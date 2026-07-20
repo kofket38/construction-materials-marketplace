@@ -4,9 +4,10 @@ The backend includes the Phase 1 authentication foundation, the Phase 2
 marketplace foundation, and Phase 3 seller dashboard and advanced product
 discovery and product media modules, plus the administrator dashboard and
 marketplace moderation module, verified-purchase product reviews, and customer
-product wishlists. Product, category, order, media, review, wishlist, seller
-business-management, and administrator oversight APIs are implemented; RFQs,
-payments, chat, and notifications remain outside the current scope.
+product wishlists, RFQs, and supplier quotations. Product, category, order,
+media, review, wishlist, RFQ, seller business-management, and administrator
+oversight APIs are implemented; payments, chat, and notifications remain
+outside the current scope.
 
 ## Requirements
 
@@ -84,6 +85,9 @@ normalized reviews, customer/product uniqueness, rating constraints, and
 review lookup indexes.
 The product wishlist migration adds normalized customer/product saved items,
 customer/product uniqueness, cascade cleanup, and ordered lookup indexes.
+The RFQ migrations add normalized request and quotation lines, status and unit
+enums, catalog snapshots, supplier uniqueness, positive quantity and price
+constraints, one accepted quotation per RFQ, and accepted-quote order links.
 
 ## Running Locally
 
@@ -378,6 +382,95 @@ Removing a product that is not in the authenticated customer's wishlist
 returns `404`. Wishlist entries are automatically deleted when their customer
 or product is deleted.
 
+## RFQ and Supplier Quotation API
+
+RFQ routes require authentication. Customers manage their own requests and
+quotation decisions, sellers access eligible requests and their own quotes,
+and administrators have read-only marketplace oversight.
+
+| Method | Route | Access |
+| --- | --- | --- |
+| `POST` | `/api/rfqs` | Customer |
+| `GET` | `/api/rfqs/me` | Customer |
+| `GET` | `/api/rfqs/:id` | Owner, eligible/participating seller, or admin |
+| `PUT` | `/api/rfqs/:id` | Owning customer before any quote |
+| `PATCH` | `/api/rfqs/:id/cancel` | Owning customer |
+| `GET` | `/api/seller/rfqs` | Seller |
+| `POST` | `/api/rfqs/:id/quotes` | Eligible seller |
+| `PUT` | `/api/quotes/:id` | Owning seller |
+| `PATCH` | `/api/quotes/:id/withdraw` | Owning seller |
+| `POST` | `/api/quotes/:id/reject` | RFQ owner |
+| `POST` | `/api/quotes/:id/accept` | RFQ owner |
+| `GET` | `/api/admin/rfqs` | Admin |
+
+Create an RFQ with one to twenty requested material lines:
+
+```bash
+curl -X POST http://localhost:3000/api/rfqs \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Bulk structural materials",
+    "deliveryLocation": "Industrial Area, Nairobi",
+    "expiresAt": "2026-07-27T12:00:00.000Z",
+    "items": [
+      {
+        "categoryId": "<cement-category-id>",
+        "materialName": "General purpose cement",
+        "specifications": "50 kg bags",
+        "requestedQuantity": "2.500",
+        "requestedUnit": "TONNE"
+      }
+    ]
+  }'
+```
+
+RFQs expire between 24 hours and 90 days after creation. Supported requested
+units are `BAG`, `KG`, `TONNE`, `LITRE`, `METRE`, `SQUARE_METRE`,
+`CUBIC_METRE`, `PIECE`, `ROLL`, `PALLET`, `LOAD`, and `OTHER`. `OTHER`
+requires `customUnit`.
+
+An eligible seller owns at least one product in every requested category.
+Submit a complete quotation by mapping every RFQ item to a seller-owned
+product in the same category:
+
+```bash
+curl -X POST http://localhost:3000/api/rfqs/<rfq-id>/quotes \
+  -H "Authorization: Bearer <seller-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "validUntil": "2026-07-25T12:00:00.000Z",
+    "leadTimeDays": 5,
+    "terms": "Material pricing only.",
+    "items": [
+      {
+        "rfqItemId": "<rfq-item-id>",
+        "productId": "<seller-product-id>",
+        "offeredQuantity": 50,
+        "unitPrice": "825.00"
+      }
+    ]
+  }'
+```
+
+Only one quote per seller and RFQ is permitted. Sellers cannot see competing
+quote details. Quote submission does not reserve stock.
+
+Accept a submitted, unexpired quotation:
+
+```bash
+curl -X POST http://localhost:3000/api/quotes/<quote-id>/accept \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Acceptance runs in a serializable transaction. It revalidates product
+ownership and category, conditionally reserves stock, creates a normal
+`PENDING` order at the quoted prices, marks the selected quote `ACCEPTED`,
+rejects competing submitted quotes, and marks the RFQ `AWARDED`. Payments,
+messaging, notifications, and delivery charges are not part of this workflow.
+
 ## Category API
 
 | Method | Route | Access |
@@ -602,10 +695,12 @@ dashboard aggregation, administrator monitoring and moderation, disabled-user
 enforcement, filters, analytics, product media ownership and primary-image
 behavior, and review eligibility, ownership, validation, public listing, and
 rating aggregates, plus wishlist customer isolation, ordering, validation, and
-removal. They use in-memory repository implementations so routine HTTP tests
-do not require PostgreSQL. Focused tests also exercise the Prisma
-administrator, review, and wishlist repositories' mappings, aggregates,
-persistence rules, and error translation.
+removal, plus RFQ ownership, seller eligibility, quote isolation, validation,
+award transactions, stock rollback, order creation, and concurrent acceptance.
+They use in-memory repository implementations so routine HTTP tests do not
+require PostgreSQL. Focused tests also exercise the Prisma administrator,
+review, wishlist, and RFQ repositories' mappings, aggregates, persistence
+rules, transaction behavior, and error translation.
 
 ## Architecture
 
@@ -613,7 +708,7 @@ persistence rules, and error translation.
 src/
   config/        Environment, logger, and cookie configuration
   controllers/   HTTP request and response handling
-  services/      Authentication, catalog, order, review, wishlist, seller, and admin use cases
+  services/      Authentication, catalog, order, review, wishlist, RFQ, seller, and admin use cases
   repositories/  Persistence contracts and Prisma implementation
   middleware/    Authentication, roles, validation, errors, and rate limits
   routes/        Express route composition

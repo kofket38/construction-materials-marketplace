@@ -59,7 +59,11 @@ export const ModelName = {
   Order: 'Order',
   OrderItem: 'OrderItem',
   Review: 'Review',
-  WishlistItem: 'WishlistItem'
+  WishlistItem: 'WishlistItem',
+  RequestForQuote: 'RequestForQuote',
+  RfqItem: 'RfqItem',
+  SupplierQuote: 'SupplierQuote',
+  SupplierQuoteItem: 'SupplierQuoteItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -191,6 +195,71 @@ export const WishlistItemScalarFieldEnum = {
 } as const
 
 export type WishlistItemScalarFieldEnum = (typeof WishlistItemScalarFieldEnum)[keyof typeof WishlistItemScalarFieldEnum]
+
+
+export const RequestForQuoteScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  title: 'title',
+  deliveryLocation: 'deliveryLocation',
+  notes: 'notes',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  awardedQuoteId: 'awardedQuoteId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RequestForQuoteScalarFieldEnum = (typeof RequestForQuoteScalarFieldEnum)[keyof typeof RequestForQuoteScalarFieldEnum]
+
+
+export const RfqItemScalarFieldEnum = {
+  id: 'id',
+  rfqId: 'rfqId',
+  categoryId: 'categoryId',
+  preferredProductId: 'preferredProductId',
+  categoryName: 'categoryName',
+  materialName: 'materialName',
+  specifications: 'specifications',
+  requestedQuantity: 'requestedQuantity',
+  requestedUnit: 'requestedUnit',
+  customUnit: 'customUnit',
+  createdAt: 'createdAt'
+} as const
+
+export type RfqItemScalarFieldEnum = (typeof RfqItemScalarFieldEnum)[keyof typeof RfqItemScalarFieldEnum]
+
+
+export const SupplierQuoteScalarFieldEnum = {
+  id: 'id',
+  rfqId: 'rfqId',
+  sellerId: 'sellerId',
+  status: 'status',
+  validUntil: 'validUntil',
+  leadTimeDays: 'leadTimeDays',
+  terms: 'terms',
+  totalAmount: 'totalAmount',
+  orderId: 'orderId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SupplierQuoteScalarFieldEnum = (typeof SupplierQuoteScalarFieldEnum)[keyof typeof SupplierQuoteScalarFieldEnum]
+
+
+export const SupplierQuoteItemScalarFieldEnum = {
+  id: 'id',
+  quoteId: 'quoteId',
+  rfqItemId: 'rfqItemId',
+  productId: 'productId',
+  productName: 'productName',
+  offeredQuantity: 'offeredQuantity',
+  unitPrice: 'unitPrice',
+  lineTotal: 'lineTotal',
+  createdAt: 'createdAt'
+} as const
+
+export type SupplierQuoteItemScalarFieldEnum = (typeof SupplierQuoteItemScalarFieldEnum)[keyof typeof SupplierQuoteItemScalarFieldEnum]
 
 
 export const SortOrder = {

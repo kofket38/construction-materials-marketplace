@@ -27,3 +27,42 @@ export const OrderStatus = {
 } as const
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+
+export const RfqStatus = {
+  OPEN: 'OPEN',
+  AWARDED: 'AWARDED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type RfqStatus = (typeof RfqStatus)[keyof typeof RfqStatus]
+
+
+export const SupplierQuoteStatus = {
+  SUBMITTED: 'SUBMITTED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
+  CLOSED: 'CLOSED'
+} as const
+
+export type SupplierQuoteStatus = (typeof SupplierQuoteStatus)[keyof typeof SupplierQuoteStatus]
+
+
+export const RfqUnit = {
+  BAG: 'BAG',
+  KG: 'KG',
+  TONNE: 'TONNE',
+  LITRE: 'LITRE',
+  METRE: 'METRE',
+  SQUARE_METRE: 'SQUARE_METRE',
+  CUBIC_METRE: 'CUBIC_METRE',
+  PIECE: 'PIECE',
+  ROLL: 'ROLL',
+  PALLET: 'PALLET',
+  LOAD: 'LOAD',
+  OTHER: 'OTHER'
+} as const
+
+export type RfqUnit = (typeof RfqUnit)[keyof typeof RfqUnit]

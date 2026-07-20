@@ -62,3 +62,23 @@ export type Review = Prisma.ReviewModel
  * 
  */
 export type WishlistItem = Prisma.WishlistItemModel
+/**
+ * Model RequestForQuote
+ * 
+ */
+export type RequestForQuote = Prisma.RequestForQuoteModel
+/**
+ * Model RfqItem
+ * 
+ */
+export type RfqItem = Prisma.RfqItemModel
+/**
+ * Model SupplierQuote
+ * 
+ */
+export type SupplierQuote = Prisma.SupplierQuoteModel
+/**
+ * Model SupplierQuoteItem
+ * 
+ */
+export type SupplierQuoteItem = Prisma.SupplierQuoteItemModel

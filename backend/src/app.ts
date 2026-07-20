@@ -10,6 +10,7 @@ import { CategoryController } from "./controllers/category.controller.js";
 import { OrderController } from "./controllers/order.controller.js";
 import { ProductController } from "./controllers/product.controller.js";
 import { ReviewController } from "./controllers/review.controller.js";
+import { RfqController } from "./controllers/rfq.controller.js";
 import { SellerDashboardController } from "./controllers/seller-dashboard.controller.js";
 import { WishlistController } from "./controllers/wishlist.controller.js";
 import { env } from "./config/env.js";
@@ -22,6 +23,7 @@ import { PrismaProductRepository } from "./repositories/prisma-product.repositor
 import { PrismaCategoryRepository } from "./repositories/prisma-category.repository.js";
 import { PrismaOrderRepository } from "./repositories/prisma-order.repository.js";
 import { PrismaReviewRepository } from "./repositories/prisma-review.repository.js";
+import { PrismaRfqRepository } from "./repositories/prisma-rfq.repository.js";
 import { PrismaSellerDashboardRepository } from "./repositories/prisma-seller-dashboard.repository.js";
 import { PrismaAdminDashboardRepository } from "./repositories/prisma-admin-dashboard.repository.js";
 import { PrismaWishlistRepository } from "./repositories/prisma-wishlist.repository.js";
@@ -30,6 +32,7 @@ import type { CategoryRepository } from "./repositories/category.repository.js";
 import type { OrderRepository } from "./repositories/order.repository.js";
 import type { ProductRepository } from "./repositories/product.repository.js";
 import type { ReviewRepository } from "./repositories/review.repository.js";
+import type { RfqRepository } from "./repositories/rfq.repository.js";
 import type { SellerDashboardRepository } from "./repositories/seller-dashboard.repository.js";
 import type { UserRepository } from "./repositories/user.repository.js";
 import type { WishlistRepository } from "./repositories/wishlist.repository.js";
@@ -40,6 +43,7 @@ import { CategoryService } from "./services/category.service.js";
 import { OrderService } from "./services/order.service.js";
 import { ProductService } from "./services/product.service.js";
 import { ReviewService } from "./services/review.service.js";
+import { RfqService } from "./services/rfq.service.js";
 import { SellerDashboardService } from "./services/seller-dashboard.service.js";
 import { WishlistService } from "./services/wishlist.service.js";
 import {
@@ -57,6 +61,7 @@ export interface AppDependencies {
   orderRepository?: OrderRepository;
   productRepository?: ProductRepository;
   reviewRepository?: ReviewRepository;
+  rfqRepository?: RfqRepository;
   sellerDashboardRepository?: SellerDashboardRepository;
   wishlistRepository?: WishlistRepository;
   tokenService?: TokenService;
@@ -75,6 +80,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     dependencies.productRepository ?? new PrismaProductRepository(prisma);
   const reviewRepository =
     dependencies.reviewRepository ?? new PrismaReviewRepository(prisma);
+  const rfqRepository =
+    dependencies.rfqRepository ?? new PrismaRfqRepository(prisma);
   const sellerDashboardRepository =
     dependencies.sellerDashboardRepository ??
     new PrismaSellerDashboardRepository(prisma);
@@ -101,6 +108,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const productController = new ProductController(productService);
   const reviewService = new ReviewService(reviewRepository);
   const reviewController = new ReviewController(reviewService);
+  const rfqService = new RfqService(rfqRepository);
+  const rfqController = new RfqController(rfqService);
   const sellerDashboardService = new SellerDashboardService(
     sellerDashboardRepository,
   );
@@ -155,6 +164,7 @@ export function createApp(dependencies: AppDependencies = {}): Express {
       orderController,
       productController,
       reviewController,
+      rfqController,
       sellerDashboardController,
       wishlistController,
       tokenService,

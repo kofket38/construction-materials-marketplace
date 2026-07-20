@@ -21,26 +21,58 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum RfqStatus {
+  OPEN
+  AWARDED
+  CANCELLED
+  EXPIRED
+}
+
+enum SupplierQuoteStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  CLOSED
+}
+
+enum RfqUnit {
+  BAG
+  KG
+  TONNE
+  LITRE
+  METRE
+  SQUARE_METRE
+  CUBIC_METRE
+  PIECE
+  ROLL
+  PALLET
+  LOAD
+  OTHER
+}
+
 model User {
-  id             String         @id @default(uuid()) @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
   name           String
   firstName      String?
   lastName       String?
-  email          String         @unique
+  email          String            @unique
   passwordHash   String
   phone          String?
   company        String?
-  role           Role           @default(CUSTOMER)
-  isActive       Boolean        @default(true)
-  emailVerified  Boolean        @default(false)
+  role           Role              @default(CUSTOMER)
+  isActive       Boolean           @default(true)
+  emailVerified  Boolean           @default(false)
   refreshToken   String?
   sellerProfile  SellerProfile?
-  listedProducts Product[]      @relation("SellerProducts")
-  orders         Order[]        @relation("CustomerOrders")
-  reviews        Review[]       @relation("CustomerReviews")
-  wishlistItems  WishlistItem[] @relation("CustomerWishlist")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  listedProducts Product[]         @relation("SellerProducts")
+  orders         Order[]           @relation("CustomerOrders")
+  reviews        Review[]          @relation("CustomerReviews")
+  wishlistItems  WishlistItem[]    @relation("CustomerWishlist")
+  rfqs           RequestForQuote[] @relation("CustomerRfqs")
+  supplierQuotes SupplierQuote[]   @relation("SellerQuotes")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([role])
   @@index([isActive])
@@ -67,27 +99,30 @@ model Category {
   name        String    @unique
   description String?
   products    Product[]
+  rfqItems    RfqItem[]
 
   @@map("categories")
 }
 
 model Product {
-  id            String         @id @default(uuid()) @db.Uuid
-  sellerId      String         @db.Uuid
-  categoryId    String         @db.Uuid
-  name          String
-  description   String
-  price         Decimal        @db.Decimal(12, 2)
-  quantity      Int            @default(0)
-  imageUrl      String?
-  seller        User           @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Restrict)
-  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images        ProductImage[]
-  orderItems    OrderItem[]
-  reviews       Review[]
-  wishlistItems WishlistItem[] @relation("ProductWishlist")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                 String              @id @default(uuid()) @db.Uuid
+  sellerId           String              @db.Uuid
+  categoryId         String              @db.Uuid
+  name               String
+  description        String
+  price              Decimal             @db.Decimal(12, 2)
+  quantity           Int                 @default(0)
+  imageUrl           String?
+  seller             User                @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Restrict)
+  category           Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images             ProductImage[]
+  orderItems         OrderItem[]
+  reviews            Review[]
+  wishlistItems      WishlistItem[]      @relation("ProductWishlist")
+  preferredRfqItems  RfqItem[]           @relation("PreferredRfqProduct")
+  supplierQuoteItems SupplierQuoteItem[] @relation("QuotedProduct")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([sellerId])
   @@index([categoryId])
@@ -113,14 +148,15 @@ model ProductImage {
 }
 
 model Order {
-  id          String      @id @default(uuid()) @db.Uuid
-  customerId  String      @db.Uuid
-  status      OrderStatus @default(PENDING)
-  totalAmount Decimal     @db.Decimal(14, 2)
-  customer    User        @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  id          String         @id @default(uuid()) @db.Uuid
+  customerId  String         @db.Uuid
+  status      OrderStatus    @default(PENDING)
+  totalAmount Decimal        @db.Decimal(14, 2)
+  customer    User           @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
   items       OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  sourceQuote SupplierQuote?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([customerId, createdAt])
   @@index([status])
@@ -170,4 +206,96 @@ model WishlistItem {
   @@index([customerId, createdAt])
   @@index([productId])
   @@map("wishlist_items")
+}
+
+model RequestForQuote {
+  id               String          @id @default(uuid()) @db.Uuid
+  customerId       String          @db.Uuid
+  title            String
+  deliveryLocation String
+  notes            String?
+  status           RfqStatus       @default(OPEN)
+  expiresAt        DateTime
+  awardedQuoteId   String?         @unique @db.Uuid
+  customer         User            @relation("CustomerRfqs", fields: [customerId], references: [id], onDelete: Restrict)
+  items            RfqItem[]
+  quotes           SupplierQuote[] @relation("RfqQuotes")
+  awardedQuote     SupplierQuote?  @relation("AwardedRfqQuote", fields: [awardedQuoteId], references: [id], onDelete: SetNull)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, expiresAt])
+  @@index([createdAt])
+  @@map("request_for_quotes")
+}
+
+model RfqItem {
+  id                 String              @id @default(uuid()) @db.Uuid
+  rfqId              String              @db.Uuid
+  categoryId         String?             @db.Uuid
+  preferredProductId String?             @db.Uuid
+  categoryName       String
+  materialName       String
+  specifications     String?
+  requestedQuantity  Decimal             @db.Decimal(14, 3)
+  requestedUnit      RfqUnit
+  customUnit         String?
+  rfq                RequestForQuote     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  preferredProduct   Product?            @relation("PreferredRfqProduct", fields: [preferredProductId], references: [id], onDelete: SetNull)
+  quoteItems         SupplierQuoteItem[]
+  createdAt          DateTime            @default(now())
+
+  @@index([rfqId])
+  @@index([categoryId])
+  @@index([preferredProductId])
+  @@map("rfq_items")
+}
+
+model SupplierQuote {
+  id           String              @id @default(uuid()) @db.Uuid
+  rfqId        String              @db.Uuid
+  sellerId     String              @db.Uuid
+  status       SupplierQuoteStatus @default(SUBMITTED)
+  validUntil   DateTime
+  leadTimeDays Int
+  terms        String?
+  totalAmount  Decimal             @db.Decimal(14, 2)
+  orderId      String?             @unique @db.Uuid
+  rfq          RequestForQuote     @relation("RfqQuotes", fields: [rfqId], references: [id], onDelete: Cascade)
+  seller       User                @relation("SellerQuotes", fields: [sellerId], references: [id], onDelete: Restrict)
+  items        SupplierQuoteItem[]
+  order        Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  awardedFor   RequestForQuote?    @relation("AwardedRfqQuote")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([rfqId, sellerId])
+  @@index([rfqId, status])
+  @@index([sellerId, createdAt])
+  @@index([sellerId, status])
+  @@index([validUntil])
+  @@map("supplier_quotes")
+}
+
+model SupplierQuoteItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  quoteId         String        @db.Uuid
+  rfqItemId       String        @db.Uuid
+  productId       String?       @db.Uuid
+  productName     String
+  offeredQuantity Int
+  unitPrice       Decimal       @db.Decimal(12, 2)
+  lineTotal       Decimal       @db.Decimal(14, 2)
+  quote           SupplierQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  rfqItem         RfqItem       @relation(fields: [rfqItemId], references: [id], onDelete: Restrict)
+  product         Product?      @relation("QuotedProduct", fields: [productId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  @@unique([quoteId, rfqItemId])
+  @@unique([quoteId, productId])
+  @@index([rfqItemId])
+  @@index([productId])
+  @@map("supplier_quote_items")
 }

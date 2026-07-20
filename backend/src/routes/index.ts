@@ -5,6 +5,7 @@ import type { CategoryController } from "../controllers/category.controller.js";
 import type { OrderController } from "../controllers/order.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
 import type { ReviewController } from "../controllers/review.controller.js";
+import type { RfqController } from "../controllers/rfq.controller.js";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
 import type { WishlistController } from "../controllers/wishlist.controller.js";
 import { authenticate } from "../middleware/authentication.js";
@@ -17,6 +18,7 @@ import { createCategoryRouter } from "./category.routes.js";
 import { createOrderRouter } from "./order.routes.js";
 import { createProductRouter } from "./product.routes.js";
 import { createReviewRouter } from "./review.routes.js";
+import { createRfqRouter } from "./rfq.routes.js";
 import { createSellerDashboardRouter } from "./seller-dashboard.routes.js";
 import { createWishlistRouter } from "./wishlist.routes.js";
 
@@ -27,6 +29,7 @@ export function createApiRouter(
   orderController: OrderController,
   productController: ProductController,
   reviewController: ReviewController,
+  rfqController: RfqController,
   sellerDashboardController: SellerDashboardController,
   wishlistController: WishlistController,
   tokenService: TokenService,
@@ -60,6 +63,7 @@ export function createApiRouter(
     createProductRouter(productController, requireAuthentication),
   );
   router.use(createReviewRouter(reviewController, requireAuthentication));
+  router.use(createRfqRouter(rfqController, requireAuthentication));
   router.use(
     "/seller",
     createSellerDashboardRouter(
