@@ -11,6 +11,7 @@ import { OrderController } from "./controllers/order.controller.js";
 import { ProductController } from "./controllers/product.controller.js";
 import { ReviewController } from "./controllers/review.controller.js";
 import { SellerDashboardController } from "./controllers/seller-dashboard.controller.js";
+import { WishlistController } from "./controllers/wishlist.controller.js";
 import { env } from "./config/env.js";
 import { logger as defaultLogger } from "./config/logger.js";
 import { createErrorHandler } from "./middleware/error-handler.js";
@@ -23,6 +24,7 @@ import { PrismaOrderRepository } from "./repositories/prisma-order.repository.js
 import { PrismaReviewRepository } from "./repositories/prisma-review.repository.js";
 import { PrismaSellerDashboardRepository } from "./repositories/prisma-seller-dashboard.repository.js";
 import { PrismaAdminDashboardRepository } from "./repositories/prisma-admin-dashboard.repository.js";
+import { PrismaWishlistRepository } from "./repositories/prisma-wishlist.repository.js";
 import type { AdminDashboardRepository } from "./repositories/admin-dashboard.repository.js";
 import type { CategoryRepository } from "./repositories/category.repository.js";
 import type { OrderRepository } from "./repositories/order.repository.js";
@@ -30,6 +32,7 @@ import type { ProductRepository } from "./repositories/product.repository.js";
 import type { ReviewRepository } from "./repositories/review.repository.js";
 import type { SellerDashboardRepository } from "./repositories/seller-dashboard.repository.js";
 import type { UserRepository } from "./repositories/user.repository.js";
+import type { WishlistRepository } from "./repositories/wishlist.repository.js";
 import { createApiRouter } from "./routes/index.js";
 import { AuthService } from "./services/auth.service.js";
 import { AdminDashboardService } from "./services/admin-dashboard.service.js";
@@ -38,6 +41,7 @@ import { OrderService } from "./services/order.service.js";
 import { ProductService } from "./services/product.service.js";
 import { ReviewService } from "./services/review.service.js";
 import { SellerDashboardService } from "./services/seller-dashboard.service.js";
+import { WishlistService } from "./services/wishlist.service.js";
 import {
   JwtTokenService,
   type TokenService,
@@ -54,6 +58,7 @@ export interface AppDependencies {
   productRepository?: ProductRepository;
   reviewRepository?: ReviewRepository;
   sellerDashboardRepository?: SellerDashboardRepository;
+  wishlistRepository?: WishlistRepository;
   tokenService?: TokenService;
   logger?: Logger;
 }
@@ -73,6 +78,9 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const sellerDashboardRepository =
     dependencies.sellerDashboardRepository ??
     new PrismaSellerDashboardRepository(prisma);
+  const wishlistRepository =
+    dependencies.wishlistRepository ??
+    new PrismaWishlistRepository(prisma);
   const adminDashboardRepository =
     dependencies.adminDashboardRepository ??
     new PrismaAdminDashboardRepository(prisma);
@@ -99,6 +107,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const sellerDashboardController = new SellerDashboardController(
     sellerDashboardService,
   );
+  const wishlistService = new WishlistService(wishlistRepository);
+  const wishlistController = new WishlistController(wishlistService);
 
   const app = express();
 
@@ -146,6 +156,7 @@ export function createApp(dependencies: AppDependencies = {}): Express {
       productController,
       reviewController,
       sellerDashboardController,
+      wishlistController,
       tokenService,
       userRepository,
     ),

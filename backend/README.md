@@ -3,10 +3,10 @@
 The backend includes the Phase 1 authentication foundation, the Phase 2
 marketplace foundation, and Phase 3 seller dashboard and advanced product
 discovery and product media modules, plus the administrator dashboard and
-marketplace moderation module and verified-purchase product reviews. Product,
-category, order, media, review, seller business-management, and administrator
-oversight APIs are implemented; RFQs, payments, chat, and notifications remain
-outside the current scope.
+marketplace moderation module, verified-purchase product reviews, and customer
+product wishlists. Product, category, order, media, review, wishlist, seller
+business-management, and administrator oversight APIs are implemented; RFQs,
+payments, chat, and notifications remain outside the current scope.
 
 ## Requirements
 
@@ -82,6 +82,8 @@ descriptions, and seller shop names. The administrator status migration adds
 indexed active/disabled state to users. The product review migration adds
 normalized reviews, customer/product uniqueness, rating constraints, and
 review lookup indexes.
+The product wishlist migration adds normalized customer/product saved items,
+customer/product uniqueness, cascade cleanup, and ordered lookup indexes.
 
 ## Running Locally
 
@@ -331,6 +333,51 @@ curl -X DELETE http://localhost:3000/api/reviews/<review-id> \
 Customers can update or delete only their own reviews. Administrators may
 delete any review but cannot edit reviews.
 
+## Wishlist API
+
+All wishlist routes require an active `CUSTOMER` access token.
+
+| Method | Route | Access |
+| --- | --- | --- |
+| `GET` | `/api/wishlist` | Customer |
+| `POST` | `/api/wishlist/:productId` | Customer |
+| `DELETE` | `/api/wishlist/:productId` | Customer |
+
+Add an existing product to the authenticated customer's wishlist:
+
+```bash
+curl -X POST http://localhost:3000/api/wishlist/<product-id> \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Each product may appear only once in a customer's wishlist. Duplicate
+additions return `409`, and unknown product IDs return `404`.
+
+List saved products in newest-first order:
+
+```bash
+curl http://localhost:3000/api/wishlist \
+  -H "Authorization: Bearer <customer-access-token>"
+```
+
+Each item includes the standard product representation with seller and
+category summaries. Results are scoped to the authenticated customer.
+
+Remove a saved product:
+
+```bash
+curl -X DELETE http://localhost:3000/api/wishlist/<product-id> \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Removing a product that is not in the authenticated customer's wishlist
+returns `404`. Wishlist entries are automatically deleted when their customer
+or product is deleted.
+
 ## Category API
 
 | Method | Route | Access |
@@ -554,10 +601,11 @@ JWT handling, cookies, refresh rotation, logout, protected routes, seller
 dashboard aggregation, administrator monitoring and moderation, disabled-user
 enforcement, filters, analytics, product media ownership and primary-image
 behavior, and review eligibility, ownership, validation, public listing, and
-rating aggregates. They use in-memory repository implementations so routine
-HTTP tests do not require PostgreSQL. Focused tests also exercise the Prisma
-administrator and review repositories' mappings, aggregates, persistence
-rules, and error translation.
+rating aggregates, plus wishlist customer isolation, ordering, validation, and
+removal. They use in-memory repository implementations so routine HTTP tests
+do not require PostgreSQL. Focused tests also exercise the Prisma
+administrator, review, and wishlist repositories' mappings, aggregates,
+persistence rules, and error translation.
 
 ## Architecture
 
@@ -565,7 +613,7 @@ rules, and error translation.
 src/
   config/        Environment, logger, and cookie configuration
   controllers/   HTTP request and response handling
-  services/      Authentication, catalog, order, review, seller, and admin use cases
+  services/      Authentication, catalog, order, review, wishlist, seller, and admin use cases
   repositories/  Persistence contracts and Prisma implementation
   middleware/    Authentication, roles, validation, errors, and rate limits
   routes/        Express route composition

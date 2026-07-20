@@ -38,6 +38,7 @@ model User {
   listedProducts Product[]      @relation("SellerProducts")
   orders         Order[]        @relation("CustomerOrders")
   reviews        Review[]       @relation("CustomerReviews")
+  wishlistItems  WishlistItem[] @relation("CustomerWishlist")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -71,21 +72,22 @@ model Category {
 }
 
 model Product {
-  id          String         @id @default(uuid()) @db.Uuid
-  sellerId    String         @db.Uuid
-  categoryId  String         @db.Uuid
-  name        String
-  description String
-  price       Decimal        @db.Decimal(12, 2)
-  quantity    Int            @default(0)
-  imageUrl    String?
-  seller      User           @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Restrict)
-  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images      ProductImage[]
-  orderItems  OrderItem[]
-  reviews     Review[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(uuid()) @db.Uuid
+  sellerId      String         @db.Uuid
+  categoryId    String         @db.Uuid
+  name          String
+  description   String
+  price         Decimal        @db.Decimal(12, 2)
+  quantity      Int            @default(0)
+  imageUrl      String?
+  seller        User           @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Restrict)
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[] @relation("ProductWishlist")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([sellerId])
   @@index([categoryId])
@@ -154,4 +156,18 @@ model Review {
   @@index([productId, createdAt])
   @@index([customerId])
   @@map("reviews")
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  customerId String   @db.Uuid
+  productId  String   @db.Uuid
+  customer   User     @relation("CustomerWishlist", fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation("ProductWishlist", fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId, createdAt])
+  @@index([productId])
+  @@map("wishlist_items")
 }

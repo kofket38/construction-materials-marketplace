@@ -6,8 +6,8 @@ Last updated: 2026-07-20
 
 Construction Materials Marketplace is a TypeScript/Express backend for a
 multi-role marketplace. It supports customer purchasing, seller catalog and
-business management, verified-purchase product reviews, and administrator
-marketplace monitoring and moderation.
+business management, customer wishlists, verified-purchase product reviews,
+and administrator marketplace monitoring and moderation.
 
 The API uses a layered architecture:
 
@@ -33,14 +33,14 @@ applicable.
 | Phase 1 | Complete | Authentication, JWT access/refresh tokens, role authorization, refresh-token rotation, security middleware, and API error handling. |
 | Phase 2 | Complete | Marketplace foundation: categories, products, orders, stock management, and seller profiles. |
 | Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
-| Phase 4 | Complete, awaiting review | Administrator oversight plus verified-purchase product reviews and ratings. |
+| Phase 4 | Complete, awaiting review | Administrator oversight, verified-purchase product reviews and ratings, and customer product wishlists. |
 
 ## 3. Current Phase
 
-**Phase 4 - Product Reviews & Ratings is complete and awaiting review.**
+**Phase 4 - Customer Product Wishlist is complete and awaiting review.**
 
-The most recently completed work is **Phase 4 - Module 1: Product Reviews &
-Ratings**.
+The most recently completed work is **Phase 4 - Module 2: Customer Product
+Wishlist**.
 
 ## 4. Completed Modules
 
@@ -86,6 +86,14 @@ Ratings**.
   - Administrator deletion of any review.
   - Integer ratings from 1 through 5 with database and Zod enforcement.
   - Product-detail `averageRating` and `reviewCount` fields.
+- Customer product wishlists with:
+  - Customer-only authenticated access.
+  - Add, list, and remove operations by product ID.
+  - Customer-scoped data isolation.
+  - One wishlist entry per customer and product.
+  - Newest-first deterministic listing with complete product, seller, and
+    category summaries.
+  - Automatic cleanup when a customer or product is deleted.
 
 ## 5. Folder Structure
 
@@ -117,9 +125,11 @@ CMM/
       orders.test.ts
       prisma-admin-dashboard.repository.test.ts
       prisma-review.repository.test.ts
+      prisma-wishlist.repository.test.ts
       products.test.ts
       reviews.test.ts
       seller-dashboard.test.ts
+      wishlist.test.ts
     README.md
     package.json
 ```
@@ -138,6 +148,7 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `Order` | Customer order with status and total amount. |
 | `OrderItem` | Product/quantity/price snapshot belonging to an order. |
 | `Review` | Customer rating and optional comment for a purchased product. |
+| `WishlistItem` | Customer-saved product with creation time for ordered retrieval. |
 
 Relations:
 
@@ -151,6 +162,9 @@ Relations:
 - A `Review` belongs to one product and one customer.
 - `Review` is unique per `(customerId, productId)`, and its rating is
   constrained to an integer from 1 through 5.
+- A `WishlistItem` belongs to one customer and one product.
+- `WishlistItem` is unique per `(customerId, productId)` and is cascade-deleted
+  with either related record.
 
 Enums:
 
@@ -167,6 +181,7 @@ Applied migrations:
 6. `20260719150000_product_image_management`
 7. `20260719170000_admin_dashboard_user_status`
 8. `20260720120000_product_reviews`
+9. `20260720150000_product_wishlist`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
@@ -175,7 +190,8 @@ images have a product/creation-time index and a PostgreSQL partial unique index
 that permits at most one primary image per product. User role and active-state
 indexes support administrator filtering and protected-request status checks.
 Reviews have customer/product uniqueness, product/creation-time and customer
-indexes, and a PostgreSQL rating check constraint.
+indexes, and a PostgreSQL rating check constraint. Wishlist items have
+customer/product uniqueness plus customer/creation-time and product indexes.
 
 ## 7. API Endpoints Created
 
@@ -205,6 +221,9 @@ indexes, and a PostgreSQL rating check constraint.
 | `POST` | `/api/products/:id/reviews` | Customer with delivered purchase |
 | `PUT` | `/api/reviews/:id` | Review owner |
 | `DELETE` | `/api/reviews/:id` | Review owner or admin |
+| `GET` | `/api/wishlist` | Customer |
+| `POST` | `/api/wishlist/:productId` | Customer |
+| `DELETE` | `/api/wishlist/:productId` | Customer |
 | `POST` | `/api/orders` | Customer |
 | `GET` | `/api/orders/me` | Authenticated |
 | `GET` | `/api/orders/:id` | Order owner or admin |
@@ -244,7 +263,7 @@ stock, sortBy, sortOrder
 
 ## 9. Remaining Tasks
 
-No approved implementation work remains within the Product Reviews & Ratings
+No approved implementation work remains within the Customer Product Wishlist
 module.
 
 Features outside the currently implemented scope:
@@ -258,7 +277,7 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**Review and approve Phase 4, Module 1: Product Reviews & Ratings.** No
+**Review and approve Phase 4, Module 2: Customer Product Wishlist.** No
 subsequent module has been formally specified, so do not begin RFQs, payments,
 chat, notifications, frontend work, or another business module until the next
 requirements are provided and approved.
@@ -315,6 +334,15 @@ requirements are provided and approved.
   delete any review but cannot edit review content.
 - Product detail rating aggregates are calculated from normalized reviews at
   read time; no denormalized rating columns are stored on products.
+- Wishlist access is restricted to customers at both the route and service
+  layers. Entries are always scoped by the authenticated customer ID.
+- Wishlist uniqueness is enforced by the service-facing repository and by a
+  PostgreSQL unique index so concurrent duplicate additions remain safe.
+- Wishlist lists are ordered by newest creation time with the item ID as a
+  deterministic tie-breaker and include the standard product, seller, and
+  category summaries.
+- Wishlist foreign keys cascade on customer or product deletion so saved-item
+  records cannot become orphaned.
 - Administrative product deletion is blocked when historical order items
   reference the product.
 - Category deletion is blocked when products reference that category.
@@ -336,6 +364,8 @@ Current limitations and deferred work:
   during concurrent catalog updates.
 - Public product review lists are currently unpaginated and should gain
   cursor or offset pagination before products accumulate large review volumes.
+- Customer wishlist lists are currently unpaginated and should gain cursor or
+  offset pagination before customers accumulate large saved-product sets.
 - Full-text ranking, typo tolerance beyond trigram matching, faceted counts,
   and search-result highlighting are not implemented.
 - Product media management stores validated external image URLs only. Binary
@@ -346,20 +376,19 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Most recent Phase 4 Product Reviews & Ratings verification completed
+Most recent Phase 4 Customer Product Wishlist verification completed
 successfully:
 
 ```text
 npm run typecheck     PASS
-npm test              PASS (81 tests)
+npm test              PASS (91 tests)
 npm run build         PASS
 prisma validate       PASS
-prisma migrate status PASS (8 migrations applied)
+prisma migrate status PASS (9 migrations applied)
 ```
 
-Review HTTP tests cover successful and duplicate reviews, delivered-purchase
-eligibility, invalid ratings, role enforcement, owner updates and deletion,
-administrator deletion, public listing, and product rating aggregates.
-Focused Prisma review repository tests cover delivered-order lookup, unique
-constraint translation, non-purchaser rejection, mapping, and aggregate
-calculation.
+Wishlist HTTP tests cover successful and duplicate additions, missing products,
+authentication and role enforcement, customer isolation, deterministic
+listing, removal ownership, and strict input validation. Focused Prisma
+wishlist repository tests cover create/list/delete persistence, product
+mapping, deterministic ordering, and database-error translation.

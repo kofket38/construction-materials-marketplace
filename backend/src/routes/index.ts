@@ -6,6 +6,7 @@ import type { OrderController } from "../controllers/order.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
 import type { ReviewController } from "../controllers/review.controller.js";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
+import type { WishlistController } from "../controllers/wishlist.controller.js";
 import { authenticate } from "../middleware/authentication.js";
 import { createAuthRateLimiter } from "../middleware/rate-limit.js";
 import type { UserRepository } from "../repositories/user.repository.js";
@@ -17,6 +18,7 @@ import { createOrderRouter } from "./order.routes.js";
 import { createProductRouter } from "./product.routes.js";
 import { createReviewRouter } from "./review.routes.js";
 import { createSellerDashboardRouter } from "./seller-dashboard.routes.js";
+import { createWishlistRouter } from "./wishlist.routes.js";
 
 export function createApiRouter(
   adminDashboardController: AdminDashboardController,
@@ -26,6 +28,7 @@ export function createApiRouter(
   productController: ProductController,
   reviewController: ReviewController,
   sellerDashboardController: SellerDashboardController,
+  wishlistController: WishlistController,
   tokenService: TokenService,
   userRepository: UserRepository,
 ): Router {
@@ -63,6 +66,10 @@ export function createApiRouter(
       sellerDashboardController,
       requireAuthentication,
     ),
+  );
+  router.use(
+    "/wishlist",
+    createWishlistRouter(wishlistController, requireAuthentication),
   );
 
   return router;
