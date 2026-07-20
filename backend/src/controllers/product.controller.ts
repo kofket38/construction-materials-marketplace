@@ -2,8 +2,10 @@ import type { Request, Response } from "express";
 import type { ProductService } from "../services/product.service.js";
 import { UnauthorizedError } from "../utils/api-error.js";
 import type {
+  AddProductImageBody,
   CreateProductBody,
   ProductDiscoveryQueryParams,
+  ProductImageIdParams,
   ProductIdParams,
   UpdateProductBody,
 } from "../validators/product.validators.js";
@@ -68,6 +70,61 @@ export class ProductController {
     res.status(200).json({
       success: true,
       data: null,
+    });
+  };
+
+  addImage = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params as ProductIdParams;
+    const image = await this.productService.addImage(
+      id,
+      this.requireActor(req),
+      req.body as AddProductImageBody,
+    );
+
+    res.status(201).json({
+      success: true,
+      data: { image },
+    });
+  };
+
+  findImages = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params as ProductIdParams;
+    const images = await this.productService.findImages(id);
+
+    res.status(200).json({
+      success: true,
+      data: { images },
+    });
+  };
+
+  deleteImage = async (req: Request, res: Response): Promise<void> => {
+    const { id, imageId } = req.params as ProductImageIdParams;
+    await this.productService.deleteImage(
+      id,
+      imageId,
+      this.requireActor(req),
+    );
+
+    res.status(200).json({
+      success: true,
+      data: null,
+    });
+  };
+
+  setPrimaryImage = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const { id, imageId } = req.params as ProductImageIdParams;
+    const image = await this.productService.setPrimaryImage(
+      id,
+      imageId,
+      this.requireActor(req),
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { image },
     });
   };
 

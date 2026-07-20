@@ -18,3 +18,10 @@ export class ProductInUseError extends Error {
     this.name = "ProductInUseError";
   }
 }
+
+export class ProductImageLimitError extends Error {
+  constructor(limit: number) {
+    super(`A product can have at most ${limit} images.`);
+    this.name = "ProductImageLimitError";
+  }
+}

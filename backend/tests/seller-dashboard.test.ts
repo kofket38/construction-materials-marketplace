@@ -25,6 +25,7 @@ const otherSellerProductId = randomUUID();
 describe("Seller Dashboard API", () => {
   const tokenService = new JwtTokenService();
   let dashboard: InMemorySellerDashboardRepository;
+  let users: InMemoryUserRepository;
   let app: ReturnType<typeof createApp>;
   let sellerToken: string;
   let customerToken: string;
@@ -37,8 +38,14 @@ describe("Seller Dashboard API", () => {
     seedProducts();
     seedOrders();
 
+    users = new InMemoryUserRepository();
+    const adminId = randomUUID();
+    users.addUser({ id: sellerId, role: "SELLER" });
+    users.addUser({ id: firstCustomerId, role: "CUSTOMER" });
+    users.addUser({ id: adminId, role: "ADMIN" });
+
     app = createApp({
-      userRepository: new InMemoryUserRepository(),
+      userRepository: users,
       sellerDashboardRepository: dashboard,
       tokenService,
       logger: pino({ level: "silent" }),
@@ -53,7 +60,7 @@ describe("Seller Dashboard API", () => {
       role: "CUSTOMER",
     });
     adminToken = tokenService.createAccessToken({
-      userId: randomUUID(),
+      userId: adminId,
       role: "ADMIN",
     });
   });

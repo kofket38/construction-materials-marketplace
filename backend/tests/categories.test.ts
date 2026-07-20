@@ -11,24 +11,30 @@ describe("Category API", () => {
   const tokenService = new JwtTokenService();
   let app: ReturnType<typeof createApp>;
   let categories: InMemoryCategoryRepository;
+  let users: InMemoryUserRepository;
   let adminToken: string;
   let customerToken: string;
 
   beforeEach(() => {
     categories = new InMemoryCategoryRepository();
+    users = new InMemoryUserRepository();
+    const adminId = randomUUID();
+    const customerId = randomUUID();
+    users.addUser({ id: adminId, role: "ADMIN" });
+    users.addUser({ id: customerId, role: "CUSTOMER" });
     app = createApp({
-      userRepository: new InMemoryUserRepository(),
+      userRepository: users,
       categoryRepository: categories,
       tokenService,
       logger: pino({ level: "silent" }),
     });
 
     adminToken = tokenService.createAccessToken({
-      userId: randomUUID(),
+      userId: adminId,
       role: "ADMIN",
     });
     customerToken = tokenService.createAccessToken({
-      userId: randomUUID(),
+      userId: customerId,
       role: "CUSTOMER",
     });
   });

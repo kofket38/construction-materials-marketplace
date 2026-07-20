@@ -1,27 +1,27 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { ProductController } from "../controllers/product.controller.js";
-import { authenticate } from "../middleware/authentication.js";
 import { authorizeRoles } from "../middleware/authorize-role.js";
 import { validateRequest } from "../middleware/validate-request.js";
-import type { TokenService } from "../services/token.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
+  addProductImageBodySchema,
   createProductBodySchema,
   emptyProductObjectSchema,
   productDiscoveryQuerySchema,
+  productImageIdParamsSchema,
   productIdParamsSchema,
   updateProductBodySchema,
 } from "../validators/product.validators.js";
 
 export function createProductRouter(
   controller: ProductController,
-  tokenService: TokenService,
+  requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
 
   router.post(
     "/",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("SELLER"),
     validateRequest({
       body: createProductBodySchema,
@@ -41,6 +41,52 @@ export function createProductRouter(
     asyncHandler(controller.findAll),
   );
 
+  router.post(
+    "/:id/images",
+    requireAuthentication,
+    authorizeRoles("SELLER"),
+    validateRequest({
+      body: addProductImageBodySchema,
+      params: productIdParamsSchema,
+      query: emptyProductObjectSchema,
+    }),
+    asyncHandler(controller.addImage),
+  );
+
+  router.get(
+    "/:id/images",
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: productIdParamsSchema,
+      query: emptyProductObjectSchema,
+    }),
+    asyncHandler(controller.findImages),
+  );
+
+  router.delete(
+    "/:id/images/:imageId",
+    requireAuthentication,
+    authorizeRoles("SELLER"),
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: productImageIdParamsSchema,
+      query: emptyProductObjectSchema,
+    }),
+    asyncHandler(controller.deleteImage),
+  );
+
+  router.patch(
+    "/:id/images/:imageId/primary",
+    requireAuthentication,
+    authorizeRoles("SELLER"),
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: productImageIdParamsSchema,
+      query: emptyProductObjectSchema,
+    }),
+    asyncHandler(controller.setPrimaryImage),
+  );
+
   router.get(
     "/:id",
     validateRequest({
@@ -53,7 +99,7 @@ export function createProductRouter(
 
   router.put(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     validateRequest({
       body: updateProductBodySchema,
       params: productIdParamsSchema,
@@ -64,7 +110,7 @@ export function createProductRouter(
 
   router.delete(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     validateRequest({
       body: emptyProductObjectSchema,
       params: productIdParamsSchema,

@@ -1,13 +1,18 @@
 import { randomUUID } from "node:crypto";
-import { ProductCategoryNotFoundError } from "../../src/repositories/product.errors.js";
+import {
+  ProductCategoryNotFoundError,
+  ProductImageLimitError,
+} from "../../src/repositories/product.errors.js";
 import type {
   CreateProductInput,
   ProductDiscoveryQuery,
   ProductDiscoveryResult,
   ProductEntity,
+  ProductImageEntity,
   ProductRepository,
   UpdateProductInput,
 } from "../../src/repositories/product.repository.js";
+import { MAX_PRODUCT_IMAGES } from "../../src/repositories/product.repository.js";
 
 interface CategorySeed {
   id: string;
@@ -16,6 +21,7 @@ interface CategorySeed {
 
 export class InMemoryProductRepository implements ProductRepository {
   private readonly products = new Map<string, ProductEntity>();
+  private readonly images = new Map<string, ProductImageEntity>();
   private readonly categories = new Map<string, CategorySeed>();
   private readonly sellerNames = new Map<string, string>();
   private readonly sellerShopNames = new Map<string, string>();
@@ -54,6 +60,16 @@ export class InMemoryProductRepository implements ProductRepository {
     };
 
     this.products.set(product.id, product);
+    if (input.imageUrl !== undefined) {
+      const image: ProductImageEntity = {
+        id: randomUUID(),
+        productId: product.id,
+        imageUrl: input.imageUrl,
+        isPrimary: true,
+        createdAt: now,
+      };
+      this.images.set(image.id, image);
+    }
     this.popularity.set(product.id, 0);
     return product;
   }
@@ -143,7 +159,9 @@ export class InMemoryProductRepository implements ProductRepository {
       product.price = Number(input.price).toFixed(2);
     }
     if (input.quantity !== undefined) product.quantity = input.quantity;
-    if (input.imageUrl !== undefined) product.imageUrl = input.imageUrl;
+    if (input.imageUrl !== undefined) {
+      this.synchronizeLegacyImage(product, input.imageUrl);
+    }
     product.updatedAt = new Date();
 
     return product;
@@ -151,7 +169,102 @@ export class InMemoryProductRepository implements ProductRepository {
 
   async delete(id: string): Promise<boolean> {
     this.popularity.delete(id);
+    for (const image of this.imagesFor(id)) {
+      this.images.delete(image.id);
+    }
     return this.products.delete(id);
+  }
+
+  async addImage(
+    productId: string,
+    imageUrl: string,
+  ): Promise<ProductImageEntity | null> {
+    const product = this.products.get(productId);
+    if (!product) {
+      return null;
+    }
+
+    const productImages = this.imagesFor(productId);
+    if (productImages.length >= MAX_PRODUCT_IMAGES) {
+      throw new ProductImageLimitError(MAX_PRODUCT_IMAGES);
+    }
+
+    const image: ProductImageEntity = {
+      id: randomUUID(),
+      productId,
+      imageUrl,
+      isPrimary: productImages.length === 0,
+      createdAt: new Date(),
+    };
+    this.images.set(image.id, image);
+
+    if (image.isPrimary) {
+      product.imageUrl = image.imageUrl;
+      product.updatedAt = new Date();
+    }
+
+    return image;
+  }
+
+  async findImages(productId: string): Promise<ProductImageEntity[]> {
+    return this.imagesFor(productId).sort((left, right) => {
+      if (left.isPrimary !== right.isPrimary) {
+        return left.isPrimary ? -1 : 1;
+      }
+
+      return (
+        left.createdAt.getTime() - right.createdAt.getTime() ||
+        left.id.localeCompare(right.id)
+      );
+    });
+  }
+
+  async deleteImage(
+    productId: string,
+    imageId: string,
+  ): Promise<boolean> {
+    const product = this.products.get(productId);
+    const image = this.images.get(imageId);
+    if (!product || !image || image.productId !== productId) {
+      return false;
+    }
+
+    this.images.delete(imageId);
+
+    if (image.isPrimary) {
+      const replacement = this.imagesFor(productId).sort(
+        (left, right) =>
+          left.createdAt.getTime() - right.createdAt.getTime() ||
+          left.id.localeCompare(right.id),
+      )[0];
+
+      if (replacement) {
+        replacement.isPrimary = true;
+      }
+      product.imageUrl = replacement?.imageUrl ?? null;
+      product.updatedAt = new Date();
+    }
+
+    return true;
+  }
+
+  async setPrimaryImage(
+    productId: string,
+    imageId: string,
+  ): Promise<ProductImageEntity | null> {
+    const product = this.products.get(productId);
+    const image = this.images.get(imageId);
+    if (!product || !image || image.productId !== productId) {
+      return null;
+    }
+
+    for (const productImage of this.imagesFor(productId)) {
+      productImage.isPrimary = productImage.id === imageId;
+    }
+    product.imageUrl = image.imageUrl;
+    product.updatedAt = new Date();
+
+    return image;
   }
 
   setCreatedAt(id: string, createdAt: Date): void {
@@ -175,6 +288,55 @@ export class InMemoryProductRepository implements ProductRepository {
       throw new ProductCategoryNotFoundError();
     }
     return category;
+  }
+
+  private imagesFor(productId: string): ProductImageEntity[] {
+    return [...this.images.values()].filter(
+      (image) => image.productId === productId,
+    );
+  }
+
+  private synchronizeLegacyImage(
+    product: ProductEntity,
+    imageUrl: string | null,
+  ): void {
+    const currentPrimary = this.imagesFor(product.id).find(
+      (image) => image.isPrimary,
+    );
+
+    if (imageUrl !== null) {
+      if (currentPrimary) {
+        currentPrimary.imageUrl = imageUrl;
+      } else {
+        if (this.imagesFor(product.id).length >= MAX_PRODUCT_IMAGES) {
+          throw new ProductImageLimitError(MAX_PRODUCT_IMAGES);
+        }
+        const image: ProductImageEntity = {
+          id: randomUUID(),
+          productId: product.id,
+          imageUrl,
+          isPrimary: true,
+          createdAt: new Date(),
+        };
+        this.images.set(image.id, image);
+      }
+      product.imageUrl = imageUrl;
+      return;
+    }
+
+    if (currentPrimary) {
+      this.images.delete(currentPrimary.id);
+    }
+
+    const replacement = this.imagesFor(product.id).sort(
+      (left, right) =>
+        left.createdAt.getTime() - right.createdAt.getTime() ||
+        left.id.localeCompare(right.id),
+    )[0];
+    if (replacement) {
+      replacement.isPrimary = true;
+    }
+    product.imageUrl = replacement?.imageUrl ?? null;
   }
 
   private compareProducts(

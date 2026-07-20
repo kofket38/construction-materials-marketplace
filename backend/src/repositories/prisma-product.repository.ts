@@ -4,17 +4,20 @@ import {
 } from "../prisma/generated/client.js";
 import {
   ProductCategoryNotFoundError,
+  ProductImageLimitError,
   ProductInUseError,
   ProductSellerNotFoundError,
 } from "./product.errors.js";
 import type {
   CreateProductInput,
+  ProductImageEntity,
   ProductDiscoveryQuery,
   ProductDiscoveryResult,
   ProductEntity,
   ProductRepository,
   UpdateProductInput,
 } from "./product.repository.js";
+import { MAX_PRODUCT_IMAGES } from "./product.repository.js";
 
 const productRelations = {
   seller: {
@@ -52,6 +55,22 @@ function mapProduct(product: ProductWithRelations): ProductEntity {
   };
 }
 
+function mapProductImage(image: {
+  id: string;
+  productId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+  createdAt: Date;
+}): ProductImageEntity {
+  return {
+    id: image.id,
+    productId: image.productId,
+    imageUrl: image.imageUrl,
+    isPrimary: image.isPrimary,
+    createdAt: image.createdAt,
+  };
+}
+
 function hasPrismaCode(error: unknown, code: string): boolean {
   return (
     error instanceof Error &&
@@ -75,7 +94,17 @@ export class PrismaProductRepository implements ProductRepository {
           description: input.description,
           price: input.price,
           quantity: input.quantity,
-          ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
+          ...(input.imageUrl !== undefined
+            ? {
+                imageUrl: input.imageUrl,
+                images: {
+                  create: {
+                    imageUrl: input.imageUrl,
+                    isPrimary: true,
+                  },
+                },
+              }
+            : {}),
         },
         include: productRelations,
       });
@@ -138,28 +167,43 @@ export class PrismaProductRepository implements ProductRepository {
     }
 
     try {
-      const product = await this.client.product.update({
-        where: { id },
-        data: {
-          ...(input.categoryId !== undefined
-            ? { categoryId: input.categoryId }
-            : {}),
-          ...(input.name !== undefined ? { name: input.name } : {}),
-          ...(input.description !== undefined
-            ? { description: input.description }
-            : {}),
-          ...(input.price !== undefined ? { price: input.price } : {}),
-          ...(input.quantity !== undefined
-            ? { quantity: input.quantity }
-            : {}),
-          ...(input.imageUrl !== undefined
-            ? { imageUrl: input.imageUrl }
-            : {}),
-        },
-        include: productRelations,
-      });
+      return await this.client.$transaction(async (transaction) => {
+        if (!(await lockProduct(transaction, id))) {
+          return null;
+        }
 
-      return mapProduct(product);
+        const primaryImageUrl =
+          input.imageUrl === undefined
+            ? undefined
+            : await synchronizeLegacyImage(
+                transaction,
+                id,
+                input.imageUrl,
+              );
+
+        const product = await transaction.product.update({
+          where: { id },
+          data: {
+            ...(input.categoryId !== undefined
+              ? { categoryId: input.categoryId }
+              : {}),
+            ...(input.name !== undefined ? { name: input.name } : {}),
+            ...(input.description !== undefined
+              ? { description: input.description }
+              : {}),
+            ...(input.price !== undefined ? { price: input.price } : {}),
+            ...(input.quantity !== undefined
+              ? { quantity: input.quantity }
+              : {}),
+            ...(primaryImageUrl !== undefined
+              ? { imageUrl: primaryImageUrl }
+              : {}),
+          },
+          include: productRelations,
+        });
+
+        return mapProduct(product);
+      });
     } catch (error) {
       if (hasPrismaCode(error, "P2025")) {
         return null;
@@ -188,6 +232,149 @@ export class PrismaProductRepository implements ProductRepository {
     }
   }
 
+  async addImage(
+    productId: string,
+    imageUrl: string,
+  ): Promise<ProductImageEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      if (!(await lockProduct(transaction, productId))) {
+        return null;
+      }
+
+      const imageCount = await transaction.productImage.count({
+        where: { productId },
+      });
+      if (imageCount >= MAX_PRODUCT_IMAGES) {
+        throw new ProductImageLimitError(MAX_PRODUCT_IMAGES);
+      }
+
+      const isPrimary = imageCount === 0;
+      const image = await transaction.productImage.create({
+        data: {
+          productId,
+          imageUrl,
+          isPrimary,
+        },
+      });
+
+      if (isPrimary) {
+        await transaction.product.update({
+          where: { id: productId },
+          data: { imageUrl },
+        });
+      }
+
+      return mapProductImage(image);
+    });
+  }
+
+  async findImages(productId: string): Promise<ProductImageEntity[]> {
+    const images = await this.client.productImage.findMany({
+      where: { productId },
+      orderBy: [
+        { isPrimary: "desc" },
+        { createdAt: "asc" },
+        { id: "asc" },
+      ],
+    });
+
+    return images.map(mapProductImage);
+  }
+
+  async deleteImage(
+    productId: string,
+    imageId: string,
+  ): Promise<boolean> {
+    return this.client.$transaction(async (transaction) => {
+      if (!(await lockProduct(transaction, productId))) {
+        return false;
+      }
+
+      const image = await transaction.productImage.findFirst({
+        where: {
+          id: imageId,
+          productId,
+        },
+      });
+      if (!image) {
+        return false;
+      }
+
+      await transaction.productImage.delete({
+        where: { id: image.id },
+      });
+
+      if (image.isPrimary) {
+        const replacement = await transaction.productImage.findFirst({
+          where: { productId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        });
+
+        if (replacement) {
+          await transaction.productImage.update({
+            where: { id: replacement.id },
+            data: { isPrimary: true },
+          });
+        }
+
+        await transaction.product.update({
+          where: { id: productId },
+          data: {
+            imageUrl: replacement?.imageUrl ?? null,
+          },
+        });
+      }
+
+      return true;
+    });
+  }
+
+  async setPrimaryImage(
+    productId: string,
+    imageId: string,
+  ): Promise<ProductImageEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      if (!(await lockProduct(transaction, productId))) {
+        return null;
+      }
+
+      const image = await transaction.productImage.findFirst({
+        where: {
+          id: imageId,
+          productId,
+        },
+      });
+      if (!image) {
+        return null;
+      }
+
+      if (!image.isPrimary) {
+        await transaction.productImage.updateMany({
+          where: {
+            productId,
+            isPrimary: true,
+          },
+          data: { isPrimary: false },
+        });
+
+        await transaction.productImage.update({
+          where: { id: image.id },
+          data: { isPrimary: true },
+        });
+      }
+
+      await transaction.product.update({
+        where: { id: productId },
+        data: { imageUrl: image.imageUrl },
+      });
+
+      return {
+        ...mapProductImage(image),
+        isPrimary: true,
+      };
+    });
+  }
+
   private async requireCategory(categoryId: string): Promise<void> {
     if (!(await this.categoryExists(categoryId))) {
       throw new ProductCategoryNotFoundError();
@@ -202,6 +389,79 @@ export class PrismaProductRepository implements ProductRepository {
 
     return category !== null;
   }
+}
+
+async function lockProduct(
+  transaction: Prisma.TransactionClient,
+  productId: string,
+): Promise<boolean> {
+  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "products"
+    WHERE "id" = ${productId}::uuid
+    FOR UPDATE
+  `);
+
+  return rows.length === 1;
+}
+
+async function synchronizeLegacyImage(
+  transaction: Prisma.TransactionClient,
+  productId: string,
+  imageUrl: string | null,
+): Promise<string | null> {
+  const currentPrimary = await transaction.productImage.findFirst({
+    where: {
+      productId,
+      isPrimary: true,
+    },
+  });
+
+  if (imageUrl !== null) {
+    if (currentPrimary) {
+      await transaction.productImage.update({
+        where: { id: currentPrimary.id },
+        data: { imageUrl },
+      });
+      return imageUrl;
+    }
+
+    const imageCount = await transaction.productImage.count({
+      where: { productId },
+    });
+    if (imageCount >= MAX_PRODUCT_IMAGES) {
+      throw new ProductImageLimitError(MAX_PRODUCT_IMAGES);
+    }
+
+    await transaction.productImage.create({
+      data: {
+        productId,
+        imageUrl,
+        isPrimary: true,
+      },
+    });
+    return imageUrl;
+  }
+
+  if (currentPrimary) {
+    await transaction.productImage.delete({
+      where: { id: currentPrimary.id },
+    });
+  }
+
+  const replacement = await transaction.productImage.findFirst({
+    where: { productId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  if (!replacement) {
+    return null;
+  }
+
+  await transaction.productImage.update({
+    where: { id: replacement.id },
+    data: { isPrimary: true },
+  });
+  return replacement.imageUrl;
 }
 
 function productDiscoveryWhere(

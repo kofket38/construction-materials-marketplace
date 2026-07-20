@@ -2,9 +2,10 @@
 
 The backend includes the Phase 1 authentication foundation, the Phase 2
 marketplace foundation, and Phase 3 seller dashboard and advanced product
-discovery modules. Product, category, order, and seller business-management
-APIs are implemented; RFQs, payments, chat, and notifications remain outside
-the current scope.
+discovery and product media modules, plus the administrator dashboard and
+marketplace moderation module. Product, category, order, media, seller
+business-management, and administrator oversight APIs are implemented; RFQs,
+payments, chat, and notifications remain outside the current scope.
 
 ## Requirements
 
@@ -76,7 +77,8 @@ The initial migration creates the `Role` enum and the `users` table. Refresh
 tokens are stored as SHA-256 hashes, not as reusable plaintext tokens.
 Product discovery migrations enable PostgreSQL's `pg_trgm` extension and add
 GIN indexes for case-insensitive substring searches across product names,
-descriptions, and seller shop names.
+descriptions, and seller shop names. The administrator status migration adds
+indexed active/disabled state to users.
 
 ## Running Locally
 
@@ -138,6 +140,12 @@ Refresh tokens are rotated on every successful refresh. Reuse of a rotated
 token invalidates the stored session. The current schema supports one active
 refresh-token session per user.
 
+Every protected request loads the token subject from the user repository.
+Missing or disabled users receive `401`, and authorization uses the user's
+current database role. Disabling an account clears its refresh token, blocks
+login and refresh, and causes already-issued access tokens to be rejected on
+their next protected request.
+
 ## Product API
 
 | Method | Route | Access |
@@ -147,6 +155,10 @@ refresh-token session per user.
 | `GET` | `/api/products/:id` | Public |
 | `PUT` | `/api/products/:id` | Owning seller |
 | `DELETE` | `/api/products/:id` | Owning seller |
+| `POST` | `/api/products/:id/images` | Owning seller |
+| `GET` | `/api/products/:id/images` | Public |
+| `DELETE` | `/api/products/:id/images/:imageId` | Owning seller |
+| `PATCH` | `/api/products/:id/images/:imageId/primary` | Owning seller |
 
 Create a product with a seller access token:
 
@@ -215,6 +227,42 @@ The list response contains:
 
 Product prices are returned as fixed two-decimal strings so API consumers do
 not lose monetary precision. Product creation requires an existing category.
+
+### Product Images
+
+Products support up to eight managed HTTP or HTTPS image URLs. Add an image
+with:
+
+```bash
+curl -X POST http://localhost:3000/api/products/<product-id>/images \
+  -H "Authorization: Bearer <seller-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl":"https://example.com/cement-front.jpg"}'
+```
+
+Only the owning seller can add, delete, or select primary images. Image lists
+are public. The first image becomes primary automatically:
+
+```bash
+curl http://localhost:3000/api/products/<product-id>/images
+
+curl -X PATCH \
+  http://localhost:3000/api/products/<product-id>/images/<image-id>/primary \
+  -H "Authorization: Bearer <seller-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+curl -X DELETE \
+  http://localhost:3000/api/products/<product-id>/images/<image-id> \
+  -H "Authorization: Bearer <seller-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Only one image can be primary. Deleting it promotes the oldest remaining
+image; deleting the last image clears the primary image. The existing
+`Product.imageUrl` field remains synchronized with the primary image for
+backward compatibility.
 
 ## Category API
 
@@ -340,6 +388,54 @@ returns the top 10 products and categories from delivered sales, order counts
 by status, and monthly sales and revenue for the current UTC month plus the
 preceding 11 months.
 
+## Admin Dashboard API
+
+All administrator dashboard routes require an active `ADMIN` account.
+Unauthenticated or disabled accounts receive `401`; active non-admin accounts
+receive `403`.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/admin/dashboard` | Marketplace totals, revenue, and recent activity |
+| `GET` | `/api/admin/users` | Paginated user search and role filtering |
+| `PATCH` | `/api/admin/users/:id/status` | Activate or disable a user |
+| `GET` | `/api/admin/sellers` | Seller profiles and business aggregates |
+| `GET` | `/api/admin/products` | Paginated product moderation listing |
+| `DELETE` | `/api/admin/products/:id` | Remove an unreferenced product |
+
+The dashboard returns total users, customers, sellers, products, categories,
+orders, delivered revenue, current UTC-month delivered revenue, and the latest
+10 user, product, or order activities.
+
+User query options:
+
+- `page`: positive integer, default `1`
+- `limit`: positive integer up to `100`, default `20`
+- `search`: user name, email, or company
+- `role`: `CUSTOMER`, `SELLER`, or `ADMIN`
+
+Update user status with:
+
+```bash
+curl -X PATCH http://localhost:3000/api/admin/users/<user-id>/status \
+  -H "Authorization: Bearer <admin-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"DISABLED"}'
+```
+
+The allowed values are `ACTIVE` and `DISABLED`. Administrators cannot disable
+their own account. Disabling another account clears its refresh token and is
+enforced immediately for existing access tokens.
+
+Seller query options are `page`, `limit`, and `search`. Seller results include
+profile details, product count, distinct order count, and delivered line-item
+revenue.
+
+Product query options are `page`, `limit`, `search`, `categoryId`, and
+`sellerId`. Search covers product text, category, seller identity, and shop
+name. Products referenced by historical order items cannot be deleted and
+return `409`.
+
 ## Response Format
 
 Success:
@@ -388,8 +484,11 @@ npm run test:watch
 
 The HTTP tests exercise the real Express routes, validation, bcrypt hashing,
 JWT handling, cookies, refresh rotation, logout, protected routes, seller
-dashboard aggregation, filters, and analytics. They use in-memory repository
-implementations so the test suite does not require PostgreSQL.
+dashboard aggregation, administrator monitoring and moderation, disabled-user
+enforcement, filters, analytics, and product media ownership and primary-image
+behavior. They use in-memory repository implementations so routine HTTP tests
+do not require PostgreSQL. Focused tests also exercise the Prisma administrator
+repository's mappings, aggregates, pagination, and persistence error handling.
 
 ## Architecture
 
@@ -397,7 +496,7 @@ implementations so the test suite does not require PostgreSQL.
 src/
   config/        Environment, logger, and cookie configuration
   controllers/   HTTP request and response handling
-  services/      Authentication, catalog, order, and seller dashboard use cases
+  services/      Authentication, catalog, order, seller, and admin use cases
   repositories/  Persistence contracts and Prisma implementation
   middleware/    Authentication, roles, validation, errors, and rate limits
   routes/        Express route composition

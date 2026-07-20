@@ -1,8 +1,6 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { AuthController } from "../controllers/auth.controller.js";
-import { authenticate } from "../middleware/authentication.js";
 import { validateRequest } from "../middleware/validate-request.js";
-import type { TokenService } from "../services/token.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   emptyObjectSchema,
@@ -12,7 +10,7 @@ import {
 
 export function createAuthRouter(
   controller: AuthController,
-  tokenService: TokenService,
+  requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
   const noInput = validateRequest({
@@ -44,7 +42,7 @@ export function createAuthRouter(
   router.get(
     "/me",
     noInput,
-    authenticate(tokenService),
+    requireAuthentication,
     asyncHandler(controller.me),
   );
 

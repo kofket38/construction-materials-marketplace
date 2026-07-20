@@ -1,12 +1,12 @@
 # Project State
 
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 ## 1. Project Overview
 
 Construction Materials Marketplace is a TypeScript/Express backend for a
 multi-role marketplace. It supports customer purchasing, seller catalog and
-business management, and administrator category/order management.
+business management, and administrator marketplace monitoring and moderation.
 
 The API uses a layered architecture:
 
@@ -31,14 +31,15 @@ applicable.
 | --- | --- | --- |
 | Phase 1 | Complete | Authentication, JWT access/refresh tokens, role authorization, refresh-token rotation, security middleware, and API error handling. |
 | Phase 2 | Complete | Marketplace foundation: categories, products, orders, stock management, and seller profiles. |
-| Phase 3 | Complete, awaiting review | Seller dashboard/business management and advanced product search, filtering, sorting, and pagination. |
+| Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
+| Phase 4 | Complete, awaiting review | Administrator dashboard, user status management, seller oversight, and product moderation. |
 
 ## 3. Current Phase
 
-**Phase 3 is complete and awaiting review.**
+**Phase 4 is complete and awaiting review.**
 
-The most recently completed work is **Phase 3 - Module 2: Advanced Search,
-Filtering & Pagination** for `GET /api/products`.
+The most recently completed work is **Phase 4 - Module 1: Admin Dashboard and
+Marketplace Moderation**.
 
 ## 4. Completed Modules
 
@@ -56,6 +57,25 @@ Filtering & Pagination** for `GET /api/products`.
   - Category, seller, inclusive price-range, and stock filters.
   - Newest, oldest, price, name, and popularity sorting.
   - PostgreSQL indexes for discovery filters/sorts and trigram search.
+- Product image management with:
+  - Public image listing.
+  - Owning-seller add, delete, and primary-image selection.
+  - An eight-image limit and HTTP/HTTPS URL validation.
+  - Exactly one application-managed primary image when images exist.
+  - Automatic primary-image replacement after deletion.
+  - Backward-compatible synchronization with `Product.imageUrl`.
+- Administrator dashboard and moderation with:
+  - Marketplace user, customer, seller, product, category, order, and revenue
+    totals.
+  - Current-month delivered revenue and recent marketplace activity.
+  - Paginated user search and role filtering.
+  - User activation and disabling with self-disable protection.
+  - Paginated seller oversight with product, order, and delivered-revenue
+    aggregates.
+  - Paginated product moderation with search, category/seller filters, and
+    administrative deletion.
+  - Immediate rejection of disabled accounts on every protected endpoint,
+    including already-issued access tokens.
 
 ## 5. Folder Structure
 
@@ -81,9 +101,11 @@ CMM/
       validators/            Zod input/query schemas
     tests/
       helpers/               In-memory repository test doubles
+      admin-dashboard.test.ts
       auth.test.ts
       categories.test.ts
       orders.test.ts
+      prisma-admin-dashboard.repository.test.ts
       products.test.ts
       seller-dashboard.test.ts
     README.md
@@ -96,10 +118,11 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 
 | Model | Purpose |
 | --- | --- |
-| `User` | Customer, seller, or administrator account; stores a hashed refresh token. |
+| `User` | Customer, seller, or administrator account; stores active/disabled state and a hashed refresh token. |
 | `SellerProfile` | One-to-one seller profile containing shop name, phone, and address. |
 | `Category` | Administrator-managed product category. |
-| `Product` | Seller listing with category, decimal price, stock quantity, optional image, and timestamps. |
+| `Product` | Seller listing with category, decimal price, stock quantity, primary-image projection, and timestamps. |
+| `ProductImage` | Managed product image URL with primary-image state and creation time. |
 | `Order` | Customer order with status and total amount. |
 | `OrderItem` | Product/quantity/price snapshot belonging to an order. |
 
@@ -107,7 +130,9 @@ Relations:
 
 - A `User` may have one `SellerProfile`, many listed products, and many
   customer orders.
-- A `Product` belongs to one seller and category, and has many order items.
+- A `Product` belongs to one seller and category, and has many images and
+  order items.
+- A `ProductImage` belongs to one product and is deleted with that product.
 - An `Order` belongs to one customer and has many order items.
 - `OrderItem` is unique per `(orderId, productId)`.
 
@@ -123,10 +148,15 @@ Applied migrations:
 3. `20260718170000_align_order_status_values`
 4. `20260719120500_advanced_product_discovery_indexes`
 5. `20260719121723_product_discovery_trigram_search_indexes`
+6. `20260719150000_product_image_management`
+7. `20260719170000_admin_dashboard_user_status`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
-substring search on product name, description, and seller shop name.
+substring search on product name, description, and seller shop name. Product
+images have a product/creation-time index and a PostgreSQL partial unique index
+that permits at most one primary image per product. User role and active-state
+indexes support administrator filtering and protected-request status checks.
 
 ## 7. API Endpoints Created
 
@@ -148,6 +178,10 @@ substring search on product name, description, and seller shop name.
 | `GET` | `/api/products/:id` | Public |
 | `PUT` | `/api/products/:id` | Owning seller |
 | `DELETE` | `/api/products/:id` | Owning seller |
+| `POST` | `/api/products/:id/images` | Owning seller |
+| `GET` | `/api/products/:id/images` | Public |
+| `DELETE` | `/api/products/:id/images/:imageId` | Owning seller |
+| `PATCH` | `/api/products/:id/images/:imageId/primary` | Owning seller |
 | `POST` | `/api/orders` | Customer |
 | `GET` | `/api/orders/me` | Authenticated |
 | `GET` | `/api/orders/:id` | Order owner or admin |
@@ -157,6 +191,12 @@ substring search on product name, description, and seller shop name.
 | `GET` | `/api/seller/products` | Seller |
 | `GET` | `/api/seller/orders` | Seller |
 | `GET` | `/api/seller/analytics` | Seller |
+| `GET` | `/api/admin/dashboard` | Admin |
+| `GET` | `/api/admin/users` | Admin |
+| `PATCH` | `/api/admin/users/:id/status` | Admin |
+| `GET` | `/api/admin/sellers` | Admin |
+| `GET` | `/api/admin/products` | Admin |
+| `DELETE` | `/api/admin/products/:id` | Admin |
 
 `GET /api/products` query parameters:
 
@@ -181,7 +221,7 @@ stock, sortBy, sortOrder
 
 ## 9. Remaining Tasks
 
-No approved implementation work remains within Phase 3.
+No approved implementation work remains within the Admin Dashboard module.
 
 Features outside the currently implemented scope:
 
@@ -194,10 +234,10 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**Review and approve Phase 3, Module 2: Advanced Search, Filtering &
-Pagination.** No subsequent module has been formally specified, so do not
-begin RFQs, payments, chat, notifications, or frontend work until the next
-requirements are provided and approved.
+**Review and approve Phase 4, Module 1: Admin Dashboard and Marketplace
+Moderation.** No subsequent module has been formally specified, so do not
+begin RFQs, payments, chat, notifications, frontend work, or another business
+module until the next requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -208,6 +248,12 @@ requirements are provided and approved.
 - Authentication uses short-lived access tokens and HTTP-only refresh-token
   cookies. Refresh tokens are SHA-256 hashed, rotated on refresh, and reuse of
   a rotated token invalidates the stored session.
+- Every protected request resolves the token subject through the user
+  repository, rejects missing or disabled accounts, and uses the current
+  database role rather than relying only on the JWT role claim.
+- Disabling a user clears the stored refresh-token hash, immediately rejects
+  login and refresh attempts, and invalidates already-issued access tokens on
+  their next protected request. Administrators cannot disable themselves.
 - Public registration permits only `CUSTOMER` and `SELLER`; `BUYER` is
   accepted as a legacy alias. `ADMIN` cannot be self-registered.
 - Monetary values are stored as PostgreSQL decimals and returned as fixed
@@ -224,17 +270,30 @@ requirements are provided and approved.
 - PostgreSQL `pg_trgm` GIN indexes were added because B-tree indexes do not
   efficiently support the `%search%` substring pattern generated by Prisma
   `contains` queries.
+- Product images are normalized in `ProductImage`; the existing
+  `Product.imageUrl` column is retained as the primary-image projection for
+  backward compatibility with product and seller-dashboard responses.
+- Product media mutations lock the parent product row and run in transactions
+  so image limits, primary selection, replacement, and preview synchronization
+  remain consistent under concurrent requests.
+- Products may have at most eight managed images. A PostgreSQL partial unique
+  index enforces at most one primary image per product.
+- Administrator total and monthly revenue use delivered orders only. Seller
+  oversight revenue includes only delivered line items belonging to that
+  seller.
+- Administrative product deletion is blocked when historical order items
+  reference the product.
 - Category deletion is blocked when products reference that category.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-07-19.
+No known failing tests or confirmed functional bugs as of 2026-07-20.
 
 Current limitations and deferred work:
 
 - The test suite uses in-memory repositories for routine integration coverage;
-  live PostgreSQL HTTP verification was performed manually for product
-  discovery but is not yet automated in CI.
+  the Prisma administrator repository is covered with focused mocked-client
+  tests, but live PostgreSQL HTTP verification is not yet automated in CI.
 - PostgreSQL `pg_trgm` must be available to apply the discovery search-index
   migration. It is available on the currently verified PostgreSQL 17 setup.
 - Offset pagination is sufficient for the current API but may need cursor
@@ -242,21 +301,27 @@ Current limitations and deferred work:
   during concurrent catalog updates.
 - Full-text ranking, typo tolerance beyond trigram matching, faceted counts,
   and search-result highlighting are not implemented.
+- Product media management stores validated external image URLs only. Binary
+  upload, resizing, object storage, and remote-file lifecycle management are
+  not implemented.
 - RFQs, payments, messaging, notifications, frontend delivery, CI/CD, and
   production observability remain unscoped and unimplemented.
 
 ## Verification Baseline
 
-Most recent Phase 3 Module 2 verification completed successfully:
+Most recent Phase 4 Module 1 verification completed successfully:
 
 ```text
 npm run typecheck     PASS
-npm test              PASS (49 tests)
+npm test              PASS (67 tests)
 npm run build         PASS
 prisma validate       PASS
-prisma migrate status PASS (5 migrations applied)
+prisma migrate status PASS (7 migrations applied)
 ```
 
-Live HTTP checks also passed against an isolated migrated PostgreSQL database
-for pagination, all three search fields, filters, sorts including popularity,
-invalid query validation, and discovery index presence.
+Administrator HTTP tests cover dashboard totals, filters, seller and product
+oversight, status changes, self-disable protection, moderation conflicts, and
+immediate rejection of disabled accounts for login, refresh, existing access
+tokens, and protected endpoints. Focused Prisma repository tests cover
+aggregation, mapping, pagination, status persistence, seller metrics, and
+deletion error translation.

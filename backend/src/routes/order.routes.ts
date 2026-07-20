@@ -1,9 +1,7 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { OrderController } from "../controllers/order.controller.js";
-import { authenticate } from "../middleware/authentication.js";
 import { authorizeRoles } from "../middleware/authorize-role.js";
 import { validateRequest } from "../middleware/validate-request.js";
-import type { TokenService } from "../services/token.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   createOrderBodySchema,
@@ -14,13 +12,13 @@ import {
 
 export function createOrderRouter(
   controller: OrderController,
-  tokenService: TokenService,
+  requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
 
   router.post(
     "/",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("CUSTOMER"),
     validateRequest({
       body: createOrderBodySchema,
@@ -32,7 +30,7 @@ export function createOrderRouter(
 
   router.get(
     "/me",
-    authenticate(tokenService),
+    requireAuthentication,
     validateRequest({
       body: emptyOrderObjectSchema,
       params: emptyOrderObjectSchema,
@@ -43,7 +41,7 @@ export function createOrderRouter(
 
   router.patch(
     "/:id/status",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("ADMIN"),
     validateRequest({
       body: updateOrderStatusBodySchema,
@@ -55,7 +53,7 @@ export function createOrderRouter(
 
   router.get(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,
@@ -66,7 +64,7 @@ export function createOrderRouter(
 
   router.delete(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,

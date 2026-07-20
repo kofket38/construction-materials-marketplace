@@ -26,6 +26,7 @@ describe("Product API", () => {
   const tokenService = new JwtTokenService();
   let app: ReturnType<typeof createApp>;
   let products: InMemoryProductRepository;
+  let users: InMemoryUserRepository;
   let sellerToken: string;
   let otherSellerToken: string;
   let customerToken: string;
@@ -37,8 +38,13 @@ describe("Product API", () => {
     products.addSeller(sellerId, "Seller One", "Kamau Materials");
     products.addSeller(otherSellerId, "Seller Two", "Mjenzi Depot");
 
+    users = new InMemoryUserRepository();
+    users.addUser({ id: sellerId, role: "SELLER" });
+    users.addUser({ id: otherSellerId, role: "SELLER" });
+    users.addUser({ id: customerId, role: "CUSTOMER" });
+
     app = createApp({
-      userRepository: new InMemoryUserRepository(),
+      userRepository: users,
       productRepository: products,
       tokenService,
       logger: pino({ level: "silent" }),
@@ -145,6 +151,194 @@ describe("Product API", () => {
       "You can only delete products that you own.",
     );
     expect(await products.findById(product.id)).not.toBeNull();
+  });
+
+  it("allows a seller to add an image to an owned product", async () => {
+    const product = await seedProductWithoutImage();
+    const imageUrl = "https://example.com/cement-front.jpg";
+
+    const response = await addProductImage(
+      product.id,
+      sellerToken,
+      imageUrl,
+      201,
+    );
+
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        image: {
+          productId: product.id,
+          imageUrl,
+          isPrimary: true,
+        },
+      },
+    });
+    expect((await products.findById(product.id))?.imageUrl).toBe(imageUrl);
+  });
+
+  it("prevents a customer from adding a product image", async () => {
+    const product = await seedProductWithoutImage();
+
+    const response = await addProductImage(
+      product.id,
+      customerToken,
+      "https://example.com/customer-upload.jpg",
+      403,
+    );
+
+    expect(response.body).toEqual({
+      success: false,
+      message: "You do not have permission to perform this action.",
+      errors: [],
+    });
+  });
+
+  it("prevents a non-owner seller from managing product images", async () => {
+    const product = await seedProductWithoutImage();
+    const image = (
+      await addProductImage(
+        product.id,
+        sellerToken,
+        "https://example.com/owned-image.jpg",
+        201,
+      )
+    ).body.data.image as { id: string };
+
+    const addResponse = await addProductImage(
+      product.id,
+      otherSellerToken,
+      "https://example.com/not-owned.jpg",
+      403,
+    );
+    const primaryResponse = await request(app)
+      .patch(`/api/products/${product.id}/images/${image.id}/primary`)
+      .set("Authorization", `Bearer ${otherSellerToken}`)
+      .send({})
+      .expect(403);
+    const deleteResponse = await request(app)
+      .delete(`/api/products/${product.id}/images/${image.id}`)
+      .set("Authorization", `Bearer ${otherSellerToken}`)
+      .send({})
+      .expect(403);
+
+    for (const response of [
+      addResponse,
+      primaryResponse,
+      deleteResponse,
+    ]) {
+      expect(response.body.message).toBe(
+        "You can only manage images for products that you own.",
+      );
+    }
+  });
+
+  it("allows public access to product images", async () => {
+    const product = await seedProductWithoutImage();
+    const firstUrl = "https://example.com/cement-front.jpg";
+    const secondUrl = "https://example.com/cement-side.jpg";
+    await addProductImage(product.id, sellerToken, firstUrl, 201);
+    await addProductImage(product.id, sellerToken, secondUrl, 201);
+
+    const response = await request(app)
+      .get(`/api/products/${product.id}/images`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        images: [
+          { imageUrl: firstUrl, isPrimary: true },
+          { imageUrl: secondUrl, isPrimary: false },
+        ],
+      },
+    });
+  });
+
+  it("switches and replaces the primary product image", async () => {
+    const product = await seedProductWithoutImage();
+    const firstUrl = "https://example.com/cement-front.jpg";
+    const secondUrl = "https://example.com/cement-side.jpg";
+    const firstImage = (
+      await addProductImage(product.id, sellerToken, firstUrl, 201)
+    ).body.data.image as { id: string };
+    const secondImage = (
+      await addProductImage(product.id, sellerToken, secondUrl, 201)
+    ).body.data.image as { id: string };
+
+    const primaryResponse = await request(app)
+      .patch(
+        `/api/products/${product.id}/images/${secondImage.id}/primary`,
+      )
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({})
+      .expect(200);
+
+    expect(primaryResponse.body.data.image).toMatchObject({
+      id: secondImage.id,
+      isPrimary: true,
+    });
+    expect((await products.findById(product.id))?.imageUrl).toBe(secondUrl);
+
+    await request(app)
+      .delete(`/api/products/${product.id}/images/${secondImage.id}`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({})
+      .expect(200);
+
+    let imagesResponse = await request(app)
+      .get(`/api/products/${product.id}/images`)
+      .expect(200);
+    expect(imagesResponse.body.data.images).toMatchObject([
+      {
+        id: firstImage.id,
+        imageUrl: firstUrl,
+        isPrimary: true,
+      },
+    ]);
+    expect((await products.findById(product.id))?.imageUrl).toBe(firstUrl);
+
+    await request(app)
+      .delete(`/api/products/${product.id}/images/${firstImage.id}`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({})
+      .expect(200);
+
+    imagesResponse = await request(app)
+      .get(`/api/products/${product.id}/images`)
+      .expect(200);
+    expect(imagesResponse.body.data.images).toEqual([]);
+    expect((await products.findById(product.id))?.imageUrl).toBeNull();
+  });
+
+  it("validates image URLs and limits products to eight images", async () => {
+    const product = await seedProductWithoutImage();
+
+    await addProductImage(
+      product.id,
+      sellerToken,
+      "ftp://example.com/cement.jpg",
+      400,
+    );
+
+    for (let index = 1; index <= 8; index += 1) {
+      await addProductImage(
+        product.id,
+        sellerToken,
+        `https://example.com/cement-${index}.jpg`,
+        201,
+      );
+    }
+
+    const response = await addProductImage(
+      product.id,
+      sellerToken,
+      "https://example.com/cement-9.jpg",
+      409,
+    );
+    expect(response.body.message).toBe(
+      "A product can have at most 8 images.",
+    );
   });
 
   it("allows public product listing", async () => {
@@ -370,6 +564,25 @@ describe("Product API", () => {
   async function seedProduct() {
     const response = await createProduct(sellerToken, productInput, 201);
     return response.body.data.product as { id: string };
+  }
+
+  async function seedProductWithoutImage() {
+    const { imageUrl: _imageUrl, ...input } = productInput;
+    const response = await createProduct(sellerToken, input, 201);
+    return response.body.data.product as { id: string };
+  }
+
+  async function addProductImage(
+    productId: string,
+    token: string,
+    imageUrl: string,
+    status: number,
+  ) {
+    return request(app)
+      .post(`/api/products/${productId}/images`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ imageUrl })
+      .expect(status);
   }
 
   async function seedDiscoveryProducts() {

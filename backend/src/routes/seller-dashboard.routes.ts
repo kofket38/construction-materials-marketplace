@@ -1,9 +1,7 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
-import { authenticate } from "../middleware/authentication.js";
 import { authorizeRoles } from "../middleware/authorize-role.js";
 import { validateRequest } from "../middleware/validate-request.js";
-import type { TokenService } from "../services/token.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   emptySellerDashboardObjectSchema,
@@ -13,11 +11,11 @@ import {
 
 export function createSellerDashboardRouter(
   controller: SellerDashboardController,
-  tokenService: TokenService,
+  requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
 
-  router.use(authenticate(tokenService), authorizeRoles("SELLER"));
+  router.use(requireAuthentication, authorizeRoles("SELLER"));
 
   router.get(
     "/dashboard",

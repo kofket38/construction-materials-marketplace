@@ -19,6 +19,7 @@ describe("Order API", () => {
   const tokenService = new JwtTokenService();
   let app: ReturnType<typeof createApp>;
   let orders: InMemoryOrderRepository;
+  let users: InMemoryUserRepository;
   let customerToken: string;
   let otherCustomerToken: string;
   let adminToken: string;
@@ -60,8 +61,14 @@ describe("Order API", () => {
       quantity: 5,
     });
 
+    users = new InMemoryUserRepository();
+    const adminId = randomUUID();
+    users.addUser({ id: customerId, role: "CUSTOMER" });
+    users.addUser({ id: otherCustomerId, role: "CUSTOMER" });
+    users.addUser({ id: adminId, role: "ADMIN" });
+
     app = createApp({
-      userRepository: new InMemoryUserRepository(),
+      userRepository: users,
       orderRepository: orders,
       tokenService,
       logger: pino({ level: "silent" }),
@@ -76,7 +83,7 @@ describe("Order API", () => {
       role: "CUSTOMER",
     });
     adminToken = tokenService.createAccessToken({
-      userId: randomUUID(),
+      userId: adminId,
       role: "ADMIN",
     });
   });

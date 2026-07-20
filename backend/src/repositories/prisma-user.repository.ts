@@ -17,6 +17,7 @@ function mapUser(user: User): UserEntity {
     phone: user.phone,
     company: user.company,
     role: user.role as UserEntity["role"],
+    isActive: user.isActive,
     emailVerified: user.emailVerified,
     refreshToken: user.refreshToken,
     createdAt: user.createdAt,

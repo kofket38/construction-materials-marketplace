@@ -4,6 +4,24 @@ const productNameSchema = z.string().trim().min(1).max(200);
 const productDescriptionSchema = z.string().trim().min(1).max(5000);
 const categoryIdSchema = z.string().uuid();
 const sellerIdSchema = z.string().uuid();
+const managedProductImageUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(2048)
+  .refine(
+    (value) => isHttpUrl(value),
+    "Image URL must use HTTP or HTTPS.",
+  );
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 const productPriceSchema = z
   .union([z.string().trim(), z.number().finite()])
@@ -95,6 +113,19 @@ export const productIdParamsSchema = z
   })
   .strict();
 
+export const productImageIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+    imageId: z.string().uuid(),
+  })
+  .strict();
+
+export const addProductImageBodySchema = z
+  .object({
+    imageUrl: managedProductImageUrlSchema,
+  })
+  .strict();
+
 export const productDiscoveryQuerySchema = z
   .object({
     page: positiveIntegerQuerySchema
@@ -137,6 +168,12 @@ export const emptyProductObjectSchema = z.object({}).strict();
 export type CreateProductBody = z.infer<typeof createProductBodySchema>;
 export type UpdateProductBody = z.infer<typeof updateProductBodySchema>;
 export type ProductIdParams = z.infer<typeof productIdParamsSchema>;
+export type ProductImageIdParams = z.infer<
+  typeof productImageIdParamsSchema
+>;
+export type AddProductImageBody = z.infer<
+  typeof addProductImageBodySchema
+>;
 export type ProductDiscoveryQueryParams = z.infer<
   typeof productDiscoveryQuerySchema
 >;

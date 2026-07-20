@@ -2,10 +2,12 @@ import type {
   ProductDiscoveryResult,
   ProductDiscoverySortBy,
   ProductEntity,
+  ProductImageEntity,
   ProductRepository,
 } from "../repositories/product.repository.js";
 import {
   ProductCategoryNotFoundError,
+  ProductImageLimitError,
   ProductInUseError,
   ProductSellerNotFoundError,
 } from "../repositories/product.errors.js";
@@ -17,6 +19,7 @@ import {
   UnauthorizedError,
 } from "../utils/api-error.js";
 import type {
+  AddProductImageBody,
   CreateProductBody,
   ProductDiscoveryQueryParams,
   UpdateProductBody,
@@ -132,6 +135,63 @@ export class ProductService {
     }
   }
 
+  async addImage(
+    id: string,
+    actor: AuthenticatedUser,
+    input: AddProductImageBody,
+  ): Promise<ProductImageEntity> {
+    this.requireSeller(actor);
+    await this.requireOwner(id, actor.userId, "manage images for");
+
+    try {
+      const image = await this.products.addImage(id, input.imageUrl);
+      if (!image) {
+        throw new NotFoundError("Product not found.");
+      }
+
+      return image;
+    } catch (error) {
+      this.handleRepositoryError(error);
+    }
+  }
+
+  async findImages(id: string): Promise<ProductImageEntity[]> {
+    if (!(await this.products.findById(id))) {
+      throw new NotFoundError("Product not found.");
+    }
+
+    return this.products.findImages(id);
+  }
+
+  async deleteImage(
+    id: string,
+    imageId: string,
+    actor: AuthenticatedUser,
+  ): Promise<void> {
+    this.requireSeller(actor);
+    await this.requireOwner(id, actor.userId, "manage images for");
+
+    if (!(await this.products.deleteImage(id, imageId))) {
+      throw new NotFoundError("Product image not found.");
+    }
+  }
+
+  async setPrimaryImage(
+    id: string,
+    imageId: string,
+    actor: AuthenticatedUser,
+  ): Promise<ProductImageEntity> {
+    this.requireSeller(actor);
+    await this.requireOwner(id, actor.userId, "manage images for");
+
+    const image = await this.products.setPrimaryImage(id, imageId);
+    if (!image) {
+      throw new NotFoundError("Product image not found.");
+    }
+
+    return image;
+  }
+
   private requireSeller(actor: AuthenticatedUser): void {
     if (actor.role !== "SELLER") {
       throw new ForbiddenError("Seller access is required.");
@@ -141,7 +201,7 @@ export class ProductService {
   private async requireOwner(
     productId: string,
     userId: string,
-    action: "update" | "delete",
+    action: "update" | "delete" | "manage images for",
   ): Promise<void> {
     const product = await this.products.findById(productId);
 
@@ -164,6 +224,9 @@ export class ProductService {
       throw new UnauthorizedError(error.message);
     }
     if (error instanceof ProductInUseError) {
+      throw new ConflictError(error.message);
+    }
+    if (error instanceof ProductImageLimitError) {
       throw new ConflictError(error.message);
     }
 

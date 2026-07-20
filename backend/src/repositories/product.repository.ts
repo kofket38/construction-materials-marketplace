@@ -8,6 +8,16 @@ export interface ProductCategorySummary {
   name: string;
 }
 
+export const MAX_PRODUCT_IMAGES = 8;
+
+export interface ProductImageEntity {
+  id: string;
+  productId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+  createdAt: Date;
+}
+
 export interface ProductEntity {
   id: string;
   sellerId: string;
@@ -82,4 +92,14 @@ export interface ProductRepository {
   findById(id: string): Promise<ProductEntity | null>;
   update(id: string, input: UpdateProductInput): Promise<ProductEntity | null>;
   delete(id: string): Promise<boolean>;
+  addImage(
+    productId: string,
+    imageUrl: string,
+  ): Promise<ProductImageEntity | null>;
+  findImages(productId: string): Promise<ProductImageEntity[]>;
+  deleteImage(productId: string, imageId: string): Promise<boolean>;
+  setPrimaryImage(
+    productId: string,
+    imageId: string,
+  ): Promise<ProductImageEntity | null>;
 }

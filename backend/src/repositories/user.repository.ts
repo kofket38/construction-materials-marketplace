@@ -10,6 +10,7 @@ export interface UserEntity {
   phone: string | null;
   company: string | null;
   role: UserRole;
+  isActive: boolean;
   emailVerified: boolean;
   refreshToken: string | null;
   createdAt: Date;

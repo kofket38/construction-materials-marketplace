@@ -1,9 +1,7 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { CategoryController } from "../controllers/category.controller.js";
-import { authenticate } from "../middleware/authentication.js";
 import { authorizeRoles } from "../middleware/authorize-role.js";
 import { validateRequest } from "../middleware/validate-request.js";
-import type { TokenService } from "../services/token.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   categoryIdParamsSchema,
@@ -14,7 +12,7 @@ import {
 
 export function createCategoryRouter(
   controller: CategoryController,
-  tokenService: TokenService,
+  requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
 
@@ -40,7 +38,7 @@ export function createCategoryRouter(
 
   router.post(
     "/",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("ADMIN"),
     validateRequest({
       body: createCategoryBodySchema,
@@ -52,7 +50,7 @@ export function createCategoryRouter(
 
   router.put(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("ADMIN"),
     validateRequest({
       body: updateCategoryBodySchema,
@@ -64,7 +62,7 @@ export function createCategoryRouter(
 
   router.delete(
     "/:id",
-    authenticate(tokenService),
+    requireAuthentication,
     authorizeRoles("ADMIN"),
     validateRequest({
       body: emptyCategoryObjectSchema,

@@ -297,10 +297,11 @@ describe("authentication API", () => {
   describe("role authorization middleware", () => {
     it("allows SELLER access and rejects CUSTOMER access", async () => {
       const tokenService = new JwtTokenService();
+      const users = new InMemoryUserRepository();
       const roleApp = express();
       roleApp.get(
         "/seller-only",
-        authenticate(tokenService),
+        authenticate(tokenService, users),
         authorizeRoles("SELLER"),
         (_req, res) => {
           res.status(200).json({ success: true, data: null });
@@ -308,6 +309,10 @@ describe("authentication API", () => {
       );
       roleApp.use(createErrorHandler(pino({ level: "silent" })));
 
+      users.addUser({
+        id: "seller-user",
+        role: "SELLER",
+      });
       const sellerToken = tokenService.createAccessToken({
         userId: "seller-user",
         role: "SELLER",
@@ -317,6 +322,10 @@ describe("authentication API", () => {
         .set("Authorization", `Bearer ${sellerToken}`)
         .expect(200);
 
+      users.addUser({
+        id: "customer-user",
+        role: "CUSTOMER",
+      });
       const customerToken = tokenService.createAccessToken({
         userId: "customer-user",
         role: "CUSTOMER",

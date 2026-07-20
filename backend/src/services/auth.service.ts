@@ -95,7 +95,11 @@ export class AuthService {
   async login(input: LoginBody): Promise<AuthenticationResult> {
     const user = await this.users.findByEmail(input.email);
 
-    if (!user || !(await comparePassword(input.password, user.passwordHash))) {
+    if (
+      !user ||
+      !user.isActive ||
+      !(await comparePassword(input.password, user.passwordHash))
+    ) {
       throw new UnauthorizedError("Invalid email or password.");
     }
 
@@ -112,7 +116,10 @@ export class AuthService {
     const payload = this.tokens.verifyRefreshToken(currentRefreshToken);
     const user = await this.users.findById(payload.userId);
 
-    if (!user) {
+    if (!user || !user.isActive) {
+      if (user) {
+        await this.users.clearRefreshToken(user.id);
+      }
       throw new UnauthorizedError("The refresh token is no longer valid.");
     }
 
@@ -165,6 +172,9 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedError("The authenticated user no longer exists.");
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedError("The authenticated user is disabled.");
     }
 
     return toPublicUser(user);

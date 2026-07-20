@@ -4,10 +4,76 @@ import type {
   CreateUserInput,
   UserEntity,
   UserRepository,
+  UserRole,
 } from "../../src/repositories/user.repository.js";
+
+export interface InMemoryUserSeed {
+  id?: string;
+  name?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string;
+  passwordHash?: string;
+  phone?: string | null;
+  company?: string | null;
+  role: UserRole;
+  isActive?: boolean;
+  emailVerified?: boolean;
+  refreshToken?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class InMemoryUserRepository implements UserRepository {
   private readonly users = new Map<string, UserEntity>();
+
+  addUser(input: InMemoryUserSeed): UserEntity {
+    const id = input.id ?? randomUUID();
+    const email = input.email ?? `${id}@example.test`;
+
+    if ([...this.users.values()].some((user) => user.email === email)) {
+      throw new DuplicateEmailError();
+    }
+
+    const now = new Date();
+    const user: UserEntity = {
+      id,
+      name: input.name ?? `${input.role} User`,
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      email,
+      passwordHash: input.passwordHash ?? "unused-password-hash",
+      phone: input.phone ?? null,
+      company: input.company ?? null,
+      role: input.role,
+      isActive: input.isActive ?? true,
+      emailVerified: input.emailVerified ?? false,
+      refreshToken: input.refreshToken ?? null,
+      createdAt: input.createdAt ?? now,
+      updatedAt: input.updatedAt ?? now,
+    };
+
+    this.users.set(user.id, user);
+    return user;
+  }
+
+  allUsers(): UserEntity[] {
+    return [...this.users.values()];
+  }
+
+  setActive(userId: string, isActive: boolean): UserEntity | null {
+    const user = this.users.get(userId);
+    if (!user) {
+      return null;
+    }
+
+    user.isActive = isActive;
+    if (!isActive) {
+      user.refreshToken = null;
+    }
+    user.updatedAt = new Date();
+    return user;
+  }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     return (
@@ -24,9 +90,7 @@ export class InMemoryUserRepository implements UserRepository {
       throw new DuplicateEmailError();
     }
 
-    const now = new Date();
-    const user: UserEntity = {
-      id: randomUUID(),
+    return this.addUser({
       name: input.name,
       firstName: input.firstName ?? null,
       lastName: input.lastName ?? null,
@@ -35,14 +99,7 @@ export class InMemoryUserRepository implements UserRepository {
       phone: input.phone ?? null,
       company: input.company ?? null,
       role: input.role,
-      emailVerified: false,
-      refreshToken: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.users.set(user.id, user);
-    return user;
+    });
   }
 
   async setRefreshToken(

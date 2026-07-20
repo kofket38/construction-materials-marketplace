@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import type { Logger } from "pino";
+import { AdminDashboardController } from "./controllers/admin-dashboard.controller.js";
 import { AuthController } from "./controllers/auth.controller.js";
 import { CategoryController } from "./controllers/category.controller.js";
 import { OrderController } from "./controllers/order.controller.js";
@@ -19,6 +20,8 @@ import { PrismaProductRepository } from "./repositories/prisma-product.repositor
 import { PrismaCategoryRepository } from "./repositories/prisma-category.repository.js";
 import { PrismaOrderRepository } from "./repositories/prisma-order.repository.js";
 import { PrismaSellerDashboardRepository } from "./repositories/prisma-seller-dashboard.repository.js";
+import { PrismaAdminDashboardRepository } from "./repositories/prisma-admin-dashboard.repository.js";
+import type { AdminDashboardRepository } from "./repositories/admin-dashboard.repository.js";
 import type { CategoryRepository } from "./repositories/category.repository.js";
 import type { OrderRepository } from "./repositories/order.repository.js";
 import type { ProductRepository } from "./repositories/product.repository.js";
@@ -26,6 +29,7 @@ import type { SellerDashboardRepository } from "./repositories/seller-dashboard.
 import type { UserRepository } from "./repositories/user.repository.js";
 import { createApiRouter } from "./routes/index.js";
 import { AuthService } from "./services/auth.service.js";
+import { AdminDashboardService } from "./services/admin-dashboard.service.js";
 import { CategoryService } from "./services/category.service.js";
 import { OrderService } from "./services/order.service.js";
 import { ProductService } from "./services/product.service.js";
@@ -39,6 +43,7 @@ import { validateRequest } from "./middleware/validate-request.js";
 import { emptyObjectSchema } from "./validators/auth.validators.js";
 
 export interface AppDependencies {
+  adminDashboardRepository?: AdminDashboardRepository;
   userRepository?: UserRepository;
   categoryRepository?: CategoryRepository;
   orderRepository?: OrderRepository;
@@ -61,9 +66,18 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const sellerDashboardRepository =
     dependencies.sellerDashboardRepository ??
     new PrismaSellerDashboardRepository(prisma);
+  const adminDashboardRepository =
+    dependencies.adminDashboardRepository ??
+    new PrismaAdminDashboardRepository(prisma);
   const tokenService = dependencies.tokenService ?? new JwtTokenService();
   const authService = new AuthService(userRepository, tokenService);
   const authController = new AuthController(authService);
+  const adminDashboardService = new AdminDashboardService(
+    adminDashboardRepository,
+  );
+  const adminDashboardController = new AdminDashboardController(
+    adminDashboardService,
+  );
   const categoryService = new CategoryService(categoryRepository);
   const categoryController = new CategoryController(categoryService);
   const orderService = new OrderService(orderRepository);
@@ -116,12 +130,14 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   app.use(
     "/api",
     createApiRouter(
+      adminDashboardController,
       authController,
       categoryController,
       orderController,
       productController,
       sellerDashboardController,
       tokenService,
+      userRepository,
     ),
   );
   app.use(notFoundHandler);
