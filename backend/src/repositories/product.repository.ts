@@ -33,6 +33,11 @@ export interface ProductEntity {
   updatedAt: Date;
 }
 
+export interface ProductDetailsEntity extends ProductEntity {
+  averageRating: number | null;
+  reviewCount: number;
+}
+
 export interface CreateProductInput {
   sellerId: string;
   categoryId: string;
@@ -90,6 +95,7 @@ export interface ProductRepository {
   create(input: CreateProductInput): Promise<ProductEntity>;
   findAll(query: ProductDiscoveryQuery): Promise<ProductDiscoveryResult>;
   findById(id: string): Promise<ProductEntity | null>;
+  findDetailsById(id: string): Promise<ProductDetailsEntity | null>;
   update(id: string, input: UpdateProductInput): Promise<ProductEntity | null>;
   delete(id: string): Promise<boolean>;
   addImage(

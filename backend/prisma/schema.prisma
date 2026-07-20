@@ -37,6 +37,7 @@ model User {
   sellerProfile  SellerProfile?
   listedProducts Product[]      @relation("SellerProducts")
   orders         Order[]        @relation("CustomerOrders")
+  reviews        Review[]       @relation("CustomerReviews")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -82,6 +83,7 @@ model Product {
   category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   images      ProductImage[]
   orderItems  OrderItem[]
+  reviews     Review[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -135,4 +137,21 @@ model OrderItem {
   @@unique([orderId, productId])
   @@index([productId])
   @@map("order_items")
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  productId  String   @db.Uuid
+  customerId String   @db.Uuid
+  rating     Int
+  comment    String?
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer   User     @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, productId])
+  @@index([productId, createdAt])
+  @@index([customerId])
+  @@map("reviews")
 }

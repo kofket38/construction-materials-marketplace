@@ -1,6 +1,7 @@
 import type {
   ProductDiscoveryResult,
   ProductDiscoverySortBy,
+  ProductDetailsEntity,
   ProductEntity,
   ProductImageEntity,
   ProductRepository,
@@ -76,8 +77,8 @@ export class ProductService {
     });
   }
 
-  async findById(id: string): Promise<ProductEntity> {
-    const product = await this.products.findById(id);
+  async findById(id: string): Promise<ProductDetailsEntity> {
+    const product = await this.products.findDetailsById(id);
 
     if (!product) {
       throw new NotFoundError("Product not found.");

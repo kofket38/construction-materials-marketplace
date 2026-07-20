@@ -11,6 +11,7 @@ import {
 import type {
   CreateProductInput,
   ProductImageEntity,
+  ProductDetailsEntity,
   ProductDiscoveryQuery,
   ProductDiscoveryResult,
   ProductEntity,
@@ -156,6 +157,35 @@ export class PrismaProductRepository implements ProductRepository {
     });
 
     return product ? mapProduct(product) : null;
+  }
+
+  async findDetailsById(
+    id: string,
+  ): Promise<ProductDetailsEntity | null> {
+    const [product, ratingSummary] = await this.client.$transaction([
+      this.client.product.findUnique({
+        where: { id },
+        include: productRelations,
+      }),
+      this.client.review.aggregate({
+        where: { productId: id },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    if (!product) {
+      return null;
+    }
+
+    return {
+      ...mapProduct(product),
+      averageRating:
+        ratingSummary._avg.rating === null
+          ? null
+          : Number(ratingSummary._avg.rating.toFixed(2)),
+      reviewCount: ratingSummary._count._all,
+    };
   }
 
   async update(

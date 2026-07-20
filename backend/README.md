@@ -3,9 +3,10 @@
 The backend includes the Phase 1 authentication foundation, the Phase 2
 marketplace foundation, and Phase 3 seller dashboard and advanced product
 discovery and product media modules, plus the administrator dashboard and
-marketplace moderation module. Product, category, order, media, seller
-business-management, and administrator oversight APIs are implemented; RFQs,
-payments, chat, and notifications remain outside the current scope.
+marketplace moderation module and verified-purchase product reviews. Product,
+category, order, media, review, seller business-management, and administrator
+oversight APIs are implemented; RFQs, payments, chat, and notifications remain
+outside the current scope.
 
 ## Requirements
 
@@ -78,7 +79,9 @@ tokens are stored as SHA-256 hashes, not as reusable plaintext tokens.
 Product discovery migrations enable PostgreSQL's `pg_trgm` extension and add
 GIN indexes for case-insensitive substring searches across product names,
 descriptions, and seller shop names. The administrator status migration adds
-indexed active/disabled state to users.
+indexed active/disabled state to users. The product review migration adds
+normalized reviews, customer/product uniqueness, rating constraints, and
+review lookup indexes.
 
 ## Running Locally
 
@@ -159,6 +162,8 @@ their next protected request.
 | `GET` | `/api/products/:id/images` | Public |
 | `DELETE` | `/api/products/:id/images/:imageId` | Owning seller |
 | `PATCH` | `/api/products/:id/images/:imageId/primary` | Owning seller |
+| `GET` | `/api/products/:id/reviews` | Public |
+| `POST` | `/api/products/:id/reviews` | Customer with delivered purchase |
 
 Create a product with a seller access token:
 
@@ -227,6 +232,8 @@ The list response contains:
 
 Product prices are returned as fixed two-decimal strings so API consumers do
 not lose monetary precision. Product creation requires an existing category.
+Product detail responses also include `averageRating` as a number or `null`
+when no reviews exist, plus integer `reviewCount`.
 
 ### Product Images
 
@@ -263,6 +270,66 @@ Only one image can be primary. Deleting it promotes the oldest remaining
 image; deleting the last image clears the primary image. The existing
 `Product.imageUrl` field remains synchronized with the primary image for
 backward compatibility.
+
+## Review API
+
+| Method | Route | Access |
+| --- | --- | --- |
+| `GET` | `/api/products/:id/reviews` | Public |
+| `POST` | `/api/products/:id/reviews` | Customer with delivered purchase |
+| `PUT` | `/api/reviews/:id` | Review owner |
+| `DELETE` | `/api/reviews/:id` | Review owner or admin |
+
+Create a review with a customer access token:
+
+```bash
+curl -X POST http://localhost:3000/api/products/<product-id>/reviews \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rating": 5,
+    "comment": "Consistent quality and good curing performance."
+  }'
+```
+
+Ratings must be integers from `1` through `5`. Comments are optional, trimmed,
+and limited to 5,000 characters. A customer can review a product only when one
+of their `DELIVERED` orders contains it. Each customer may submit only one
+review per product.
+
+Review lists are public and include aggregate fields:
+
+```bash
+curl http://localhost:3000/api/products/<product-id>/reviews
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "reviews": [],
+    "averageRating": null,
+    "reviewCount": 0
+  }
+}
+```
+
+Update or delete an owned review:
+
+```bash
+curl -X PUT http://localhost:3000/api/reviews/<review-id> \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"rating":4,"comment":"Updated after the full curing period."}'
+
+curl -X DELETE http://localhost:3000/api/reviews/<review-id> \
+  -H "Authorization: Bearer <customer-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Customers can update or delete only their own reviews. Administrators may
+delete any review but cannot edit reviews.
 
 ## Category API
 
@@ -485,10 +552,12 @@ npm run test:watch
 The HTTP tests exercise the real Express routes, validation, bcrypt hashing,
 JWT handling, cookies, refresh rotation, logout, protected routes, seller
 dashboard aggregation, administrator monitoring and moderation, disabled-user
-enforcement, filters, analytics, and product media ownership and primary-image
-behavior. They use in-memory repository implementations so routine HTTP tests
-do not require PostgreSQL. Focused tests also exercise the Prisma administrator
-repository's mappings, aggregates, pagination, and persistence error handling.
+enforcement, filters, analytics, product media ownership and primary-image
+behavior, and review eligibility, ownership, validation, public listing, and
+rating aggregates. They use in-memory repository implementations so routine
+HTTP tests do not require PostgreSQL. Focused tests also exercise the Prisma
+administrator and review repositories' mappings, aggregates, persistence
+rules, and error translation.
 
 ## Architecture
 
@@ -496,7 +565,7 @@ repository's mappings, aggregates, pagination, and persistence error handling.
 src/
   config/        Environment, logger, and cookie configuration
   controllers/   HTTP request and response handling
-  services/      Authentication, catalog, order, seller, and admin use cases
+  services/      Authentication, catalog, order, review, seller, and admin use cases
   repositories/  Persistence contracts and Prisma implementation
   middleware/    Authentication, roles, validation, errors, and rate limits
   routes/        Express route composition

@@ -5,6 +5,7 @@ import {
 } from "../../src/repositories/product.errors.js";
 import type {
   CreateProductInput,
+  ProductDetailsEntity,
   ProductDiscoveryQuery,
   ProductDiscoveryResult,
   ProductEntity,
@@ -21,6 +22,7 @@ interface CategorySeed {
 
 export class InMemoryProductRepository implements ProductRepository {
   private readonly products = new Map<string, ProductEntity>();
+  private readonly reviewRatings = new Map<string, number[]>();
   private readonly images = new Map<string, ProductImageEntity>();
   private readonly categories = new Map<string, CategorySeed>();
   private readonly sellerNames = new Map<string, string>();
@@ -71,6 +73,7 @@ export class InMemoryProductRepository implements ProductRepository {
       this.images.set(image.id, image);
     }
     this.popularity.set(product.id, 0);
+    this.reviewRatings.set(product.id, []);
     return product;
   }
 
@@ -137,6 +140,30 @@ export class InMemoryProductRepository implements ProductRepository {
     return this.products.get(id) ?? null;
   }
 
+  async findDetailsById(
+    id: string,
+  ): Promise<ProductDetailsEntity | null> {
+    const product = this.products.get(id);
+    if (!product) {
+      return null;
+    }
+
+    const ratings = this.reviewRatings.get(id) ?? [];
+    return {
+      ...product,
+      averageRating:
+        ratings.length === 0
+          ? null
+          : Number(
+              (
+                ratings.reduce((sum, rating) => sum + rating, 0) /
+                ratings.length
+              ).toFixed(2),
+            ),
+      reviewCount: ratings.length,
+    };
+  }
+
   async update(
     id: string,
     input: UpdateProductInput,
@@ -169,6 +196,7 @@ export class InMemoryProductRepository implements ProductRepository {
 
   async delete(id: string): Promise<boolean> {
     this.popularity.delete(id);
+    this.reviewRatings.delete(id);
     for (const image of this.imagesFor(id)) {
       this.images.delete(image.id);
     }
@@ -280,6 +308,13 @@ export class InMemoryProductRepository implements ProductRepository {
       throw new Error(`Test product ${id} was not found.`);
     }
     this.popularity.set(id, orderCount);
+  }
+
+  setReviewRatings(id: string, ratings: number[]): void {
+    if (!this.products.has(id)) {
+      throw new Error(`Test product ${id} was not found.`);
+    }
+    this.reviewRatings.set(id, [...ratings]);
   }
 
   private requireCategory(categoryId: string): CategorySeed {

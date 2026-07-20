@@ -6,7 +6,8 @@ Last updated: 2026-07-20
 
 Construction Materials Marketplace is a TypeScript/Express backend for a
 multi-role marketplace. It supports customer purchasing, seller catalog and
-business management, and administrator marketplace monitoring and moderation.
+business management, verified-purchase product reviews, and administrator
+marketplace monitoring and moderation.
 
 The API uses a layered architecture:
 
@@ -32,14 +33,14 @@ applicable.
 | Phase 1 | Complete | Authentication, JWT access/refresh tokens, role authorization, refresh-token rotation, security middleware, and API error handling. |
 | Phase 2 | Complete | Marketplace foundation: categories, products, orders, stock management, and seller profiles. |
 | Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
-| Phase 4 | Complete, awaiting review | Administrator dashboard, user status management, seller oversight, and product moderation. |
+| Phase 4 | Complete, awaiting review | Administrator oversight plus verified-purchase product reviews and ratings. |
 
 ## 3. Current Phase
 
-**Phase 4 is complete and awaiting review.**
+**Phase 4 - Product Reviews & Ratings is complete and awaiting review.**
 
-The most recently completed work is **Phase 4 - Module 1: Admin Dashboard and
-Marketplace Moderation**.
+The most recently completed work is **Phase 4 - Module 1: Product Reviews &
+Ratings**.
 
 ## 4. Completed Modules
 
@@ -76,6 +77,15 @@ Marketplace Moderation**.
     administrative deletion.
   - Immediate rejection of disabled accounts on every protected endpoint,
     including already-issued access tokens.
+- Product reviews and ratings with:
+  - Public review listing by product.
+  - Review creation restricted to authenticated customers with a delivered
+    order containing the product.
+  - One review per customer and product.
+  - Owner-only review updates and deletion.
+  - Administrator deletion of any review.
+  - Integer ratings from 1 through 5 with database and Zod enforcement.
+  - Product-detail `averageRating` and `reviewCount` fields.
 
 ## 5. Folder Structure
 
@@ -106,7 +116,9 @@ CMM/
       categories.test.ts
       orders.test.ts
       prisma-admin-dashboard.repository.test.ts
+      prisma-review.repository.test.ts
       products.test.ts
+      reviews.test.ts
       seller-dashboard.test.ts
     README.md
     package.json
@@ -125,6 +137,7 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `ProductImage` | Managed product image URL with primary-image state and creation time. |
 | `Order` | Customer order with status and total amount. |
 | `OrderItem` | Product/quantity/price snapshot belonging to an order. |
+| `Review` | Customer rating and optional comment for a purchased product. |
 
 Relations:
 
@@ -135,6 +148,9 @@ Relations:
 - A `ProductImage` belongs to one product and is deleted with that product.
 - An `Order` belongs to one customer and has many order items.
 - `OrderItem` is unique per `(orderId, productId)`.
+- A `Review` belongs to one product and one customer.
+- `Review` is unique per `(customerId, productId)`, and its rating is
+  constrained to an integer from 1 through 5.
 
 Enums:
 
@@ -150,6 +166,7 @@ Applied migrations:
 5. `20260719121723_product_discovery_trigram_search_indexes`
 6. `20260719150000_product_image_management`
 7. `20260719170000_admin_dashboard_user_status`
+8. `20260720120000_product_reviews`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
@@ -157,6 +174,8 @@ substring search on product name, description, and seller shop name. Product
 images have a product/creation-time index and a PostgreSQL partial unique index
 that permits at most one primary image per product. User role and active-state
 indexes support administrator filtering and protected-request status checks.
+Reviews have customer/product uniqueness, product/creation-time and customer
+indexes, and a PostgreSQL rating check constraint.
 
 ## 7. API Endpoints Created
 
@@ -182,6 +201,10 @@ indexes support administrator filtering and protected-request status checks.
 | `GET` | `/api/products/:id/images` | Public |
 | `DELETE` | `/api/products/:id/images/:imageId` | Owning seller |
 | `PATCH` | `/api/products/:id/images/:imageId/primary` | Owning seller |
+| `GET` | `/api/products/:id/reviews` | Public |
+| `POST` | `/api/products/:id/reviews` | Customer with delivered purchase |
+| `PUT` | `/api/reviews/:id` | Review owner |
+| `DELETE` | `/api/reviews/:id` | Review owner or admin |
 | `POST` | `/api/orders` | Customer |
 | `GET` | `/api/orders/me` | Authenticated |
 | `GET` | `/api/orders/:id` | Order owner or admin |
@@ -221,7 +244,8 @@ stock, sortBy, sortOrder
 
 ## 9. Remaining Tasks
 
-No approved implementation work remains within the Admin Dashboard module.
+No approved implementation work remains within the Product Reviews & Ratings
+module.
 
 Features outside the currently implemented scope:
 
@@ -234,10 +258,10 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**Review and approve Phase 4, Module 1: Admin Dashboard and Marketplace
-Moderation.** No subsequent module has been formally specified, so do not
-begin RFQs, payments, chat, notifications, frontend work, or another business
-module until the next requirements are provided and approved.
+**Review and approve Phase 4, Module 1: Product Reviews & Ratings.** No
+subsequent module has been formally specified, so do not begin RFQs, payments,
+chat, notifications, frontend work, or another business module until the next
+requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -281,6 +305,16 @@ module until the next requirements are provided and approved.
 - Administrator total and monthly revenue use delivered orders only. Seller
   oversight revenue includes only delivered line items belonging to that
   seller.
+- A completed purchase for review eligibility means a `DELIVERED` order,
+  matching the existing order lifecycle and seller revenue semantics.
+- Review uniqueness is enforced by the service-facing repository and by a
+  PostgreSQL unique index so concurrent duplicate submissions remain safe.
+- Review ratings are validated as integer values from 1 through 5 in Zod and
+  enforced with a PostgreSQL check constraint.
+- Review updates and customer deletions require ownership. Administrators may
+  delete any review but cannot edit review content.
+- Product detail rating aggregates are calculated from normalized reviews at
+  read time; no denormalized rating columns are stored on products.
 - Administrative product deletion is blocked when historical order items
   reference the product.
 - Category deletion is blocked when products reference that category.
@@ -292,13 +326,16 @@ No known failing tests or confirmed functional bugs as of 2026-07-20.
 Current limitations and deferred work:
 
 - The test suite uses in-memory repositories for routine integration coverage;
-  the Prisma administrator repository is covered with focused mocked-client
-  tests, but live PostgreSQL HTTP verification is not yet automated in CI.
+  the Prisma administrator and review repositories are covered with focused
+  mocked-client tests, but live PostgreSQL HTTP verification is not yet
+  automated in CI.
 - PostgreSQL `pg_trgm` must be available to apply the discovery search-index
   migration. It is available on the currently verified PostgreSQL 17 setup.
 - Offset pagination is sufficient for the current API but may need cursor
   pagination if the catalog grows large or users require highly stable views
   during concurrent catalog updates.
+- Public product review lists are currently unpaginated and should gain
+  cursor or offset pagination before products accumulate large review volumes.
 - Full-text ranking, typo tolerance beyond trigram matching, faceted counts,
   and search-result highlighting are not implemented.
 - Product media management stores validated external image URLs only. Binary
@@ -309,19 +346,20 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Most recent Phase 4 Module 1 verification completed successfully:
+Most recent Phase 4 Product Reviews & Ratings verification completed
+successfully:
 
 ```text
 npm run typecheck     PASS
-npm test              PASS (67 tests)
+npm test              PASS (81 tests)
 npm run build         PASS
 prisma validate       PASS
-prisma migrate status PASS (7 migrations applied)
+prisma migrate status PASS (8 migrations applied)
 ```
 
-Administrator HTTP tests cover dashboard totals, filters, seller and product
-oversight, status changes, self-disable protection, moderation conflicts, and
-immediate rejection of disabled accounts for login, refresh, existing access
-tokens, and protected endpoints. Focused Prisma repository tests cover
-aggregation, mapping, pagination, status persistence, seller metrics, and
-deletion error translation.
+Review HTTP tests cover successful and duplicate reviews, delivered-purchase
+eligibility, invalid ratings, role enforcement, owner updates and deletion,
+administrator deletion, public listing, and product rating aggregates.
+Focused Prisma review repository tests cover delivered-order lookup, unique
+constraint translation, non-purchaser rejection, mapping, and aggregate
+calculation.

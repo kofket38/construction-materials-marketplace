@@ -4,6 +4,7 @@ import type { AuthController } from "../controllers/auth.controller.js";
 import type { CategoryController } from "../controllers/category.controller.js";
 import type { OrderController } from "../controllers/order.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
+import type { ReviewController } from "../controllers/review.controller.js";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
 import { authenticate } from "../middleware/authentication.js";
 import { createAuthRateLimiter } from "../middleware/rate-limit.js";
@@ -14,6 +15,7 @@ import { createAuthRouter } from "./auth.routes.js";
 import { createCategoryRouter } from "./category.routes.js";
 import { createOrderRouter } from "./order.routes.js";
 import { createProductRouter } from "./product.routes.js";
+import { createReviewRouter } from "./review.routes.js";
 import { createSellerDashboardRouter } from "./seller-dashboard.routes.js";
 
 export function createApiRouter(
@@ -22,6 +24,7 @@ export function createApiRouter(
   categoryController: CategoryController,
   orderController: OrderController,
   productController: ProductController,
+  reviewController: ReviewController,
   sellerDashboardController: SellerDashboardController,
   tokenService: TokenService,
   userRepository: UserRepository,
@@ -53,6 +56,7 @@ export function createApiRouter(
     "/products",
     createProductRouter(productController, requireAuthentication),
   );
+  router.use(createReviewRouter(reviewController, requireAuthentication));
   router.use(
     "/seller",
     createSellerDashboardRouter(
