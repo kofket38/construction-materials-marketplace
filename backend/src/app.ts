@@ -54,6 +54,8 @@ import { prisma } from "./prisma/client.js";
 import { validateRequest } from "./middleware/validate-request.js";
 import { emptyObjectSchema } from "./validators/auth.validators.js";
 
+const JSON_BODY_LIMIT = "128kb";
+
 export interface AppDependencies {
   adminDashboardRepository?: AdminDashboardRepository;
   userRepository?: UserRepository;
@@ -137,7 +139,7 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     }),
   );
   app.use(createGlobalRateLimiter());
-  app.use(express.json({ limit: "10kb" }));
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(cookieParser());
 
   app.get(

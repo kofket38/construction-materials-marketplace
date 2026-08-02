@@ -66,3 +66,21 @@ export const RfqUnit = {
 } as const
 
 export type RfqUnit = (typeof RfqUnit)[keyof typeof RfqUnit]
+
+
+export const ProductApprovalStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type ProductApprovalStatus = (typeof ProductApprovalStatus)[keyof typeof ProductApprovalStatus]
+
+
+export const ProductImageType = {
+  OFFICIAL: 'OFFICIAL',
+  DEFAULT: 'DEFAULT',
+  SELLER_UPLOAD: 'SELLER_UPLOAD'
+} as const
+
+export type ProductImageType = (typeof ProductImageType)[keyof typeof ProductImageType]

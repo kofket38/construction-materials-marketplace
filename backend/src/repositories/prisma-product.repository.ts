@@ -33,6 +33,25 @@ const productRelations = {
       name: true,
     },
   },
+  images: {
+  orderBy: [
+    {
+      type: "asc",
+    },
+    {
+      isPrimary: "desc",
+    },
+    {
+      createdAt: "asc",
+    },
+  ],
+  select: {
+    imageUrl: true,
+    type: true,
+    isPrimary: true,
+  },
+  take: 1,
+},
 } satisfies Prisma.ProductInclude;
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
@@ -48,7 +67,7 @@ function mapProduct(product: ProductWithRelations): ProductEntity {
     description: product.description,
     price: product.price.toFixed(2),
     quantity: product.quantity,
-    imageUrl: product.imageUrl,
+    imageUrl: product.images[0]?.imageUrl ?? product.imageUrl,
     seller: product.seller,
     category: product.category,
     createdAt: product.createdAt,

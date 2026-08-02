@@ -145,6 +145,13 @@ export class SupplierQuoteExpiredError extends Error {
   }
 }
 
+export class SupplierQuoteSellerInactiveError extends Error {
+  constructor() {
+    super("The supplier account is no longer active.");
+    this.name = "SupplierQuoteSellerInactiveError";
+  }
+}
+
 export class RfqQuotedProductUnavailableError extends Error {
   constructor(productId: string | null) {
     super(

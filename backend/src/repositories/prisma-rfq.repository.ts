@@ -25,6 +25,7 @@ import {
   SupplierQuoteNotFoundError,
   SupplierQuoteNotSubmittedError,
   SupplierQuoteOwnershipError,
+  SupplierQuoteSellerInactiveError,
   SupplierQuoteValidityError,
 } from "./rfq.errors.js";
 import type {
@@ -105,6 +106,16 @@ const rfqRelations = {
     orderBy: [{ createdAt: "desc" as const }, { id: "asc" as const }],
   },
 } satisfies Prisma.RequestForQuoteInclude;
+
+function rfqRelationsForSeller(sellerId: string) {
+  return {
+    ...rfqRelations,
+    quotes: {
+      ...rfqRelations.quotes,
+      where: { sellerId },
+    },
+  } satisfies Prisma.RequestForQuoteInclude;
+}
 
 const quoteRelations = {
   seller: {
@@ -217,6 +228,18 @@ export class PrismaRfqRepository implements RfqRepository {
     return rfq ? mapRfq(rfq) : null;
   }
 
+  async findByIdForSeller(
+    id: string,
+    sellerId: string,
+  ): Promise<RequestForQuoteEntity | null> {
+    await this.expireOpenRfqs();
+    const rfq = await this.client.requestForQuote.findUnique({
+      where: { id },
+      include: rfqRelationsForSeller(sellerId),
+    });
+    return rfq ? mapRfq(rfq) : null;
+  }
+
   async findByCustomer(
     customerId: string,
     query: RfqListQuery,
@@ -260,6 +283,7 @@ export class PrismaRfqRepository implements RfqRepository {
 
     return this.findMany({
       query,
+      quoteSellerId: sellerId,
       where: {
         AND: [sellerScope, listFilters(query)],
       },
@@ -599,6 +623,14 @@ export class PrismaRfqRepository implements RfqRepository {
                   select: productSummarySelect,
                 },
               },
+              orderBy: {
+                id: "asc",
+              },
+            },
+            seller: {
+              select: {
+                isActive: true,
+              },
             },
           },
         });
@@ -606,6 +638,9 @@ export class PrismaRfqRepository implements RfqRepository {
         this.requireOpenRfq(quote.rfq);
         if (quote.validUntil.getTime() <= Date.now()) {
           throw new SupplierQuoteExpiredError();
+        }
+        if (!quote.seller.isActive) {
+          throw new SupplierQuoteSellerInactiveError();
         }
 
         const rfqItems = new Map(
@@ -721,12 +756,17 @@ export class PrismaRfqRepository implements RfqRepository {
   private async findMany(input: {
     query: RfqListQuery;
     where: Prisma.RequestForQuoteWhereInput;
+    quoteSellerId?: string;
   }): Promise<RfqListResult> {
+    const relations =
+      input.quoteSellerId === undefined
+        ? rfqRelations
+        : rfqRelationsForSeller(input.quoteSellerId);
     const [total, rfqs] = await this.client.$transaction([
       this.client.requestForQuote.count({ where: input.where }),
       this.client.requestForQuote.findMany({
         where: input.where,
-        include: rfqRelations,
+        include: relations,
         orderBy: [{ createdAt: "desc" }, { id: "asc" }],
         skip: (input.query.page - 1) * input.query.limit,
         take: input.query.limit,
@@ -756,19 +796,23 @@ export class PrismaRfqRepository implements RfqRepository {
         return;
       }
       const ids = expired.map((rfq) => rfq.id);
-      await transaction.supplierQuote.updateMany({
-        where: {
-          rfqId: { in: ids },
-          status: "SUBMITTED",
-        },
-        data: { status: "CLOSED" },
-      });
       await transaction.requestForQuote.updateMany({
         where: {
           id: { in: ids },
           status: "OPEN",
+          expiresAt: { lte: new Date() },
         },
         data: { status: "EXPIRED" },
+      });
+      await transaction.supplierQuote.updateMany({
+        where: {
+          rfqId: { in: ids },
+          status: "SUBMITTED",
+          rfq: {
+            status: "EXPIRED",
+          },
+        },
+        data: { status: "CLOSED" },
       });
     });
   }

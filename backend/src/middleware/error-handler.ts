@@ -1,6 +1,10 @@
 import type { ErrorRequestHandler } from "express";
 import type { Logger } from "pino";
-import { ApiError, BadRequestError } from "../utils/api-error.js";
+import {
+  ApiError,
+  BadRequestError,
+  PayloadTooLargeError,
+} from "../utils/api-error.js";
 
 export function createErrorHandler(logger: Logger): ErrorRequestHandler {
   return (error: unknown, _req, res, next) => {
@@ -9,8 +13,9 @@ export function createErrorHandler(logger: Logger): ErrorRequestHandler {
       return;
     }
 
-    const normalizedError =
-      error instanceof SyntaxError && "body" in error
+    const normalizedError = isPayloadTooLargeError(error)
+      ? new PayloadTooLargeError()
+      : error instanceof SyntaxError && "body" in error
         ? new BadRequestError("Request body contains invalid JSON.")
         : error;
 
@@ -30,4 +35,12 @@ export function createErrorHandler(logger: Logger): ErrorRequestHandler {
       errors: [],
     });
   };
+}
+
+function isPayloadTooLargeError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (("type" in error && error.type === "entity.too.large") ||
+      ("status" in error && error.status === 413))
+  );
 }

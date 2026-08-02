@@ -22,6 +22,7 @@ import {
   SupplierQuoteNotFoundError,
   SupplierQuoteNotSubmittedError,
   SupplierQuoteOwnershipError,
+  SupplierQuoteSellerInactiveError,
   SupplierQuoteValidityError,
 } from "../repositories/rfq.errors.js";
 import type {
@@ -113,7 +114,10 @@ export class RfqService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<RequestForQuoteEntity> {
-    const rfq = await this.rfqs.findById(id);
+    const rfq =
+      actor.role === "SELLER"
+        ? await this.rfqs.findByIdForSeller(id, actor.userId)
+        : await this.rfqs.findById(id);
     if (!rfq) {
       throw new NotFoundError("RFQ not found.");
     }
@@ -313,6 +317,7 @@ export class RfqService {
       error instanceof DuplicateSupplierQuoteError ||
       error instanceof SupplierQuoteNotSubmittedError ||
       error instanceof SupplierQuoteExpiredError ||
+      error instanceof SupplierQuoteSellerInactiveError ||
       error instanceof RfqQuotedProductUnavailableError ||
       error instanceof RfqInsufficientStockError ||
       error instanceof RfqStateChangedError

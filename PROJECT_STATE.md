@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## 1. Project Overview
 
@@ -34,15 +34,14 @@ applicable.
 | Phase 1 | Complete | Authentication, JWT access/refresh tokens, role authorization, refresh-token rotation, security middleware, and API error handling. |
 | Phase 2 | Complete | Marketplace foundation: categories, products, orders, stock management, and seller profiles. |
 | Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
-| Phase 4 | Complete, awaiting review | Administrator oversight, verified-purchase product reviews and ratings, customer product wishlists, and RFQ and supplier quotations. |
+| Phase 4 | Complete and stabilized | Administrator oversight, verified-purchase product reviews and ratings, customer product wishlists, and RFQ and supplier quotations. |
 
 ## 3. Current Phase
 
-**Phase 4 - Module 3: RFQ & Supplier Quotations is complete and awaiting
-review.**
+**Phase 4 - Module 3: RFQ & Supplier Quotations is approved, complete, and
+stabilized.**
 
-The most recently completed work is **Phase 4 - Module 3: RFQ & Supplier
-Quotations**.
+The most recently completed work is **Phase 4 - Module 3 Stabilization**.
 
 Module 3 lets customers submit requests for quotation, eligible suppliers
 respond with structured quotations, and customers reject or atomically accept
@@ -115,6 +114,12 @@ notifications, and delivery charges are not included.
     creates a quoted-price order, awards one quote, and rejects competitors.
   - Read-only administrator oversight and database constraints for workflow
     consistency, positive values, and one accepted quote per RFQ.
+  - HTTP `413` handling for requests above the 128kb JSON limit while retaining
+    support for the largest schema-valid RFQ.
+  - Acceptance-time supplier active-state validation and database-scoped
+    competing-quotation confidentiality.
+  - Live PostgreSQL verification of acceptance, rollback, concurrent awards,
+    row locking, uniqueness, and cross-table workflow constraints.
 
 ## 5. Folder Structure
 
@@ -224,6 +229,8 @@ Applied migrations:
 9. `20260720150000_product_wishlist`
 10. `20260720230538_phase_4_module_3_rfq_supplier_quotations`
 11. `20260720231500_rfq_database_constraints`
+12. `20260721150000_phase_4_module_3_stabilization`
+13. `20260721170000_phase_4_module_3_constraint_closure`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
@@ -237,7 +244,11 @@ customer/product uniqueness plus customer/creation-time and product indexes.
 RFQs and supplier quotes have customer/seller/status/expiry/category indexes,
 seller/RFQ uniqueness, positive quantity and monetary checks, request/quote
 state consistency checks, and a partial unique index for one accepted quote
-per RFQ.
+per RFQ. Stabilization adds a composite seller/category product index plus
+database-enforced quotation-line RFQ ownership, quote-total consistency, and
+accepted-quote/awarded-RFQ agreement. Constraint closure validates both source
+and destination totals when lines move and prevents either side of an accepted
+award from changing independently.
 
 ## 7. API Endpoints Created
 
@@ -334,10 +345,10 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**Review and approve Phase 4, Module 3: RFQ & Supplier Quotations.** No
-subsequent module has been formally specified, so do not begin payments,
-messaging, notifications, frontend work, or another business module until the
-next requirements are provided and approved.
+**Await the next formally approved module.** Phase 4, Module 3 and its
+stabilization are complete, so do not begin payments, messaging, notifications,
+frontend work, or another business module until the next requirements are
+provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -410,6 +421,13 @@ next requirements are provided and approved.
 - Quote submission does not reserve stock. Acceptance uses a serializable
   transaction and conditional stock updates to prevent duplicate awards and
   overselling.
+- Acceptance revalidates that the quoted supplier account remains active.
+- RFQ expiration changes the RFQ row before closing submitted quotations so
+  transaction lock ordering remains RFQ-first across mutation workflows.
+- Seller RFQ reads filter quotation relations in PostgreSQL before application
+  mapping, so competing quotation data is not hydrated unnecessarily.
+- JSON request bodies are limited to 128kb and oversized requests return HTTP
+  `413`.
 - Accepted quotations create normal `PENDING` orders with quoted-price
   snapshots, so existing order status, seller analytics, and delivered-order
   review eligibility continue to apply.
@@ -423,14 +441,14 @@ next requirements are provided and approved.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-07-20.
+No known failing tests or confirmed functional bugs as of 2026-07-21.
 
 Current limitations and deferred work:
 
-- The test suite uses in-memory repositories for routine integration coverage;
-  the Prisma administrator, review, wishlist, and RFQ repositories are covered
-  with focused mocked-client tests, but live PostgreSQL HTTP verification is
-  not yet automated in CI.
+- Routine HTTP tests continue to use in-memory repositories. RFQ persistence
+  acceptance, rollback, concurrency, row locking, uniqueness, and strengthened
+  constraints now run against the configured live PostgreSQL database. Broader
+  end-to-end HTTP verification with PostgreSQL is not yet automated in CI.
 - PostgreSQL `pg_trgm` must be available to apply the discovery search-index
   migration. It is available on the currently verified PostgreSQL 17 setup.
 - Offset pagination is sufficient for the current API but may need cursor
@@ -454,21 +472,25 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Most recent Phase 4 RFQ & Supplier Quotations verification completed
+Most recent Phase 4 Module 3 Stabilization verification completed
 successfully:
 
 ```text
 npm run typecheck     PASS
-npm test              PASS (110 tests)
+npm test              PASS (125 tests)
 npm run build         PASS
 prisma validate       PASS
-prisma migrate status PASS (11 migrations applied)
+prisma migrate status PASS (13 migrations applied)
 ```
 
 RFQ HTTP tests cover customer and seller lifecycles, authentication, role and
 ownership enforcement, customer and quotation isolation, strict validation,
 seller eligibility, quote rejection and withdrawal, expiration, atomic quote
 acceptance, order creation, quoted-price snapshots, stock rollback, deleted
-products, and simultaneous acceptance attempts. Focused Prisma RFQ repository
-tests cover snapshots, decimal totals, duplicate-quote translation, acceptance
-transactions, order creation, and insufficient-stock handling.
+products, inactive suppliers, payload-size handling, and simultaneous
+acceptance attempts. Focused Prisma RFQ repository tests cover snapshots,
+decimal totals, seller-scoped quote loading, lock ordering, duplicate-quote
+translation, acceptance transactions, order creation, and insufficient-stock
+handling. Live PostgreSQL tests cover acceptance commits, transaction rollback,
+competing concurrent acceptance, row locking, uniqueness, quote-line movement,
+award-state transitions, and strengthened cross-table constraints.

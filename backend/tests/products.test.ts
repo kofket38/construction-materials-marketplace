@@ -349,7 +349,13 @@ describe("Product API", () => {
     expect(response.body).toMatchObject({
       success: true,
       data: {
-        products: [{ id: product.id, name: productInput.name }],
+        products: [
+          {
+            id: product.id,
+            name: productInput.name,
+            imageUrl: productInput.imageUrl,
+          },
+        ],
         totalItems: 1,
         totalPages: 1,
         currentPage: 1,

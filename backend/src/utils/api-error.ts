@@ -49,3 +49,9 @@ export class TooManyRequestsError extends ApiError {
     super(429, message);
   }
 }
+
+export class PayloadTooLargeError extends ApiError {
+  constructor(message = "Request body exceeds the maximum allowed size.") {
+    super(413, message);
+  }
+}

@@ -14,6 +14,7 @@ import {
   RfqPreferredProductCategoryError,
   RfqPreferredProductNotFoundError,
   RfqQuotedProductUnavailableError,
+  SupplierQuoteSellerInactiveError,
   SupplierQuoteCoverageError,
   SupplierQuoteAmountTooLargeError,
   SupplierQuoteCustomerError,
@@ -69,6 +70,7 @@ export class InMemoryRfqRepository implements RfqRepository {
   private readonly products = new Map<string, ProductSeed>();
   private readonly customers = new Map<string, CustomerSeed>();
   private readonly sellers = new Map<string, RfqSellerSummary>();
+  private readonly sellerActive = new Map<string, boolean>();
   private readonly rfqs = new Map<string, RequestForQuoteEntity>();
   private readonly orders = new Map<string, OrderEntity>();
 
@@ -86,6 +88,11 @@ export class InMemoryRfqRepository implements RfqRepository {
 
   addSeller(seller: RfqSellerSummary): void {
     this.sellers.set(seller.id, { ...seller });
+    this.sellerActive.set(seller.id, true);
+  }
+
+  setSellerActive(sellerId: string, isActive: boolean): void {
+    this.sellerActive.set(sellerId, isActive);
   }
 
   getProductQuantity(productId: string): number | null {
@@ -203,6 +210,19 @@ export class InMemoryRfqRepository implements RfqRepository {
   async findById(id: string): Promise<RequestForQuoteEntity | null> {
     this.expireRfqs();
     return this.rfqs.get(id) ?? null;
+  }
+
+  async findByIdForSeller(
+    id: string,
+    sellerId: string,
+  ): Promise<RequestForQuoteEntity | null> {
+    const rfq = await this.findById(id);
+    return rfq
+      ? {
+          ...rfq,
+          quotes: rfq.quotes.filter((quote) => quote.sellerId === sellerId),
+        }
+      : null;
   }
 
   async findByCustomer(
@@ -364,6 +384,9 @@ export class InMemoryRfqRepository implements RfqRepository {
     this.requireOpenRfq(rfq.id);
     if (quote.validUntil.getTime() <= Date.now()) {
       throw new SupplierQuoteExpiredError();
+    }
+    if (this.sellerActive.get(quote.sellerId) === false) {
+      throw new SupplierQuoteSellerInactiveError();
     }
 
     const products = quote.items.map((item) => {

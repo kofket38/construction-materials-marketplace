@@ -28,6 +28,11 @@ export type User = Prisma.UserModel
  */
 export type SellerProfile = Prisma.SellerProfileModel
 /**
+ * Model Brand
+ * 
+ */
+export type Brand = Prisma.BrandModel
+/**
  * Model Category
  * 
  */
@@ -42,6 +47,11 @@ export type Product = Prisma.ProductModel
  * 
  */
 export type ProductImage = Prisma.ProductImageModel
+/**
+ * Model SellerInventory
+ * 
+ */
+export type SellerInventory = Prisma.SellerInventoryModel
 /**
  * Model Order
  * 

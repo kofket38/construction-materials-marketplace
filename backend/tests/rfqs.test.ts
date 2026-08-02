@@ -432,6 +432,29 @@ describe("RFQ API", () => {
     );
   });
 
+  it("rejects acceptance after the quoted seller is disabled", async () => {
+    const created = await createRfq(customerToken);
+    const rfq = created.body.data.rfq;
+    const submitted = await createQuote(
+      sellerToken,
+      rfq,
+      sellerCementId,
+      sellerSteelId,
+    );
+    rfqs.setSellerActive(sellerId, false);
+
+    const response = await request(app)
+      .post(`/api/quotes/${submitted.body.data.quote.id}/accept`)
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({})
+      .expect(409);
+
+    expect(response.body.message).toBe(
+      "The supplier account is no longer active.",
+    );
+    expect(rfqs.getOrders()).toEqual([]);
+  });
+
   it("allows only one concurrent acceptance to create an order", async () => {
     const created = await createRfq(customerToken);
     const rfq = created.body.data.rfq;
@@ -538,6 +561,43 @@ describe("RFQ API", () => {
       .get("/api/rfqs/me?unknown=true")
       .set("Authorization", `Bearer ${customerToken}`)
       .expect(400);
+  });
+
+  it("returns 413 when an RFQ request exceeds the JSON body limit", async () => {
+    const response = await request(app)
+      .post("/api/rfqs")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({
+        ...rfqBody(),
+        notes: "x".repeat(140_000),
+      })
+      .expect(413);
+
+    expect(response.body).toEqual({
+      success: false,
+      message: "Request body exceeds the maximum allowed size.",
+      errors: [],
+    });
+  });
+
+  it("accepts a schema-valid RFQ larger than the previous 10kb limit", async () => {
+    const response = await request(app)
+      .post("/api/rfqs")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({
+        ...rfqBody(),
+        notes: "n".repeat(5000),
+        items: Array.from({ length: 20 }, (_, index) => ({
+          categoryId: index % 2 === 0 ? cementCategoryId : steelCategoryId,
+          materialName: `Material ${index + 1}`,
+          specifications: "s".repeat(5000),
+          requestedQuantity: "1.000",
+          requestedUnit: "TONNE",
+        })),
+      })
+      .expect(201);
+
+    expect(response.body.data.rfq.items).toHaveLength(20);
   });
 
   function addProduct(

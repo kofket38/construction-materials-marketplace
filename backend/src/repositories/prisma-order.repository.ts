@@ -244,14 +244,29 @@ export class PrismaOrderRepository implements OrderRepository {
       if (!currentOrder) {
         return null;
       }
+
       if (currentOrder.status === PrismaOrderStatus.CANCELLED) {
         throw new OrderAlreadyCancelledError();
       }
+
       if (
         options.onlyIfPending &&
         currentOrder.status !== PrismaOrderStatus.PENDING
       ) {
         throw new OrderNotPendingError();
+      }
+
+      if (currentOrder.status !== PrismaOrderStatus.DELIVERED) {
+        for (const item of currentOrder.items) {
+          await transaction.product.update({
+            where: { id: item.productId },
+            data: {
+              quantity: {
+                increment: item.quantity,
+              },
+            },
+          });
+        }
       }
 
       const cancelled = await transaction.order.updateMany({
@@ -266,19 +281,6 @@ export class PrismaOrderRepository implements OrderRepository {
 
       if (cancelled.count !== 1) {
         throw new OrderStateChangedError();
-      }
-
-      if (currentOrder.status !== PrismaOrderStatus.DELIVERED) {
-        for (const item of currentOrder.items) {
-          await transaction.product.update({
-            where: { id: item.productId },
-            data: {
-              quantity: {
-                increment: item.quantity,
-              },
-            },
-          });
-        }
       }
 
       const order = await transaction.order.findUnique({

@@ -256,6 +256,55 @@ describe("PrismaRfqRepository", () => {
     expect(client.order.create).not.toHaveBeenCalled();
     expect(client.requestForQuote.update).not.toHaveBeenCalled();
   });
+
+  it("loads only the authenticated seller's quotations for seller listings", async () => {
+    client.requestForQuote.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([rfqRecord()]);
+    client.requestForQuote.count.mockResolvedValue(1);
+
+    await repository.findForSeller(sellerId, {
+      page: 1,
+      limit: 20,
+      view: "available",
+    });
+
+    expect(client.requestForQuote.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        include: expect.objectContaining({
+          quotes: expect.objectContaining({
+            where: { sellerId },
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("expires RFQs before closing their submitted quotations", async () => {
+    client.requestForQuote.findMany.mockResolvedValue([{ id: rfqId }]);
+    client.requestForQuote.updateMany.mockResolvedValue({ count: 1 });
+    client.supplierQuote.updateMany.mockResolvedValue({ count: 1 });
+    client.requestForQuote.findUnique.mockResolvedValue(null);
+
+    await repository.findById(rfqId);
+
+    expect(
+      client.requestForQuote.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      client.supplierQuote.updateMany.mock.invocationCallOrder[0]!,
+    );
+    expect(client.supplierQuote.updateMany).toHaveBeenCalledWith({
+      where: {
+        rfqId: { in: [rfqId] },
+        status: "SUBMITTED",
+        rfq: {
+          status: "EXPIRED",
+        },
+      },
+      data: { status: "CLOSED" },
+    });
+  });
 });
 
 function createPrismaClientMock() {
@@ -418,6 +467,9 @@ function acceptanceQuoteRecord() {
         { id: rfqItemId, categoryId },
         { id: secondRfqItemId, categoryId: secondCategoryId },
       ],
+    },
+    seller: {
+      isActive: true,
     },
     items: quoteRecord().items,
   };

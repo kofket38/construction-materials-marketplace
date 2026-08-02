@@ -6,6 +6,7 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     restoreMocks: true,
     clearMocks: true,
+    testTimeout: 20_000,
     coverage: {
       reporter: ["text", "html"],
     },

@@ -181,6 +181,10 @@ export interface AcceptQuoteResult {
 export interface RfqRepository {
   create(input: CreateRfqInput): Promise<RequestForQuoteEntity>;
   findById(id: string): Promise<RequestForQuoteEntity | null>;
+  findByIdForSeller(
+    id: string,
+    sellerId: string,
+  ): Promise<RequestForQuoteEntity | null>;
   findByCustomer(
     customerId: string,
     query: RfqListQuery,

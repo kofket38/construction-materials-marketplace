@@ -1,6 +1,8 @@
+import "dotenv/config";
+
 process.env.NODE_ENV = "test";
 process.env.PORT = "3000";
-process.env.DATABASE_URL =
+process.env.DATABASE_URL ??=
   "postgresql://postgres:postgres@localhost:5432/cmm_test";
 process.env.JWT_ACCESS_SECRET =
   "test-access-secret-at-least-thirty-two-characters";

@@ -308,7 +308,7 @@ describe("Admin Dashboard API", () => {
       name: "System Administrator",
       email: "admin@example.com",
       role: "ADMIN",
-      createdAt: new Date("2026-01-10T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(10),
     });
     users.addUser({
       id: customerId,
@@ -316,7 +316,7 @@ describe("Admin Dashboard API", () => {
       email: "alice@example.com",
       company: "Alice Construction",
       role: "CUSTOMER",
-      createdAt: new Date("2026-02-10T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(11),
     });
     users.addUser({
       id: firstSellerId,
@@ -324,7 +324,7 @@ describe("Admin Dashboard API", () => {
       email: "amina@kamau.example.com",
       company: "Kamau Supplies",
       role: "SELLER",
-      createdAt: new Date("2026-03-10T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(12),
     });
     users.addUser({
       id: secondSellerId,
@@ -332,7 +332,7 @@ describe("Admin Dashboard API", () => {
       email: "brian@example.com",
       company: "Otieno Builders Hub",
       role: "SELLER",
-      createdAt: new Date("2026-04-10T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(13),
     });
   }
 
@@ -360,7 +360,7 @@ describe("Admin Dashboard API", () => {
       description: "High-strength bagged cement",
       price: "100.00",
       quantity: 20,
-      createdAt: new Date("2026-07-17T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(17),
     });
     dashboard.addProduct({
       id: steelProductId,
@@ -369,7 +369,7 @@ describe("Admin Dashboard API", () => {
       name: "Steel Bar",
       price: "200.00",
       quantity: 10,
-      createdAt: new Date("2026-07-16T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(16),
     });
     dashboard.addProduct({
       id: aggregateProductId,
@@ -378,7 +378,7 @@ describe("Admin Dashboard API", () => {
       name: "Cement Additive",
       price: "50.00",
       quantity: 15,
-      createdAt: new Date("2026-07-15T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(15),
     });
     dashboard.addProduct({
       id: removableProductId,
@@ -387,7 +387,7 @@ describe("Admin Dashboard API", () => {
       name: "Unused Steel Mesh",
       price: "75.00",
       quantity: 5,
-      createdAt: new Date("2026-07-14T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(14),
     });
 
     dashboard.addOrder({
@@ -398,7 +398,7 @@ describe("Admin Dashboard API", () => {
         { productId: cementProductId, quantity: 2, price: "100.00" },
         { productId: aggregateProductId, quantity: 1, price: "50.00" },
       ],
-      createdAt: new Date("2026-07-18T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(18),
     });
     dashboard.addOrder({
       id: "00000000-0000-4000-8000-000000000302",
@@ -407,7 +407,7 @@ describe("Admin Dashboard API", () => {
       items: [
         { productId: steelProductId, quantity: 3, price: "200.00" },
       ],
-      createdAt: new Date("2026-06-18T08:00:00.000Z"),
+      createdAt: dateInPreviousUtcMonth(18),
     });
     dashboard.addOrder({
       id: "00000000-0000-4000-8000-000000000303",
@@ -416,10 +416,26 @@ describe("Admin Dashboard API", () => {
       items: [
         { productId: cementProductId, quantity: 1, price: "100.00" },
       ],
-      createdAt: new Date("2026-07-19T08:00:00.000Z"),
+      createdAt: dateInCurrentUtcMonth(19),
     });
   }
 });
+
+function dateInCurrentUtcMonth(day: number): Date {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, 8),
+  );
+}
+
+function dateInPreviousUtcMonth(day: number): Date {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, day, 8),
+  );
+}
 
 function readRefreshCookie(response: Response): string {
   const setCookie = response.headers["set-cookie"] as unknown;

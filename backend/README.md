@@ -88,6 +88,11 @@ customer/product uniqueness, cascade cleanup, and ordered lookup indexes.
 The RFQ migrations add normalized request and quotation lines, status and unit
 enums, catalog snapshots, supplier uniqueness, positive quantity and price
 constraints, one accepted quotation per RFQ, and accepted-quote order links.
+The RFQ stabilization migration adds seller/category lookup indexing and
+database-enforced quote-line ownership, quote-total consistency, and final
+accepted-quote/awarded-RFQ agreement. A follow-up constraint migration validates
+both quotations when lines move and prevents either side of an accepted award
+from changing independently.
 
 ## Running Locally
 
@@ -428,7 +433,8 @@ curl -X POST http://localhost:3000/api/rfqs \
 RFQs expire between 24 hours and 90 days after creation. Supported requested
 units are `BAG`, `KG`, `TONNE`, `LITRE`, `METRE`, `SQUARE_METRE`,
 `CUBIC_METRE`, `PIECE`, `ROLL`, `PALLET`, `LOAD`, and `OTHER`. `OTHER`
-requires `customUnit`.
+requires `customUnit`. JSON request bodies are limited to 128kb so the largest
+schema-valid RFQ remains supported; larger bodies return HTTP `413`.
 
 An eligible seller owns at least one product in every requested category.
 Submit a complete quotation by mapping every RFQ item to a seller-owned
@@ -466,10 +472,11 @@ curl -X POST http://localhost:3000/api/quotes/<quote-id>/accept \
 ```
 
 Acceptance runs in a serializable transaction. It revalidates product
-ownership and category, conditionally reserves stock, creates a normal
-`PENDING` order at the quoted prices, marks the selected quote `ACCEPTED`,
-rejects competing submitted quotes, and marks the RFQ `AWARDED`. Payments,
-messaging, notifications, and delivery charges are not part of this workflow.
+ownership, category, and the supplier's current active status, conditionally
+reserves stock, creates a normal `PENDING` order at the quoted prices, marks
+the selected quote `ACCEPTED`, rejects competing submitted quotes, and marks
+the RFQ `AWARDED`. Payments, messaging, notifications, and delivery charges
+are not part of this workflow.
 
 ## Category API
 
@@ -683,6 +690,10 @@ Run the API integration tests:
 npm test
 ```
 
+`npm test` uses the migrated PostgreSQL database configured by `DATABASE_URL`
+for the RFQ persistence integration suite. The suite creates isolated fixtures
+and removes them after each test.
+
 Use watch mode while developing:
 
 ```bash
@@ -700,7 +711,10 @@ award transactions, stock rollback, order creation, and concurrent acceptance.
 They use in-memory repository implementations so routine HTTP tests do not
 require PostgreSQL. Focused tests also exercise the Prisma administrator,
 review, wishlist, and RFQ repositories' mappings, aggregates, persistence
-rules, transaction behavior, and error translation.
+rules, transaction behavior, and error translation. The RFQ suite additionally
+uses live PostgreSQL to verify acceptance commits, rollback, concurrent
+acceptance, row locking, uniqueness, quote-line moves, award transitions, and
+cross-table constraints.
 
 ## Architecture
 
