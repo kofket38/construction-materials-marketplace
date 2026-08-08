@@ -1,4 +1,8 @@
-import type { OrderStatus } from "./order.repository.js";
+import type {
+  OrderStatus,
+  PaymentMethod,
+} from "./order.repository.js";
+import type { PaymentStatus } from "./payment.repository.js";
 import type { ProductEntity } from "./product.repository.js";
 
 export type SellerProductSortBy =
@@ -34,6 +38,12 @@ export interface SellerProductQuery {
 export interface SellerProductsResult {
   products: ProductEntity[];
   pagination: Pagination;
+  inventorySummary: {
+    totalProducts: number;
+    lowStock: number;
+    outOfStock: number;
+    inventoryValue: string;
+  };
 }
 
 export interface SellerOrderQuery {
@@ -73,6 +83,21 @@ export interface SellerOrderEntity {
   customerId: string;
   customer: SellerOrderCustomer;
   status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  shippingFullName: string;
+  shippingPhone: string;
+  shippingCity: string;
+  shippingAddress: string;
+  shippingNotes: string | null;
+  payment: {
+    id: string;
+    method: PaymentMethod;
+    providerName: string;
+    proofImageUrl: string;
+    status: PaymentStatus;
+    createdAt: Date;
+    verifiedAt: Date | null;
+  } | null;
   sellerTotal: string;
   totalItems: number;
   items: SellerOrderItem[];
@@ -99,8 +124,16 @@ export interface SellerDashboardSummary {
   cancelledOrders: number;
   totalRevenue: string;
   monthlyRevenue: string;
+  pendingPaymentVerification: number;
+  paymentVerified: number;
+  processing: number;
+  readyForDelivery: number;
+  outForDelivery: number;
+  delivered: number;
   recentOrders: SellerOrderEntity[];
 }
+
+export type SellerPaymentDecision = "APPROVE" | "REJECT";
 
 export interface SellerAnalyticsPeriod {
   startDate: Date;
@@ -162,6 +195,21 @@ export interface SellerDashboardRepository {
     sellerId: string,
     query: SellerOrderQuery,
   ): Promise<SellerOrdersResult>;
+  findOrderById(
+    sellerId: string,
+    orderId: string,
+  ): Promise<SellerOrderEntity | null>;
+  verifyPayment(
+    sellerId: string,
+    orderId: string,
+    decision: SellerPaymentDecision,
+  ): Promise<SellerOrderEntity | null>;
+  updateOrderStatus(
+    sellerId: string,
+    orderId: string,
+    expectedStatus: OrderStatus,
+    status: OrderStatus,
+  ): Promise<SellerOrderEntity | null>;
   getAnalytics(
     sellerId: string,
     period: SellerAnalyticsPeriod,

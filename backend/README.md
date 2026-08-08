@@ -6,8 +6,10 @@ discovery and product media modules, plus the administrator dashboard and
 marketplace moderation module, verified-purchase product reviews, and customer
 product wishlists, RFQs, and supplier quotations. Product, category, order,
 media, review, wishlist, RFQ, seller business-management, and administrator
-oversight APIs are implemented; payments, chat, and notifications remain
-outside the current scope.
+oversight APIs are implemented. Checkout supports cash on delivery and
+seller-configured Telebirr, CBE Birr, bank, and E-birr manual payments with
+receipt verification. Chat and notifications remain outside the current
+scope.
 
 ## Requirements
 
@@ -48,6 +50,7 @@ Put one value in `JWT_ACCESS_SECRET` and the other in
 | `ACCESS_TOKEN_EXPIRES` | JWT access-token lifetime | `15m` |
 | `REFRESH_TOKEN_EXPIRES` | JWT refresh-token lifetime | `7d` |
 | `CLIENT_URL` | Allowed browser origin for CORS | `http://localhost:5173` |
+| `PAYMENT_PROOF_UPLOAD_DIR` | Local directory for uploaded payment receipts | `uploads/payment-proofs` |
 | `NODE_ENV` | `development`, `test`, or `production` | `development` |
 
 The server validates all required environment variables at startup and exits
@@ -161,6 +164,21 @@ login and refresh, and causes already-issued access tokens to be rejected on
 their next protected request.
 
 ## Product API
+
+### Development sample data
+
+Populate a development database with idempotent marketplace sample data:
+
+```bash
+npm run seed
+```
+
+The seed creates or updates three development sellers, construction-material
+categories and brands, five named cement products, and ten products across
+steel, masonry, flooring, roofing, aggregates, paint, electrical, and plumbing.
+Running it repeatedly reuses products by case-insensitive name and does not
+create duplicates. Development seller accounts use password
+`DevSeller123!`.
 
 | Method | Route | Access |
 | --- | --- | --- |
@@ -517,7 +535,8 @@ by products cannot be deleted.
 | Method | Route | Access |
 | --- | --- | --- |
 | `POST` | `/api/orders` | Customer |
-| `GET` | `/api/orders/me` | Authenticated user |
+| `GET` | `/api/orders` | Customer |
+| `GET` | `/api/orders/me` | Customer; legacy alias |
 | `GET` | `/api/orders/:id` | Order owner or admin |
 | `PATCH` | `/api/orders/:id/status` | Admin |
 | `DELETE` | `/api/orders/:id` | Order owner or admin |
@@ -531,7 +550,15 @@ curl -X POST http://localhost:3000/api/orders \
   -d '{
     "items": [
       {"productId": "00000000-0000-4000-8000-000000000000", "quantity": 2}
-    ]
+    ],
+    "paymentMethod": "CASH_ON_DELIVERY",
+    "shipping": {
+      "fullName": "Amina Tesfaye",
+      "phone": "+251911000000",
+      "city": "Addis Ababa",
+      "address": "Bole, near the construction site",
+      "notes": "Call before delivery"
+    }
   }'
 ```
 
@@ -541,12 +568,23 @@ same transaction as order creation; an order is rejected when any item is
 missing or has insufficient stock. A customer cannot order their own product,
 and a product may appear only once in an order.
 
-Customers can cancel only `PENDING` orders. Administrators can cancel orders
-in any non-cancelled status. Cancelling an order before delivery restores its
-reserved stock. Administrators update order status with one of `PENDING`,
-`CONFIRMED`, `SHIPPED`, `DELIVERED`, or `CANCELLED`. Cancelled orders cannot
-change status. Delivered orders cannot move to another non-cancelled status,
-and cancelling a delivered order does not restore stock.
+Customers can cancel orders before seller processing or shipment.
+Cancellation restores reserved stock exactly once. Delivered orders do not
+restore stock when cancelled by an administrator.
+
+## Payment API
+
+Manual payment routes require a customer access token.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/payments/options` | Resolve payment destinations for a single-seller cart |
+| `POST` | `/api/payments/manual` | Upload a JPEG, PNG, or WebP receipt up to 5 MB |
+| `GET` | `/api/payments/:orderId` | Read the customer's payment and destination details |
+
+Digital payment is limited to single-seller carts. Cash on delivery remains
+available for mixed-seller carts. Uploaded receipts are stored beneath
+`PAYMENT_PROOF_UPLOAD_DIR` and served from `/uploads/payment-proofs`.
 
 ## Seller Dashboard API
 
@@ -558,6 +596,9 @@ invalid tokens return `401`; customer and administrator tokens return `403`.
 | `GET` | `/api/seller/dashboard` | Business summary and latest 10 orders |
 | `GET` | `/api/seller/products` | Paginated seller-owned products |
 | `GET` | `/api/seller/orders` | Paginated orders containing seller products |
+| `GET` | `/api/seller/orders/:orderId` | Seller-scoped order details |
+| `PATCH` | `/api/seller/orders/:orderId/payment` | Approve or reject a pending receipt |
+| `PATCH` | `/api/seller/orders/:orderId/status` | Advance seller fulfillment |
 | `GET` | `/api/seller/analytics` | Sales, revenue, status, and category analytics |
 
 Get the dashboard summary:

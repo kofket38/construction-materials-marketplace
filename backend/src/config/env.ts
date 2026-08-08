@@ -17,6 +17,11 @@ const environmentSchema = z
     ACCESS_TOKEN_EXPIRES: jwtDurationSchema.default("15m"),
     REFRESH_TOKEN_EXPIRES: jwtDurationSchema.default("7d"),
     CLIENT_URL: z.string().url().default("http://localhost:5173"),
+    PAYMENT_PROOF_UPLOAD_DIR: z
+      .string()
+      .trim()
+      .min(1)
+      .default("uploads/payment-proofs"),
   })
   .refine(
     (values) => values.JWT_ACCESS_SECRET !== values.JWT_REFRESH_SECRET,

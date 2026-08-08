@@ -19,6 +19,15 @@ export type Role = (typeof Role)[keyof typeof Role]
 
 
 export const OrderStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PENDING_PAYMENT_VERIFICATION: 'PENDING_PAYMENT_VERIFICATION',
+  PAYMENT_VERIFIED: 'PAYMENT_VERIFIED',
+  PAYMENT_REJECTED: 'PAYMENT_REJECTED',
+  PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
+  PROCESSING: 'PROCESSING',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  REJECTED: 'REJECTED',
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   SHIPPED: 'SHIPPED',
@@ -27,6 +36,30 @@ export const OrderStatus = {
 } as const
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+
+export const PaymentMethod = {
+  CASH_ON_DELIVERY: 'CASH_ON_DELIVERY',
+  TELEBIRR: 'TELEBIRR',
+  CBE_BIRR: 'CBE_BIRR',
+  AWASH_BIRR: 'AWASH_BIRR',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  CBE_BANK: 'CBE_BANK',
+  AWASH_BANK: 'AWASH_BANK',
+  DASHEN_BANK: 'DASHEN_BANK',
+  E_BIRR: 'E_BIRR'
+} as const
+
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+
+export const PaymentStatus = {
+  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
 
 export const RfqStatus = {
@@ -84,3 +117,11 @@ export const ProductImageType = {
 } as const
 
 export type ProductImageType = (typeof ProductImageType)[keyof typeof ProductImageType]
+
+
+export const InventoryTransactionType = {
+  ORDER_SHIPMENT: 'ORDER_SHIPMENT',
+  ORDER_CANCELLATION: 'ORDER_CANCELLATION'
+} as const
+
+export type InventoryTransactionType = (typeof InventoryTransactionType)[keyof typeof InventoryTransactionType]

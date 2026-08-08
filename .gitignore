@@ -1,0 +1,6 @@
+*.log
+.chrome-smoke*/
+products-smoke*.png
+frontend/.edge-*/
+frontend/screenshots/
+backend/uploads/

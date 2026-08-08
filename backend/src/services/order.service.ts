@@ -13,7 +13,14 @@ import type {
   OrderRepository,
 } from "../repositories/order.repository.js";
 import type { AuthenticatedUser } from "../types/auth.js";
+import type {
+  ManualPaymentMethod,
+  PaymentDestination,
+} from "../types/payment.js";
+import { isManualPaymentMethod } from "../types/payment.js";
+import type { SellerPaymentRepository } from "../repositories/seller-payment.repository.js";
 import {
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -25,19 +32,54 @@ import type {
 } from "../validators/order.validators.js";
 
 export class OrderService {
-  constructor(private readonly orders: OrderRepository) {}
+  constructor(
+    private readonly orders: OrderRepository,
+    private readonly sellerPayments: SellerPaymentRepository,
+  ) {}
 
   async create(
     actor: AuthenticatedUser,
     input: CreateOrderBody,
-  ): Promise<OrderEntity> {
+  ): Promise<CreateOrderResult> {
     this.requireCustomer(actor);
+    const paymentDestination = isManualPaymentMethod(input.paymentMethod)
+      ? await this.requirePaymentDestination(
+          input.items.map((item) => item.productId),
+          input.paymentMethod,
+        )
+      : null;
 
     try {
-      return await this.orders.create({
+      const order = await this.orders.create({
         customerId: actor.userId,
         items: input.items,
+        paymentMethod: input.paymentMethod,
+        shipping: {
+          fullName: input.shipping.fullName,
+          phone: input.shipping.phone,
+          city: input.shipping.city,
+          address: input.shipping.address,
+          ...(input.shipping.notes !== undefined
+            ? { notes: input.shipping.notes }
+            : {}),
+        },
+        status: initialOrderStatus(input.paymentMethod),
       });
+
+      if (paymentDestination) {
+        return {
+          order,
+          manualPaymentInstructions: {
+            paymentDestination,
+            paymentReference: order.id,
+            amount: order.totalAmount,
+            receiptUploadInstructions:
+              "Upload a clear screenshot of your transfer receipt for verification.",
+          },
+        };
+      }
+
+      return { order };
     } catch (error) {
       this.handleRepositoryError(error);
     }
@@ -57,6 +99,7 @@ export class OrderService {
   }
 
   findMyOrders(actor: AuthenticatedUser): Promise<OrderEntity[]> {
+    this.requireCustomer(actor);
     return this.orders.findByCustomerId(actor.userId);
   }
 
@@ -90,7 +133,7 @@ export class OrderService {
     if (!isAdmin && order.customerId !== actor.userId) {
       throw new ForbiddenError("You can only cancel your own orders.");
     }
-    if (!isAdmin && order.status !== "PENDING") {
+    if (!isAdmin && !isCustomerCancellableStatus(order.status)) {
       throw new ConflictError(
         "Only pending orders can be cancelled by customers.",
       );
@@ -123,6 +166,37 @@ export class OrderService {
     }
   }
 
+  private async requirePaymentDestination(
+    productIds: string[],
+    method: ManualPaymentMethod,
+  ): Promise<PaymentDestination> {
+    const resolution =
+      await this.sellerPayments.resolveCheckoutSellers(productIds);
+    if (resolution.missingProductIds.length > 0) {
+      throw new NotFoundError(
+        "One or more products are no longer available.",
+      );
+    }
+    if (resolution.sellerIds.length !== 1) {
+      throw new BadRequestError(
+        "Digital payment requires products from one seller. Choose cash on delivery or place separate orders.",
+      );
+    }
+
+    const profile = await this.sellerPayments.findBySellerId(
+      resolution.sellerIds[0]!,
+    );
+    const destination = profile?.destinations.find(
+      (candidate) => candidate.method === method,
+    );
+    if (!destination) {
+      throw new BadRequestError(
+        "The seller has not configured this payment provider.",
+      );
+    }
+    return destination;
+  }
+
   private requireAdmin(actor: AuthenticatedUser): void {
     if (actor.role !== "ADMIN") {
       throw new ForbiddenError("Administrator access is required.");
@@ -153,4 +227,33 @@ export class OrderService {
 
     throw error;
   }
+}
+
+export interface ManualPaymentInstructions {
+  paymentDestination: PaymentDestination;
+  paymentReference: string;
+  amount: string;
+  receiptUploadInstructions: string;
+}
+
+export interface CreateOrderResult {
+  order: OrderEntity;
+  manualPaymentInstructions?: ManualPaymentInstructions;
+}
+
+function initialOrderStatus(
+  paymentMethod: CreateOrderBody["paymentMethod"],
+): "PENDING_PAYMENT" | "PENDING_CONFIRMATION" {
+  return paymentMethod === "CASH_ON_DELIVERY"
+    ? "PENDING_CONFIRMATION"
+    : "PENDING_PAYMENT";
+}
+
+function isCustomerCancellableStatus(status: OrderEntity["status"]): boolean {
+  return (
+    status === "PENDING_PAYMENT" ||
+    status === "PENDING_PAYMENT_VERIFICATION" ||
+    status === "PENDING_CONFIRMATION" ||
+    status === "PENDING"
+  );
 }

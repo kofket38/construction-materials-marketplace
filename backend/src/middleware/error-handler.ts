@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { MulterError } from "multer";
 import type { Logger } from "pino";
 import {
   ApiError,
@@ -15,9 +16,11 @@ export function createErrorHandler(logger: Logger): ErrorRequestHandler {
 
     const normalizedError = isPayloadTooLargeError(error)
       ? new PayloadTooLargeError()
-      : error instanceof SyntaxError && "body" in error
-        ? new BadRequestError("Request body contains invalid JSON.")
-        : error;
+      : error instanceof MulterError
+        ? normalizeMulterError(error)
+        : error instanceof SyntaxError && "body" in error
+          ? new BadRequestError("Request body contains invalid JSON.")
+          : error;
 
     if (normalizedError instanceof ApiError) {
       res.status(normalizedError.statusCode).json({
@@ -35,6 +38,24 @@ export function createErrorHandler(logger: Logger): ErrorRequestHandler {
       errors: [],
     });
   };
+}
+
+function normalizeMulterError(error: MulterError): ApiError {
+  if (error.code === "LIMIT_FILE_SIZE") {
+    return new PayloadTooLargeError(
+      "The payment screenshot must not exceed 5 MB.",
+    );
+  }
+
+  return new BadRequestError("Payment proof upload failed.", [
+    {
+      field: "body.proof",
+      message:
+        error.code === "LIMIT_UNEXPECTED_FILE"
+          ? "Upload one image using the proof field."
+          : "The payment screenshot could not be processed.",
+    },
+  ]);
 }
 
 function isPayloadTooLargeError(error: unknown): boolean {

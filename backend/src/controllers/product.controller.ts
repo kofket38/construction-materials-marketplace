@@ -5,8 +5,11 @@ import type {
   AddProductImageBody,
   CreateProductBody,
   ProductDiscoveryQueryParams,
+  MarketplaceSellersQueryParams,
   ProductImageIdParams,
   ProductIdParams,
+  SellerStoreParams,
+  SellerStoreQueryParams,
   UpdateProductBody,
 } from "../validators/product.validators.js";
 
@@ -34,6 +37,48 @@ export class ProductController {
     res.status(200).json({
       success: true,
       data: result,
+    });
+  };
+
+  findMarketplaceCities = async (
+    _req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const cities = await this.productService.findMarketplaceCities();
+
+    res.status(200).json({
+      success: true,
+      data: { cities },
+    });
+  };
+
+  findMarketplaceSellers = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const sellers = await this.productService.findMarketplaceSellers(
+      req.query as MarketplaceSellersQueryParams,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { sellers },
+    });
+  };
+
+  findSellerStore = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const { sellerId } = req.params as SellerStoreParams;
+    const store = await this.productService.findSellerStore(
+      sellerId,
+      req.query as SellerStoreQueryParams,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { store },
     });
   };
 

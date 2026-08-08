@@ -7,9 +7,12 @@ import {
   addProductImageBodySchema,
   createProductBodySchema,
   emptyProductObjectSchema,
+  marketplaceSellersQuerySchema,
   productDiscoveryQuerySchema,
   productImageIdParamsSchema,
   productIdParamsSchema,
+  sellerStoreParamsSchema,
+  sellerStoreQuerySchema,
   updateProductBodySchema,
 } from "../validators/product.validators.js";
 
@@ -39,6 +42,36 @@ export function createProductRouter(
       query: productDiscoveryQuerySchema,
     }),
     asyncHandler(controller.findAll),
+  );
+
+  router.get(
+    "/marketplace/cities",
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: emptyProductObjectSchema,
+      query: emptyProductObjectSchema,
+    }),
+    asyncHandler(controller.findMarketplaceCities),
+  );
+
+  router.get(
+    "/marketplace/sellers",
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: emptyProductObjectSchema,
+      query: marketplaceSellersQuerySchema,
+    }),
+    asyncHandler(controller.findMarketplaceSellers),
+  );
+
+  router.get(
+    "/stores/:sellerId",
+    validateRequest({
+      body: emptyProductObjectSchema,
+      params: sellerStoreParamsSchema,
+      query: sellerStoreQuerySchema,
+    }),
+    asyncHandler(controller.findSellerStore),
   );
 
   router.post(

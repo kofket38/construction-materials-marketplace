@@ -1,10 +1,13 @@
 import type {
+  MarketplaceCityEntity,
+  MarketplaceSellerEntity,
   ProductDiscoveryResult,
   ProductDiscoverySortBy,
   ProductDetailsEntity,
   ProductEntity,
   ProductImageEntity,
   ProductRepository,
+  SellerStoreEntity,
 } from "../repositories/product.repository.js";
 import {
   ProductCategoryNotFoundError,
@@ -23,6 +26,8 @@ import type {
   AddProductImageBody,
   CreateProductBody,
   ProductDiscoveryQueryParams,
+  MarketplaceSellersQueryParams,
+  SellerStoreQueryParams,
   UpdateProductBody,
 } from "../validators/product.validators.js";
 
@@ -63,6 +68,7 @@ export class ProductService {
       ...(input.search !== undefined
         ? { search: input.search.trim() }
         : {}),
+      ...(input.city !== undefined ? { city: input.city.trim() } : {}),
       ...(input.categoryId !== undefined
         ? { categoryId: input.categoryId }
         : {}),
@@ -75,6 +81,32 @@ export class ProductService {
         : {}),
       ...(input.stock !== undefined ? { stock: input.stock } : {}),
     });
+  }
+
+  findMarketplaceCities(): Promise<MarketplaceCityEntity[]> {
+    return this.products.findMarketplaceCities();
+  }
+
+  findMarketplaceSellers(
+    input: MarketplaceSellersQueryParams,
+  ): Promise<MarketplaceSellerEntity[]> {
+    return this.products.findMarketplaceSellers(input.city.trim());
+  }
+
+  async findSellerStore(
+    sellerId: string,
+    input: SellerStoreQueryParams,
+  ): Promise<SellerStoreEntity> {
+    const store = await this.products.findSellerStore(
+      sellerId,
+      input.city?.trim(),
+    );
+
+    if (!store) {
+      throw new NotFoundError("Seller store not found.");
+    }
+
+    return store;
   }
 
   async findById(id: string): Promise<ProductDetailsEntity> {

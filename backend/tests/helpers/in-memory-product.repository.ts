@@ -11,6 +11,9 @@ import type {
   ProductEntity,
   ProductImageEntity,
   ProductRepository,
+  MarketplaceCityEntity,
+  MarketplaceSellerEntity,
+  SellerStoreEntity,
   UpdateProductInput,
 } from "../../src/repositories/product.repository.js";
 import { MAX_PRODUCT_IMAGES } from "../../src/repositories/product.repository.js";
@@ -27,14 +30,21 @@ export class InMemoryProductRepository implements ProductRepository {
   private readonly categories = new Map<string, CategorySeed>();
   private readonly sellerNames = new Map<string, string>();
   private readonly sellerShopNames = new Map<string, string>();
+  private readonly sellerCities = new Map<string, string>();
   private readonly popularity = new Map<string, number>();
 
   addCategory(category: CategorySeed): void {
     this.categories.set(category.id, category);
   }
 
-  addSeller(id: string, name: string, shopName?: string): void {
+  addSeller(
+    id: string,
+    name: string,
+    shopName?: string,
+    city = "Addis Ababa",
+  ): void {
     this.sellerNames.set(id, name);
+    this.sellerCities.set(id, city);
     if (shopName !== undefined) {
       this.sellerShopNames.set(id, shopName);
     }
@@ -55,6 +65,8 @@ export class InMemoryProductRepository implements ProductRepository {
       seller: {
         id: input.sellerId,
         name: this.sellerNames.get(input.sellerId) ?? "Test Seller",
+        city: this.sellerCities.get(input.sellerId) ?? null,
+        shopName: this.sellerShopNames.get(input.sellerId) ?? null,
       },
       category: { ...category },
       createdAt: now,
@@ -84,9 +96,17 @@ export class InMemoryProductRepository implements ProductRepository {
     const products = [...this.products.values()]
       .filter(
         (product) =>
+          query.city === undefined ||
+          product.seller.city?.toLocaleLowerCase() ===
+            query.city.toLocaleLowerCase(),
+      )
+      .filter(
+        (product) =>
           search === undefined ||
           product.name.toLocaleLowerCase().includes(search) ||
           product.description.toLocaleLowerCase().includes(search) ||
+          product.category.name.toLocaleLowerCase().includes(search) ||
+          (product.brand?.name ?? "").toLocaleLowerCase().includes(search) ||
           (this.sellerShopNames.get(product.sellerId) ?? "")
             .toLocaleLowerCase()
             .includes(search),
@@ -133,6 +153,118 @@ export class InMemoryProductRepository implements ProductRepository {
       pageSize: query.limit,
       hasNextPage: query.page < totalPages,
       hasPreviousPage: query.page > 1,
+    };
+  }
+
+  async findMarketplaceCities(): Promise<MarketplaceCityEntity[]> {
+    const cities = new Map<
+      string,
+      { productIds: Set<string>; sellerIds: Set<string> }
+    >();
+
+    for (const product of this.products.values()) {
+      const name = product.seller.city?.trim();
+      if (!name) {
+        continue;
+      }
+      const city = cities.get(name) ?? {
+        productIds: new Set<string>(),
+        sellerIds: new Set<string>(),
+      };
+      city.productIds.add(product.id);
+      city.sellerIds.add(product.sellerId);
+      cities.set(name, city);
+    }
+
+    return [...cities.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([name, city]) => ({
+        name,
+        productCount: city.productIds.size,
+        sellerCount: city.sellerIds.size,
+      }));
+  }
+
+  async findMarketplaceSellers(
+    city: string,
+  ): Promise<MarketplaceSellerEntity[]> {
+    const normalizedCity = city.toLocaleLowerCase();
+    const sellerIds = new Set(
+      [...this.products.values()]
+        .filter(
+          (product) =>
+            product.seller.city?.toLocaleLowerCase() === normalizedCity,
+        )
+        .map((product) => product.sellerId),
+    );
+
+    return [...sellerIds]
+      .map((sellerId) => {
+        const sellerProducts = [...this.products.values()].filter(
+          (product) =>
+            product.sellerId === sellerId &&
+            product.seller.city?.toLocaleLowerCase() === normalizedCity,
+        );
+        const ratings = sellerProducts.flatMap(
+          (product) => this.reviewRatings.get(product.id) ?? [],
+        );
+
+        return {
+          id: sellerId,
+          name: this.sellerNames.get(sellerId) ?? "Test Seller",
+          shopName: this.sellerShopNames.get(sellerId) ?? null,
+          city,
+          productCount: sellerProducts.length,
+          averageRating: averageRating(ratings),
+          reviewCount: ratings.length,
+        };
+      })
+      .sort((left, right) =>
+        (left.shopName ?? left.name).localeCompare(
+          right.shopName ?? right.name,
+        ),
+      );
+  }
+
+  async findSellerStore(
+    sellerId: string,
+    city?: string,
+  ): Promise<SellerStoreEntity | null> {
+    const sellerName = this.sellerNames.get(sellerId);
+    if (!sellerName) {
+      return null;
+    }
+
+    const sellerProducts = [...this.products.values()].filter(
+      (product) =>
+        product.sellerId === sellerId &&
+        (city === undefined ||
+          product.seller.city?.toLocaleLowerCase() ===
+            city.toLocaleLowerCase()),
+    );
+    if (city !== undefined && sellerProducts.length === 0) {
+      return null;
+    }
+
+    const ratings = sellerProducts.flatMap(
+      (product) => this.reviewRatings.get(product.id) ?? [],
+    );
+    const sellerCity = this.sellerCities.get(sellerId) ?? null;
+
+    return {
+      id: sellerId,
+      name: sellerName,
+      storeName: this.sellerShopNames.get(sellerId) ?? sellerName,
+      logoUrl: null,
+      city: city ?? sellerCity,
+      cities: sellerCity ? [sellerCity] : [],
+      address: null,
+      phone: null,
+      email: `${sellerId}@example.test`,
+      averageRating: averageRating(ratings),
+      reviewCount: ratings.length,
+      totalProducts: sellerProducts.length,
+      joinedAt: new Date("2026-01-01T00:00:00.000Z"),
     };
   }
 
@@ -412,4 +544,15 @@ export class InMemoryProductRepository implements ProductRepository {
 
     return comparison || left.id.localeCompare(right.id);
   }
+}
+
+function averageRating(ratings: number[]): number | null {
+  return ratings.length === 0
+    ? null
+    : Number(
+        (
+          ratings.reduce((sum, rating) => sum + rating, 0) /
+          ratings.length
+        ).toFixed(2),
+      );
 }

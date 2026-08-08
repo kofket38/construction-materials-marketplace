@@ -18,9 +18,47 @@ const orderItemSchema = z
   })
   .strict();
 
+const shippingSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(1, "Shipping full name is required.")
+      .max(160),
+    phone: z
+      .string()
+      .trim()
+      .min(1, "Shipping phone is required.")
+      .max(30),
+    city: z
+      .string()
+      .trim()
+      .min(1, "Shipping city is required.")
+      .max(120),
+    address: z
+      .string()
+      .trim()
+      .min(1, "Shipping address is required.")
+      .max(300),
+    notes: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
 export const createOrderBodySchema = z
   .object({
     items: z.array(orderItemSchema).min(1).max(100),
+    shipping: shippingSchema,
+    paymentMethod: z.enum([
+      "CASH_ON_DELIVERY",
+      "TELEBIRR",
+      "CBE_BIRR",
+      "AWASH_BIRR",
+      "BANK_TRANSFER",
+      "CBE_BANK",
+      "AWASH_BANK",
+      "DASHEN_BANK",
+      "E_BIRR",
+    ]),
   })
   .strict()
   .superRefine((input, context) => {
@@ -41,6 +79,15 @@ export const createOrderBodySchema = z
 export const updateOrderStatusBodySchema = z
   .object({
     status: z.enum([
+      "PENDING_PAYMENT",
+      "PENDING_PAYMENT_VERIFICATION",
+      "PAYMENT_VERIFIED",
+      "PAYMENT_REJECTED",
+      "PENDING_CONFIRMATION",
+      "PROCESSING",
+      "READY_FOR_DELIVERY",
+      "OUT_FOR_DELIVERY",
+      "REJECTED",
       "PENDING",
       "CONFIRMED",
       "SHIPPED",

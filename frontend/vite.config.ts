@@ -5,17 +5,40 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "data-vendor": ["@tanstack/react-query", "axios", "zustand"],
+          "form-vendor": [
+            "@hookform/resolvers",
+            "react-hook-form",
+            "zod",
+          ],
+          "react-vendor": [
+            "react",
+            "react-dom",
+            "react-router-dom",
+          ],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   server: {
-    host: "127.0.0.1",
+    host: "localhost",
     port: 5173,
+    strictPort: true,
+    watch: {
+      ignored: ["**/.edge-*/**", "**/screenshots/**"],
+    },
   },
   preview: {
-    host: "127.0.0.1",
+    host: "localhost",
     port: 4173,
   },
 });

@@ -5,7 +5,10 @@ import { validateRequest } from "../middleware/validate-request.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   emptySellerDashboardObjectSchema,
+  sellerOrderIdParamsSchema,
+  sellerOrderStatusBodySchema,
   sellerOrdersQuerySchema,
+  sellerPaymentDecisionBodySchema,
   sellerProductsQuerySchema,
 } from "../validators/seller-dashboard.validators.js";
 
@@ -45,6 +48,36 @@ export function createSellerDashboardRouter(
       query: sellerOrdersQuerySchema,
     }),
     asyncHandler(controller.findOrders),
+  );
+
+  router.get(
+    "/orders/:orderId",
+    validateRequest({
+      body: emptySellerDashboardObjectSchema,
+      params: sellerOrderIdParamsSchema,
+      query: emptySellerDashboardObjectSchema,
+    }),
+    asyncHandler(controller.findOrderById),
+  );
+
+  router.patch(
+    "/orders/:orderId/payment",
+    validateRequest({
+      body: sellerPaymentDecisionBodySchema,
+      params: sellerOrderIdParamsSchema,
+      query: emptySellerDashboardObjectSchema,
+    }),
+    asyncHandler(controller.verifyPayment),
+  );
+
+  router.patch(
+    "/orders/:orderId/status",
+    validateRequest({
+      body: sellerOrderStatusBodySchema,
+      params: sellerOrderIdParamsSchema,
+      query: emptySellerDashboardObjectSchema,
+    }),
+    asyncHandler(controller.updateOrderStatus),
   );
 
   router.get(

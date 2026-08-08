@@ -1,7 +1,10 @@
 import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { refreshAccessToken } from "@/features/auth/api/refresh-access-token";
 import { useAuthStore } from "@/features/auth/model/auth.store";
-import { getApiErrorMessage, getHttpStatus } from "@/shared/api/http-error";
+import {
+  getApiErrorMessage,
+  getHttpStatus,
+} from "@/shared/api/http-error";
 
 let bootstrapRequest: Promise<void> | null = null;
 

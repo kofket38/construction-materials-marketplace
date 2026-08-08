@@ -4,6 +4,7 @@ const productNameSchema = z.string().trim().min(1).max(200);
 const productDescriptionSchema = z.string().trim().min(1).max(5000);
 const categoryIdSchema = z.string().uuid();
 const sellerIdSchema = z.string().uuid();
+const marketplaceCitySchema = z.string().trim().min(1).max(120);
 const managedProductImageUrlSchema = z
   .string()
   .trim()
@@ -141,6 +142,7 @@ export const productDiscoveryQuerySchema = z
       )
       .optional(),
     search: productSearchSchema.optional(),
+    city: marketplaceCitySchema.optional(),
     categoryId: categoryIdSchema.optional(),
     sellerId: sellerIdSchema.optional(),
     minPrice: productQueryPriceSchema.optional(),
@@ -163,6 +165,24 @@ export const productDiscoveryQuerySchema = z
     },
   );
 
+export const marketplaceSellersQuerySchema = z
+  .object({
+    city: marketplaceCitySchema,
+  })
+  .strict();
+
+export const sellerStoreParamsSchema = z
+  .object({
+    sellerId: sellerIdSchema,
+  })
+  .strict();
+
+export const sellerStoreQuerySchema = z
+  .object({
+    city: marketplaceCitySchema.optional(),
+  })
+  .strict();
+
 export const emptyProductObjectSchema = z.object({}).strict();
 
 export type CreateProductBody = z.infer<typeof createProductBodySchema>;
@@ -176,4 +196,11 @@ export type AddProductImageBody = z.infer<
 >;
 export type ProductDiscoveryQueryParams = z.infer<
   typeof productDiscoveryQuerySchema
+>;
+export type MarketplaceSellersQueryParams = z.infer<
+  typeof marketplaceSellersQuerySchema
+>;
+export type SellerStoreParams = z.infer<typeof sellerStoreParamsSchema>;
+export type SellerStoreQueryParams = z.infer<
+  typeof sellerStoreQuerySchema
 >;

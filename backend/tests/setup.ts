@@ -11,3 +11,6 @@ process.env.JWT_REFRESH_SECRET =
 process.env.ACCESS_TOKEN_EXPIRES = "15m";
 process.env.REFRESH_TOKEN_EXPIRES = "7d";
 process.env.CLIENT_URL = "http://localhost:5173";
+process.env.BANK_TRANSFER_BANK_NAME = "Test Bank";
+process.env.BANK_TRANSFER_ACCOUNT_NAME = "CMM Test Account";
+process.env.BANK_TRANSFER_ACCOUNT_NUMBER = "1000123456789";

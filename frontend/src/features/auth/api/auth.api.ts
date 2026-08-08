@@ -1,5 +1,6 @@
 import { apiClient, sessionClient } from "@/shared/api/http-client";
 import type { ApiSuccessResponse } from "@/shared/api/api.types";
+
 import type {
   AuthSession,
   AuthUser,

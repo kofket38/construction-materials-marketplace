@@ -29,8 +29,21 @@ export function createOrderRouter(
   );
 
   router.get(
+    "/",
+    requireAuthentication,
+    authorizeRoles("CUSTOMER"),
+    validateRequest({
+      body: emptyOrderObjectSchema,
+      params: emptyOrderObjectSchema,
+      query: emptyOrderObjectSchema,
+    }),
+    asyncHandler(controller.findMyOrders),
+  );
+
+  router.get(
     "/me",
     requireAuthentication,
+    authorizeRoles("CUSTOMER"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: emptyOrderObjectSchema,

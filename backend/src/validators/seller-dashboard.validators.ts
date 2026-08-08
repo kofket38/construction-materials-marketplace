@@ -65,7 +65,22 @@ export const sellerOrdersQuerySchema = z
     page: pageSchema.optional(),
     limit: limitSchema.optional(),
     status: z
-      .enum(["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"])
+      .enum([
+        "PENDING_PAYMENT",
+        "PENDING_PAYMENT_VERIFICATION",
+        "PAYMENT_VERIFIED",
+        "PAYMENT_REJECTED",
+        "PENDING_CONFIRMATION",
+        "PROCESSING",
+        "READY_FOR_DELIVERY",
+        "OUT_FOR_DELIVERY",
+        "REJECTED",
+        "PENDING",
+        "CONFIRMED",
+        "SHIPPED",
+        "DELIVERED",
+        "CANCELLED",
+      ])
       .optional(),
     dateFrom: dateQuerySchema.optional(),
     dateTo: dateQuerySchema.optional(),
@@ -85,9 +100,42 @@ export const sellerOrdersQuerySchema = z
 
 export const emptySellerDashboardObjectSchema = z.object({}).strict();
 
+export const sellerOrderIdParamsSchema = z
+  .object({
+    orderId: z.string().uuid(),
+  })
+  .strict();
+
+export const sellerPaymentDecisionBodySchema = z
+  .object({
+    decision: z.enum(["APPROVE", "REJECT"]),
+  })
+  .strict();
+
+export const sellerOrderStatusBodySchema = z
+  .object({
+    status: z.enum([
+      "CONFIRMED",
+      "PROCESSING",
+      "SHIPPED",
+      "DELIVERED",
+      "CANCELLED",
+    ]),
+  })
+  .strict();
+
 export type SellerProductsQueryParams = z.infer<
   typeof sellerProductsQuerySchema
 >;
 export type SellerOrdersQueryParams = z.infer<
   typeof sellerOrdersQuerySchema
+>;
+export type SellerOrderIdParams = z.infer<
+  typeof sellerOrderIdParamsSchema
+>;
+export type SellerPaymentDecisionBody = z.infer<
+  typeof sellerPaymentDecisionBodySchema
+>;
+export type SellerOrderStatusBody = z.infer<
+  typeof sellerOrderStatusBodySchema
 >;

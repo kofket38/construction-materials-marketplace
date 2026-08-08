@@ -82,10 +82,20 @@ export type SellerInventory = Prisma.SellerInventoryModel
  */
 export type Order = Prisma.OrderModel
 /**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel
+/**
  * Model OrderItem
  * 
  */
 export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model InventoryTransaction
+ * 
+ */
+export type InventoryTransaction = Prisma.InventoryTransactionModel
 /**
  * Model Review
  * 

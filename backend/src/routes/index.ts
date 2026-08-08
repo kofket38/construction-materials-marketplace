@@ -3,6 +3,7 @@ import type { AdminDashboardController } from "../controllers/admin-dashboard.co
 import type { AuthController } from "../controllers/auth.controller.js";
 import type { CategoryController } from "../controllers/category.controller.js";
 import type { OrderController } from "../controllers/order.controller.js";
+import type { PaymentController } from "../controllers/payment.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
 import type { ReviewController } from "../controllers/review.controller.js";
 import type { RfqController } from "../controllers/rfq.controller.js";
@@ -16,6 +17,7 @@ import { createAdminDashboardRouter } from "./admin-dashboard.routes.js";
 import { createAuthRouter } from "./auth.routes.js";
 import { createCategoryRouter } from "./category.routes.js";
 import { createOrderRouter } from "./order.routes.js";
+import { createPaymentRouter } from "./payment.routes.js";
 import { createProductRouter } from "./product.routes.js";
 import { createReviewRouter } from "./review.routes.js";
 import { createRfqRouter } from "./rfq.routes.js";
@@ -27,6 +29,7 @@ export function createApiRouter(
   authController: AuthController,
   categoryController: CategoryController,
   orderController: OrderController,
+  paymentController: PaymentController,
   productController: ProductController,
   reviewController: ReviewController,
   rfqController: RfqController,
@@ -57,6 +60,10 @@ export function createApiRouter(
   router.use(
     "/orders",
     createOrderRouter(orderController, requireAuthentication),
+  );
+  router.use(
+    "/payments",
+    createPaymentRouter(paymentController, requireAuthentication),
   );
   router.use(
     "/products",

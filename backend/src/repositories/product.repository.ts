@@ -1,11 +1,31 @@
 export interface ProductSellerSummary {
   id: string;
   name: string;
+  address?: string | null;
+  averageRating?: number | null;
+  city?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  reviewCount?: number;
+  shopName?: string | null;
 }
 
 export interface ProductCategorySummary {
   id: string;
   name: string;
+}
+
+export interface ProductBrandSummary {
+  id: string;
+  name: string;
+}
+
+export interface ProductInventorySummary {
+  city: string;
+  deliveryAvailable: boolean;
+  price: string;
+  quantity: number;
+  region: string | null;
 }
 
 export const MAX_PRODUCT_IMAGES = 8;
@@ -27,15 +47,27 @@ export interface ProductEntity {
   price: string;
   quantity: number;
   imageUrl: string | null;
+  averageRating?: number | null;
+  reviewCount?: number;
   seller: ProductSellerSummary;
   category: ProductCategorySummary;
+  brand?: ProductBrandSummary | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ProductDetailsEntity extends ProductEntity {
   averageRating: number | null;
+  deliveryAvailable?: boolean;
+  inventory?: ProductInventorySummary[];
+  location?: string | null;
+  minimumOrder?: string | null;
+  origin?: string | null;
+  packaging?: string | null;
   reviewCount: number;
+  specifications?: Record<string, string>;
+  strengthGrade?: string | null;
+  weight?: string | null;
 }
 
 export interface CreateProductInput {
@@ -72,6 +104,7 @@ export interface ProductDiscoveryQuery {
   page: number;
   limit: number;
   search?: string;
+  city?: string;
   categoryId?: string;
   sellerId?: string;
   minPrice?: string;
@@ -79,6 +112,38 @@ export interface ProductDiscoveryQuery {
   stock?: ProductDiscoveryStock;
   sortBy: ProductDiscoverySortBy;
   sortOrder: ProductDiscoverySortOrder;
+}
+
+export interface MarketplaceCityEntity {
+  name: string;
+  productCount: number;
+  sellerCount: number;
+}
+
+export interface MarketplaceSellerEntity {
+  id: string;
+  name: string;
+  shopName: string | null;
+  city: string;
+  productCount: number;
+  averageRating: number | null;
+  reviewCount: number;
+}
+
+export interface SellerStoreEntity {
+  id: string;
+  name: string;
+  storeName: string;
+  logoUrl: string | null;
+  city: string | null;
+  cities: string[];
+  address: string | null;
+  phone: string | null;
+  email: string;
+  averageRating: number | null;
+  reviewCount: number;
+  totalProducts: number;
+  joinedAt: Date;
 }
 
 export interface ProductDiscoveryResult {
@@ -94,6 +159,12 @@ export interface ProductDiscoveryResult {
 export interface ProductRepository {
   create(input: CreateProductInput): Promise<ProductEntity>;
   findAll(query: ProductDiscoveryQuery): Promise<ProductDiscoveryResult>;
+  findMarketplaceCities(): Promise<MarketplaceCityEntity[]>;
+  findMarketplaceSellers(city: string): Promise<MarketplaceSellerEntity[]>;
+  findSellerStore(
+    sellerId: string,
+    city?: string,
+  ): Promise<SellerStoreEntity | null>;
   findById(id: string): Promise<ProductEntity | null>;
   findDetailsById(id: string): Promise<ProductDetailsEntity | null>;
   update(id: string, input: UpdateProductInput): Promise<ProductEntity | null>;

@@ -11,14 +11,14 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   create = async (req: Request, res: Response): Promise<void> => {
-    const order = await this.orderService.create(
+    const result = await this.orderService.create(
       this.requireActor(req),
       req.body as CreateOrderBody,
     );
 
     res.status(201).json({
       success: true,
-      data: { order },
+      data: result,
     });
   };
 

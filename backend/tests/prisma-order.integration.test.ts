@@ -49,7 +49,33 @@ describe.sequential("PrismaOrderRepository PostgreSQL integration", () => {
     await Promise.all([prisma.$disconnect(), secondPrisma.$disconnect()]);
   });
 
-  it("leaves stock unchanged when a delivered order is cancelled", async () => {
+  it("persists payment and shipping details", async () => {
+    resources = emptyResources();
+    const scenario = await seedOrderScenario(prisma, repository, resources);
+
+    const order = await prisma.order.findUniqueOrThrow({
+      where: { id: scenario.orderId },
+      select: {
+        paymentMethod: true,
+        shippingFullName: true,
+        shippingPhone: true,
+        shippingCity: true,
+        shippingAddress: true,
+        shippingNotes: true,
+      },
+    });
+
+    expect(order).toEqual({
+      paymentMethod: "CASH_ON_DELIVERY",
+      shippingFullName: "Order Integration Customer",
+      shippingPhone: "+251911000000",
+      shippingCity: "Addis Ababa",
+      shippingAddress: "Integration test delivery address",
+      shippingNotes: "Leave materials at the marked unloading zone.",
+    });
+  });
+
+  it("does not restore sold stock when a delivered order is cancelled", async () => {
     resources = emptyResources();
     const scenario = await seedOrderScenario(prisma, repository, resources);
 
@@ -63,11 +89,58 @@ describe.sequential("PrismaOrderRepository PostgreSQL integration", () => {
       status: "CANCELLED",
     });
     await expectProductQuantity(prisma, scenario.productId, 8);
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 1);
   });
 
-  it("restores pending-order stock exactly once under concurrent cancellation", async () => {
+  it("does not deduct reserved inventory again at shipment", async () => {
     resources = emptyResources();
     const scenario = await seedOrderScenario(prisma, repository, resources);
+
+    const shipped = await repository.updateStatus(
+      scenario.orderId,
+      "SHIPPED",
+    );
+
+    expect(shipped?.status).toBe("SHIPPED");
+    await expectProductQuantity(prisma, scenario.productId, 8);
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 1);
+
+    const repeated = await repository.updateStatus(
+      scenario.orderId,
+      "SHIPPED",
+    );
+
+    expect(repeated?.status).toBe("SHIPPED");
+    await expectProductQuantity(prisma, scenario.productId, 8);
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 1);
+  });
+
+  it("does not revalidate already-reserved stock at shipment", async () => {
+    resources = emptyResources();
+    const scenario = await seedOrderScenario(prisma, repository, resources);
+
+    await prisma.product.update({
+      where: { id: scenario.productId },
+      data: { quantity: 1 },
+    });
+
+    const shipped = await repository.updateStatus(
+      scenario.orderId,
+      "SHIPPED",
+    );
+
+    expect(shipped?.status).toBe("SHIPPED");
+    await expectProductQuantity(prisma, scenario.productId, 1);
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 1);
+  });
+
+  it("restores reserved stock exactly once under concurrent cancellation", async () => {
+    resources = emptyResources();
+    const scenario = await seedOrderScenario(prisma, repository, resources);
+
+    await repository.updateStatus(scenario.orderId, "SHIPPED");
+    await expectProductQuantity(prisma, scenario.productId, 8);
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 1);
 
     const attempts = await Promise.allSettled([
       repository.cancel(scenario.orderId, { onlyIfPending: false }),
@@ -82,6 +155,7 @@ describe.sequential("PrismaOrderRepository PostgreSQL integration", () => {
     ).toHaveLength(1);
     await expectProductQuantity(prisma, scenario.productId, 10);
     await expectOrderStatus(prisma, scenario.orderId, "CANCELLED");
+    await expectInventoryTransactionCount(prisma, scenario.orderId, 2);
   });
 });
 
@@ -147,10 +221,20 @@ async function seedOrderScenario(
   const order = await repository.create({
     customerId: customer.id,
     items: [{ productId: product.id, quantity: 2 }],
+    paymentMethod: "CASH_ON_DELIVERY",
+    shipping: {
+      fullName: customer.name,
+      phone: "+251911000000",
+      city: "Addis Ababa",
+      address: "Integration test delivery address",
+      notes: "Leave materials at the marked unloading zone.",
+    },
+    status: "PENDING_CONFIRMATION",
   });
 
-  expect(order.status).toBe("PENDING");
+  expect(order.status).toBe("PENDING_CONFIRMATION");
   await expectProductQuantity(prisma, product.id, 8);
+  await expectInventoryTransactionCount(prisma, order.id, 1);
 
   return {
     customerId: customer.id,
@@ -175,7 +259,7 @@ async function expectProductQuantity(
 async function expectOrderStatus(
   prisma: PrismaClient,
   orderId: string,
-  status: "CANCELLED",
+  status: "PENDING_CONFIRMATION" | "CANCELLED",
 ): Promise<void> {
   const order = await prisma.order.findUniqueOrThrow({
     where: { id: orderId },
@@ -183,6 +267,16 @@ async function expectOrderStatus(
   });
 
   expect(order.status).toBe(status);
+}
+
+async function expectInventoryTransactionCount(
+  prisma: PrismaClient,
+  orderId: string,
+  count: number,
+): Promise<void> {
+  await expect(
+    prisma.inventoryTransaction.count({ where: { orderId } }),
+  ).resolves.toBe(count);
 }
 
 async function cleanupResources(

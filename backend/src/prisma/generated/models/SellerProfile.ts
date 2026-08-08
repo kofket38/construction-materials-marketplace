@@ -30,6 +30,13 @@ export type SellerProfileMinAggregateOutputType = {
   shopName: string | null
   phone: string | null
   address: string | null
+  paymentAccountName: string | null
+  telebirrNumber: string | null
+  cbeBirrNumber: string | null
+  cbeBankAccountNumber: string | null
+  awashBankAccountNumber: string | null
+  dashenBankAccountNumber: string | null
+  eBirrNumber: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +47,13 @@ export type SellerProfileMaxAggregateOutputType = {
   shopName: string | null
   phone: string | null
   address: string | null
+  paymentAccountName: string | null
+  telebirrNumber: string | null
+  cbeBirrNumber: string | null
+  cbeBankAccountNumber: string | null
+  awashBankAccountNumber: string | null
+  dashenBankAccountNumber: string | null
+  eBirrNumber: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +64,13 @@ export type SellerProfileCountAggregateOutputType = {
   shopName: number
   phone: number
   address: number
+  paymentAccountName: number
+  telebirrNumber: number
+  cbeBirrNumber: number
+  cbeBankAccountNumber: number
+  awashBankAccountNumber: number
+  dashenBankAccountNumber: number
+  eBirrNumber: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +83,13 @@ export type SellerProfileMinAggregateInputType = {
   shopName?: true
   phone?: true
   address?: true
+  paymentAccountName?: true
+  telebirrNumber?: true
+  cbeBirrNumber?: true
+  cbeBankAccountNumber?: true
+  awashBankAccountNumber?: true
+  dashenBankAccountNumber?: true
+  eBirrNumber?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +100,13 @@ export type SellerProfileMaxAggregateInputType = {
   shopName?: true
   phone?: true
   address?: true
+  paymentAccountName?: true
+  telebirrNumber?: true
+  cbeBirrNumber?: true
+  cbeBankAccountNumber?: true
+  awashBankAccountNumber?: true
+  dashenBankAccountNumber?: true
+  eBirrNumber?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +117,13 @@ export type SellerProfileCountAggregateInputType = {
   shopName?: true
   phone?: true
   address?: true
+  paymentAccountName?: true
+  telebirrNumber?: true
+  cbeBirrNumber?: true
+  cbeBankAccountNumber?: true
+  awashBankAccountNumber?: true
+  dashenBankAccountNumber?: true
+  eBirrNumber?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +207,13 @@ export type SellerProfileGroupByOutputType = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName: string | null
+  telebirrNumber: string | null
+  cbeBirrNumber: string | null
+  cbeBankAccountNumber: string | null
+  awashBankAccountNumber: string | null
+  dashenBankAccountNumber: string | null
+  eBirrNumber: string | null
   createdAt: Date
   updatedAt: Date
   _count: SellerProfileCountAggregateOutputType | null
@@ -196,6 +245,13 @@ export type SellerProfileWhereInput = {
   shopName?: Prisma.StringFilter<"SellerProfile"> | string
   phone?: Prisma.StringFilter<"SellerProfile"> | string
   address?: Prisma.StringFilter<"SellerProfile"> | string
+  paymentAccountName?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  telebirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  cbeBirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  cbeBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  awashBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  dashenBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  eBirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -207,6 +263,13 @@ export type SellerProfileOrderByWithRelationInput = {
   shopName?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  paymentAccountName?: Prisma.SortOrderInput | Prisma.SortOrder
+  telebirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  cbeBirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  cbeBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  awashBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  dashenBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  eBirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -221,6 +284,13 @@ export type SellerProfileWhereUniqueInput = Prisma.AtLeast<{
   shopName?: Prisma.StringFilter<"SellerProfile"> | string
   phone?: Prisma.StringFilter<"SellerProfile"> | string
   address?: Prisma.StringFilter<"SellerProfile"> | string
+  paymentAccountName?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  telebirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  cbeBirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  cbeBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  awashBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  dashenBankAccountNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
+  eBirrNumber?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -232,6 +302,13 @@ export type SellerProfileOrderByWithAggregationInput = {
   shopName?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  paymentAccountName?: Prisma.SortOrderInput | Prisma.SortOrder
+  telebirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  cbeBirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  cbeBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  awashBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  dashenBankAccountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  eBirrNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SellerProfileCountOrderByAggregateInput
@@ -248,6 +325,13 @@ export type SellerProfileScalarWhereWithAggregatesInput = {
   shopName?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   phone?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   address?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
+  paymentAccountName?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  telebirrNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  cbeBirrNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  cbeBankAccountNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  awashBankAccountNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  dashenBankAccountNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
+  eBirrNumber?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SellerProfile"> | Date | string
 }
@@ -257,6 +341,13 @@ export type SellerProfileCreateInput = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName?: string | null
+  telebirrNumber?: string | null
+  cbeBirrNumber?: string | null
+  cbeBankAccountNumber?: string | null
+  awashBankAccountNumber?: string | null
+  dashenBankAccountNumber?: string | null
+  eBirrNumber?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutSellerProfileInput
@@ -268,6 +359,13 @@ export type SellerProfileUncheckedCreateInput = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName?: string | null
+  telebirrNumber?: string | null
+  cbeBirrNumber?: string | null
+  cbeBankAccountNumber?: string | null
+  awashBankAccountNumber?: string | null
+  dashenBankAccountNumber?: string | null
+  eBirrNumber?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -277,6 +375,13 @@ export type SellerProfileUpdateInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutSellerProfileNestedInput
@@ -288,6 +393,13 @@ export type SellerProfileUncheckedUpdateInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -298,6 +410,13 @@ export type SellerProfileCreateManyInput = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName?: string | null
+  telebirrNumber?: string | null
+  cbeBirrNumber?: string | null
+  cbeBankAccountNumber?: string | null
+  awashBankAccountNumber?: string | null
+  dashenBankAccountNumber?: string | null
+  eBirrNumber?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -307,6 +426,13 @@ export type SellerProfileUpdateManyMutationInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -317,6 +443,13 @@ export type SellerProfileUncheckedUpdateManyInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,6 +465,13 @@ export type SellerProfileCountOrderByAggregateInput = {
   shopName?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  paymentAccountName?: Prisma.SortOrder
+  telebirrNumber?: Prisma.SortOrder
+  cbeBirrNumber?: Prisma.SortOrder
+  cbeBankAccountNumber?: Prisma.SortOrder
+  awashBankAccountNumber?: Prisma.SortOrder
+  dashenBankAccountNumber?: Prisma.SortOrder
+  eBirrNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -342,6 +482,13 @@ export type SellerProfileMaxOrderByAggregateInput = {
   shopName?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  paymentAccountName?: Prisma.SortOrder
+  telebirrNumber?: Prisma.SortOrder
+  cbeBirrNumber?: Prisma.SortOrder
+  cbeBankAccountNumber?: Prisma.SortOrder
+  awashBankAccountNumber?: Prisma.SortOrder
+  dashenBankAccountNumber?: Prisma.SortOrder
+  eBirrNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -352,6 +499,13 @@ export type SellerProfileMinOrderByAggregateInput = {
   shopName?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  paymentAccountName?: Prisma.SortOrder
+  telebirrNumber?: Prisma.SortOrder
+  cbeBirrNumber?: Prisma.SortOrder
+  cbeBankAccountNumber?: Prisma.SortOrder
+  awashBankAccountNumber?: Prisma.SortOrder
+  dashenBankAccountNumber?: Prisma.SortOrder
+  eBirrNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -393,6 +547,13 @@ export type SellerProfileCreateWithoutUserInput = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName?: string | null
+  telebirrNumber?: string | null
+  cbeBirrNumber?: string | null
+  cbeBankAccountNumber?: string | null
+  awashBankAccountNumber?: string | null
+  dashenBankAccountNumber?: string | null
+  eBirrNumber?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -402,6 +563,13 @@ export type SellerProfileUncheckedCreateWithoutUserInput = {
   shopName: string
   phone: string
   address: string
+  paymentAccountName?: string | null
+  telebirrNumber?: string | null
+  cbeBirrNumber?: string | null
+  cbeBankAccountNumber?: string | null
+  awashBankAccountNumber?: string | null
+  dashenBankAccountNumber?: string | null
+  eBirrNumber?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -427,6 +595,13 @@ export type SellerProfileUpdateWithoutUserInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -436,6 +611,13 @@ export type SellerProfileUncheckedUpdateWithoutUserInput = {
   shopName?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentAccountName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telebirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cbeBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awashBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dashenBankAccountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  eBirrNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -448,6 +630,13 @@ export type SellerProfileSelect<ExtArgs extends runtime.Types.Extensions.Interna
   shopName?: boolean
   phone?: boolean
   address?: boolean
+  paymentAccountName?: boolean
+  telebirrNumber?: boolean
+  cbeBirrNumber?: boolean
+  cbeBankAccountNumber?: boolean
+  awashBankAccountNumber?: boolean
+  dashenBankAccountNumber?: boolean
+  eBirrNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -459,6 +648,13 @@ export type SellerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   shopName?: boolean
   phone?: boolean
   address?: boolean
+  paymentAccountName?: boolean
+  telebirrNumber?: boolean
+  cbeBirrNumber?: boolean
+  cbeBankAccountNumber?: boolean
+  awashBankAccountNumber?: boolean
+  dashenBankAccountNumber?: boolean
+  eBirrNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -470,6 +666,13 @@ export type SellerProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   shopName?: boolean
   phone?: boolean
   address?: boolean
+  paymentAccountName?: boolean
+  telebirrNumber?: boolean
+  cbeBirrNumber?: boolean
+  cbeBankAccountNumber?: boolean
+  awashBankAccountNumber?: boolean
+  dashenBankAccountNumber?: boolean
+  eBirrNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -481,11 +684,18 @@ export type SellerProfileSelectScalar = {
   shopName?: boolean
   phone?: boolean
   address?: boolean
+  paymentAccountName?: boolean
+  telebirrNumber?: boolean
+  cbeBirrNumber?: boolean
+  cbeBankAccountNumber?: boolean
+  awashBankAccountNumber?: boolean
+  dashenBankAccountNumber?: boolean
+  eBirrNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SellerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "shopName" | "phone" | "address" | "createdAt" | "updatedAt", ExtArgs["result"]["sellerProfile"]>
+export type SellerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "shopName" | "phone" | "address" | "paymentAccountName" | "telebirrNumber" | "cbeBirrNumber" | "cbeBankAccountNumber" | "awashBankAccountNumber" | "dashenBankAccountNumber" | "eBirrNumber" | "createdAt" | "updatedAt", ExtArgs["result"]["sellerProfile"]>
 export type SellerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -507,6 +717,13 @@ export type $SellerProfilePayload<ExtArgs extends runtime.Types.Extensions.Inter
     shopName: string
     phone: string
     address: string
+    paymentAccountName: string | null
+    telebirrNumber: string | null
+    cbeBirrNumber: string | null
+    cbeBankAccountNumber: string | null
+    awashBankAccountNumber: string | null
+    dashenBankAccountNumber: string | null
+    eBirrNumber: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["sellerProfile"]>
@@ -938,6 +1155,13 @@ export interface SellerProfileFieldRefs {
   readonly shopName: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly phone: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly address: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly paymentAccountName: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly telebirrNumber: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly cbeBirrNumber: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly cbeBankAccountNumber: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly awashBankAccountNumber: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly dashenBankAccountNumber: Prisma.FieldRef<"SellerProfile", 'String'>
+  readonly eBirrNumber: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly createdAt: Prisma.FieldRef<"SellerProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SellerProfile", 'DateTime'>
 }

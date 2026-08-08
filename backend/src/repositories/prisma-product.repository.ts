@@ -16,6 +16,9 @@ import type {
   ProductDiscoveryResult,
   ProductEntity,
   ProductRepository,
+  MarketplaceCityEntity,
+  MarketplaceSellerEntity,
+  SellerStoreEntity,
   UpdateProductInput,
 } from "./product.repository.js";
 import { MAX_PRODUCT_IMAGES } from "./product.repository.js";
@@ -25,6 +28,15 @@ const productRelations = {
     select: {
       id: true,
       name: true,
+      email: true,
+      phone: true,
+      sellerProfile: {
+        select: {
+          address: true,
+          phone: true,
+          shopName: true,
+        },
+      },
     },
   },
   category: {
@@ -33,25 +45,46 @@ const productRelations = {
       name: true,
     },
   },
-  images: {
-  orderBy: [
-    {
-      type: "asc",
+  brand: {
+    select: {
+      id: true,
+      name: true,
     },
-    {
-      isPrimary: "desc",
-    },
-    {
-      createdAt: "asc",
-    },
-  ],
-  select: {
-    imageUrl: true,
-    type: true,
-    isPrimary: true,
   },
-  take: 1,
-},
+  inventory: {
+    orderBy: [{ city: "asc" }, { quantity: "desc" }, { id: "asc" }],
+    select: {
+      city: true,
+      deliveryAvailable: true,
+      price: true,
+      quantity: true,
+      region: true,
+    },
+  },
+  reviews: {
+    select: {
+      rating: true,
+    },
+  },
+  images: {
+    orderBy: [
+      {
+        isPrimary: "desc",
+      },
+      {
+        type: "asc",
+      },
+      {
+        createdAt: "asc",
+      },
+    ],
+    select: {
+      imageUrl: true,
+      type: true,
+      isPrimary: true,
+    },
+    take: 1,
+  },
 } satisfies Prisma.ProductInclude;
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
@@ -59,17 +92,35 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
 }>;
 
 function mapProduct(product: ProductWithRelations): ProductEntity {
+  const parsedDescription = parseProductDescription(product.description);
+  const rating = summarizeRatings(product.reviews);
+  const primaryInventory = product.inventory[0];
+
   return {
     id: product.id,
     sellerId: product.sellerId,
     categoryId: product.categoryId,
     name: product.name,
-    description: product.description,
+    description: parsedDescription.summary,
     price: product.price.toFixed(2),
     quantity: product.quantity,
     imageUrl: product.images[0]?.imageUrl ?? product.imageUrl,
-    seller: product.seller,
+    averageRating: rating.averageRating,
+    reviewCount: rating.reviewCount,
+    seller: {
+      id: product.seller.id,
+      name: product.seller.name,
+      address: product.seller.sellerProfile?.address ?? null,
+      city: primaryInventory?.city ?? null,
+      email: product.seller.email,
+      phone:
+        product.seller.sellerProfile?.phone ??
+        product.seller.phone ??
+        null,
+      shopName: product.seller.sellerProfile?.shopName ?? null,
+    },
     category: product.category,
+    brand: product.brand,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
@@ -169,6 +220,187 @@ export class PrismaProductRepository implements ProductRepository {
     };
   }
 
+  async findMarketplaceCities(): Promise<MarketplaceCityEntity[]> {
+    const inventory = await this.client.sellerInventory.findMany({
+      where: {
+        seller: {
+          is: {
+            isActive: true,
+            role: "SELLER",
+          },
+        },
+      },
+      select: {
+        city: true,
+        productId: true,
+        sellerId: true,
+      },
+      orderBy: {
+        city: "asc",
+      },
+    });
+    const cities = new Map<
+      string,
+      { productIds: Set<string>; sellerIds: Set<string> }
+    >();
+
+    for (const item of inventory) {
+      const cityName = item.city.trim();
+      if (!cityName) {
+        continue;
+      }
+      const city = cities.get(cityName) ?? {
+        productIds: new Set<string>(),
+        sellerIds: new Set<string>(),
+      };
+      city.productIds.add(item.productId);
+      city.sellerIds.add(item.sellerId);
+      cities.set(cityName, city);
+    }
+
+    return [...cities.entries()].map(([name, city]) => ({
+      name,
+      productCount: city.productIds.size,
+      sellerCount: city.sellerIds.size,
+    }));
+  }
+
+  async findMarketplaceSellers(
+    city: string,
+  ): Promise<MarketplaceSellerEntity[]> {
+    const sellers = await this.client.user.findMany({
+      where: {
+        isActive: true,
+        role: "SELLER",
+        listedProducts: {
+          some: marketplaceCityProductFilter(city),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        sellerProfile: {
+          select: {
+            shopName: true,
+          },
+        },
+        listedProducts: {
+          where: marketplaceCityProductFilter(city),
+          select: {
+            id: true,
+            reviews: {
+              select: {
+                rating: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ sellerProfile: { shopName: "asc" } }, { name: "asc" }],
+    });
+
+    return sellers.map((seller) => {
+      const rating = summarizeRatings(
+        seller.listedProducts.flatMap((product) => product.reviews),
+      );
+
+      return {
+        id: seller.id,
+        name: seller.name,
+        shopName: seller.sellerProfile?.shopName ?? null,
+        city,
+        productCount: seller.listedProducts.length,
+        averageRating: rating.averageRating,
+        reviewCount: rating.reviewCount,
+      };
+    });
+  }
+
+  async findSellerStore(
+    sellerId: string,
+    city?: string,
+  ): Promise<SellerStoreEntity | null> {
+    const seller = await this.client.user.findFirst({
+      where: {
+        id: sellerId,
+        isActive: true,
+        role: "SELLER",
+        ...(city !== undefined
+          ? {
+              listedProducts: {
+                some: marketplaceCityProductFilter(city),
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        sellerProfile: {
+          select: {
+            address: true,
+            phone: true,
+            shopName: true,
+          },
+        },
+        listedProducts: {
+          ...(city !== undefined
+            ? { where: marketplaceCityProductFilter(city) }
+            : {}),
+          select: {
+            id: true,
+            inventory: {
+              select: {
+                city: true,
+              },
+            },
+            reviews: {
+              select: {
+                rating: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!seller) {
+      return null;
+    }
+
+    const cities = [
+      ...new Set(
+        seller.listedProducts.flatMap((product) =>
+          product.inventory.map((inventory) => inventory.city.trim()),
+        ),
+      ),
+    ]
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right));
+    const rating = summarizeRatings(
+      seller.listedProducts.flatMap((product) => product.reviews),
+    );
+
+    return {
+      id: seller.id,
+      name: seller.name,
+      storeName: seller.sellerProfile?.shopName || seller.name,
+      logoUrl: null,
+      city: city ?? cities[0] ?? null,
+      cities,
+      address: seller.sellerProfile?.address ?? null,
+      phone: seller.sellerProfile?.phone ?? seller.phone ?? null,
+      email: seller.email,
+      averageRating: rating.averageRating,
+      reviewCount: rating.reviewCount,
+      totalProducts: seller.listedProducts.length,
+      joinedAt: seller.createdAt,
+    };
+  }
+
   async findById(id: string): Promise<ProductEntity | null> {
     const product = await this.client.product.findUnique({
       where: { id },
@@ -181,29 +413,73 @@ export class PrismaProductRepository implements ProductRepository {
   async findDetailsById(
     id: string,
   ): Promise<ProductDetailsEntity | null> {
-    const [product, ratingSummary] = await this.client.$transaction([
-      this.client.product.findUnique({
-        where: { id },
-        include: productRelations,
-      }),
-      this.client.review.aggregate({
-        where: { productId: id },
-        _avg: { rating: true },
-        _count: { _all: true },
-      }),
-    ]);
+    const product = await this.client.product.findUnique({
+      where: { id },
+      include: productRelations,
+    });
 
     if (!product) {
       return null;
     }
 
+    const sellerRating = await this.client.review.aggregate({
+      where: {
+        product: {
+          is: {
+            sellerId: product.sellerId,
+          },
+        },
+      },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    const parsedDescription = parseProductDescription(product.description);
+    const inventory = product.inventory.map((item) => ({
+      city: item.city,
+      deliveryAvailable: item.deliveryAvailable,
+      price: item.price.toFixed(2),
+      quantity: item.quantity,
+      region: item.region,
+    }));
+    const primaryInventory = inventory[0];
+
     return {
       ...mapProduct(product),
-      averageRating:
-        ratingSummary._avg.rating === null
-          ? null
-          : Number(ratingSummary._avg.rating.toFixed(2)),
-      reviewCount: ratingSummary._count._all,
+      averageRating: summarizeRatings(product.reviews).averageRating,
+      deliveryAvailable: inventory.some(
+        (item) => item.deliveryAvailable,
+      ),
+      inventory,
+      location: primaryInventory
+        ? [primaryInventory.city, primaryInventory.region]
+            .filter(Boolean)
+            .join(", ")
+        : null,
+      minimumOrder:
+        getSpecification(parsedDescription.specifications, "Minimum order") ??
+        null,
+      origin:
+        getSpecification(parsedDescription.specifications, "Origin") ?? null,
+      packaging:
+        getSpecification(parsedDescription.specifications, "Packaging") ??
+        null,
+      reviewCount: product.reviews.length,
+      seller: {
+        ...mapProduct(product).seller,
+        averageRating:
+          sellerRating._avg.rating === null
+            ? null
+            : Number(sellerRating._avg.rating.toFixed(2)),
+        reviewCount: sellerRating._count._all,
+      },
+      specifications: parsedDescription.specifications,
+      strengthGrade:
+        getSpecification(
+          parsedDescription.specifications,
+          "Strength grade",
+        ) ?? null,
+      weight:
+        getSpecification(parsedDescription.specifications, "Weight") ?? null,
     };
   }
 
@@ -517,6 +793,9 @@ function productDiscoveryWhere(
   query: ProductDiscoveryQuery,
 ): Prisma.ProductWhereInput {
   return {
+    ...(query.city !== undefined
+      ? marketplaceCityProductFilter(query.city)
+      : {}),
     ...(query.search !== undefined
       ? {
           OR: [
@@ -530,6 +809,36 @@ function productDiscoveryWhere(
               description: {
                 contains: query.search,
                 mode: "insensitive",
+              },
+            },
+            {
+              category: {
+                is: {
+                  name: {
+                    contains: query.search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+            {
+              brand: {
+                is: {
+                  name: {
+                    contains: query.search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+            {
+              seller: {
+                is: {
+                  name: {
+                    contains: query.search,
+                    mode: "insensitive",
+                  },
+                },
               },
             },
             {
@@ -576,6 +885,42 @@ function productDiscoveryWhere(
   };
 }
 
+function marketplaceCityProductFilter(
+  city: string,
+): Prisma.ProductWhereInput {
+  return {
+    inventory: {
+      some: {
+        city: {
+          equals: city,
+          mode: "insensitive",
+        },
+      },
+    },
+  };
+}
+
+function summarizeRatings(
+  ratings: ReadonlyArray<{ rating: number }>,
+): { averageRating: number | null; reviewCount: number } {
+  if (ratings.length === 0) {
+    return {
+      averageRating: null,
+      reviewCount: 0,
+    };
+  }
+
+  return {
+    averageRating: Number(
+      (
+        ratings.reduce((sum, review) => sum + review.rating, 0) /
+        ratings.length
+      ).toFixed(2),
+    ),
+    reviewCount: ratings.length,
+  };
+}
+
 function productDiscoveryOrderBy(
   query: ProductDiscoveryQuery,
 ): Prisma.ProductOrderByWithRelationInput[] {
@@ -595,4 +940,61 @@ function productDiscoveryOrderBy(
         { id: "asc" },
       ];
   }
+}
+
+const SPECIFICATIONS_MARKER = "\n\nSpecifications:\n";
+
+interface ParsedProductDescription {
+  specifications: Record<string, string>;
+  summary: string;
+}
+
+function parseProductDescription(
+  description: string,
+): ParsedProductDescription {
+  const markerIndex = description.indexOf(SPECIFICATIONS_MARKER);
+  if (markerIndex === -1) {
+    return {
+      specifications: {},
+      summary: description,
+    };
+  }
+
+  const specifications = Object.fromEntries(
+    description
+      .slice(markerIndex + SPECIFICATIONS_MARKER.length)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const separatorIndex = line.indexOf(":");
+        if (separatorIndex === -1) {
+          return null;
+        }
+
+        return [
+          line.slice(0, separatorIndex).trim(),
+          line.slice(separatorIndex + 1).trim(),
+        ] as [string, string];
+      })
+      .filter(
+        (entry): entry is [string, string] =>
+          entry !== null && entry[0].length > 0 && entry[1].length > 0,
+      ),
+  );
+
+  return {
+    specifications,
+    summary: description.slice(0, markerIndex).trim(),
+  };
+}
+
+function getSpecification(
+  specifications: Record<string, string>,
+  label: string,
+): string | undefined {
+  const normalizedLabel = label.toLowerCase();
+  return Object.entries(specifications).find(
+    ([key]) => key.toLowerCase() === normalizedLabel,
+  )?.[1];
 }

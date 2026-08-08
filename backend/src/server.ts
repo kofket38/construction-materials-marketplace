@@ -1,4 +1,4 @@
-import type { Server } from "node:http";
+import { createServer, type Server } from "node:http";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
@@ -32,20 +32,39 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     logger.error({ err: error }, "Graceful shutdown failed");
     exitCode = 1;
   } finally {
-    process.exit(exitCode);
+    process.exitCode = exitCode;
   }
+}
+
+function listen(serverToStart: Server): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const handleError = (error: Error): void => {
+      serverToStart.off("listening", handleListening);
+      reject(error);
+    };
+    const handleListening = (): void => {
+      serverToStart.off("error", handleError);
+      resolve();
+    };
+
+    serverToStart.once("error", handleError);
+    serverToStart.once("listening", handleListening);
+    serverToStart.listen(env.PORT);
+  });
 }
 
 async function start(): Promise<void> {
   await prisma.$connect();
 
   const app = createApp();
-  server = app.listen(env.PORT, () => {
-    logger.info(
-      { environment: env.NODE_ENV, port: env.PORT },
-      "API server started",
-    );
-  });
+  const httpServer = createServer(app);
+  await listen(httpServer);
+
+  server = httpServer;
+  logger.info(
+    { environment: env.NODE_ENV, port: env.PORT },
+    "API server started",
+  );
 }
 
 process.on("SIGINT", () => {

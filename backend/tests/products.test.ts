@@ -35,8 +35,18 @@ describe("Product API", () => {
     products = new InMemoryProductRepository();
     products.addCategory({ id: categoryId, name: "Cement" });
     products.addCategory({ id: steelCategoryId, name: "Steel" });
-    products.addSeller(sellerId, "Seller One", "Kamau Materials");
-    products.addSeller(otherSellerId, "Seller Two", "Mjenzi Depot");
+    products.addSeller(
+      sellerId,
+      "Seller One",
+      "Kamau Materials",
+      "Addis Ababa",
+    );
+    products.addSeller(
+      otherSellerId,
+      "Seller Two",
+      "Mjenzi Depot",
+      "Bishoftu",
+    );
 
     users = new InMemoryUserRepository();
     users.addUser({ id: sellerId, role: "SELLER" });
@@ -363,6 +373,61 @@ describe("Product API", () => {
         hasNextPage: false,
         hasPreviousPage: false,
       },
+    });
+  });
+
+  it("lists marketplace cities and filters products by selected city", async () => {
+    const discoveryProducts = await seedDiscoveryProducts();
+
+    const citiesResponse = await request(app)
+      .get("/api/products/marketplace/cities")
+      .expect(200);
+    expect(citiesResponse.body.data.cities).toEqual([
+      {
+        name: "Addis Ababa",
+        productCount: 2,
+        sellerCount: 1,
+      },
+      {
+        name: "Bishoftu",
+        productCount: 2,
+        sellerCount: 1,
+      },
+    ]);
+
+    const productsResponse = await request(app)
+      .get("/api/products?city=Addis%20Ababa&sortBy=name")
+      .expect(200);
+    expect(
+      productsResponse.body.data.products.map(
+        (product: { id: string }) => product.id,
+      ),
+    ).toEqual([discoveryProducts.sand.id, discoveryProducts.cement.id]);
+  });
+
+  it("lists city sellers and exposes seller store information", async () => {
+    await seedDiscoveryProducts();
+
+    const sellersResponse = await request(app)
+      .get("/api/products/marketplace/sellers?city=Bishoftu")
+      .expect(200);
+    expect(sellersResponse.body.data.sellers).toEqual([
+      expect.objectContaining({
+        id: otherSellerId,
+        shopName: "Mjenzi Depot",
+        city: "Bishoftu",
+        productCount: 2,
+      }),
+    ]);
+
+    const storeResponse = await request(app)
+      .get(`/api/products/stores/${otherSellerId}?city=Bishoftu`)
+      .expect(200);
+    expect(storeResponse.body.data.store).toMatchObject({
+      id: otherSellerId,
+      storeName: "Mjenzi Depot",
+      city: "Bishoftu",
+      totalProducts: 2,
     });
   });
 

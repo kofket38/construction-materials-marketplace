@@ -1,8 +1,12 @@
 import {
+  OrderStatus as PrismaOrderStatus,
+  PaymentStatus as PrismaPaymentStatus,
   Prisma,
   type PrismaClient,
 } from "../prisma/generated/client.js";
+import { SellerOrderStateChangedError } from "./seller-dashboard.errors.js";
 import type { OrderStatus } from "./order.repository.js";
+import { restoreOrderInventory } from "./order-inventory.js";
 import type {
   ProductEntity,
 } from "./product.repository.js";
@@ -55,6 +59,7 @@ type SellerOrderWithRelations = Prisma.OrderGetPayload<{
         email: true;
       };
     };
+    payment: true;
     items: {
       include: {
         product: {
@@ -101,6 +106,13 @@ interface TopCategoryRow {
   revenue: string;
 }
 
+interface InventorySummaryRow {
+  totalProducts: string;
+  lowStock: string;
+  outOfStock: string;
+  inventoryValue: string;
+}
+
 export class PrismaSellerDashboardRepository
   implements SellerDashboardRepository
 {
@@ -116,6 +128,7 @@ export class PrismaSellerDashboardRepository
       totalProducts,
       activeProducts,
       orderCounts,
+      paymentVerified,
       revenueRows,
       recentOrders,
     ] = await Promise.all([
@@ -130,6 +143,14 @@ export class PrismaSellerDashboardRepository
         by: ["status"],
         where: sellerOrderWhere,
         _count: { _all: true },
+      }),
+      this.client.payment.count({
+        where: {
+          status: PrismaPaymentStatus.VERIFIED,
+          order: {
+            is: sellerOrderFilter(sellerId),
+          },
+        },
       }),
       this.client.$queryRaw<RevenueRow[]>(Prisma.sql`
         SELECT
@@ -177,6 +198,13 @@ export class PrismaSellerDashboardRepository
       cancelledOrders: counts.get("CANCELLED") ?? 0,
       totalRevenue: formatMoney(revenue?.totalRevenue),
       monthlyRevenue: formatMoney(revenue?.monthlyRevenue),
+      pendingPaymentVerification:
+        counts.get("PENDING_PAYMENT_VERIFICATION") ?? 0,
+      paymentVerified,
+      processing: counts.get("PROCESSING") ?? 0,
+      readyForDelivery: counts.get("READY_FOR_DELIVERY") ?? 0,
+      outForDelivery: counts.get("OUT_FOR_DELIVERY") ?? 0,
+      delivered: counts.get("DELIVERED") ?? 0,
       recentOrders: recentOrders.map(mapSellerOrder),
     };
   }
@@ -223,7 +251,7 @@ export class PrismaSellerDashboardRepository
         : {}),
     };
 
-    const [total, products] = await this.client.$transaction([
+    const [total, products, inventoryRows] = await this.client.$transaction([
       this.client.product.count({ where }),
       this.client.product.findMany({
         where,
@@ -232,11 +260,32 @@ export class PrismaSellerDashboardRepository
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
+      this.client.$queryRaw<InventorySummaryRow[]>(Prisma.sql`
+        SELECT
+          COUNT(*)::text AS "totalProducts",
+          COUNT(*) FILTER (
+            WHERE "quantity" > 0 AND "quantity" <= 10
+          )::text AS "lowStock",
+          COUNT(*) FILTER (
+            WHERE "quantity" = 0
+          )::text AS "outOfStock",
+          COALESCE(SUM("price" * "quantity"), 0)::text
+            AS "inventoryValue"
+        FROM "products"
+        WHERE "sellerId" = ${sellerId}::uuid
+      `),
     ]);
+    const inventorySummary = inventoryRows[0];
 
     return {
       products: products.map(mapProduct),
       pagination: pagination(query.page, query.limit, total),
+      inventorySummary: {
+        totalProducts: Number(inventorySummary?.totalProducts ?? 0),
+        lowStock: Number(inventorySummary?.lowStock ?? 0),
+        outOfStock: Number(inventorySummary?.outOfStock ?? 0),
+        inventoryValue: formatMoney(inventorySummary?.inventoryValue),
+      },
     };
   }
 
@@ -246,7 +295,9 @@ export class PrismaSellerDashboardRepository
   ): Promise<SellerOrdersResult> {
     const where: Prisma.OrderWhereInput = {
       ...sellerOrderFilter(sellerId),
-      ...(query.status !== undefined ? { status: query.status } : {}),
+      ...(query.status !== undefined
+        ? { status: sellerOrderWorkflowStatusFilter(query.status) }
+        : {}),
       ...(query.dateFrom !== undefined ||
       query.dateToExclusive !== undefined
         ? {
@@ -299,6 +350,138 @@ export class PrismaSellerDashboardRepository
       orders: orders.map(mapSellerOrder),
       pagination: pagination(query.page, query.limit, total),
     };
+  }
+
+  async findOrderById(
+    sellerId: string,
+    orderId: string,
+  ): Promise<SellerOrderEntity | null> {
+    const order = await this.client.order.findFirst({
+      where: {
+        id: orderId,
+        ...sellerOrderFilter(sellerId),
+      },
+      include: sellerOrderInclude(sellerId),
+    });
+
+    return order ? mapSellerOrder(order) : null;
+  }
+
+  async verifyPayment(
+    sellerId: string,
+    orderId: string,
+    decision: "APPROVE" | "REJECT",
+  ): Promise<SellerOrderEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      const order = await transaction.order.findFirst({
+        where: {
+          id: orderId,
+          ...sellerOrderFilter(sellerId),
+        },
+        select: {
+          status: true,
+          payment: {
+            select: { status: true },
+          },
+        },
+      });
+
+      if (!order) {
+        return null;
+      }
+      if (
+        order.status !==
+          PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION ||
+        order.payment?.status !== PrismaPaymentStatus.PENDING_VERIFICATION
+      ) {
+        throw new SellerOrderStateChangedError();
+      }
+
+      const paymentStatus =
+        decision === "APPROVE"
+          ? PrismaPaymentStatus.VERIFIED
+          : PrismaPaymentStatus.REJECTED;
+      const orderStatus =
+        decision === "APPROVE"
+          ? PrismaOrderStatus.CONFIRMED
+          : PrismaOrderStatus.PAYMENT_REJECTED;
+      const paymentUpdate = await transaction.payment.updateMany({
+        where: {
+          orderId,
+          status: PrismaPaymentStatus.PENDING_VERIFICATION,
+        },
+        data: {
+          status: paymentStatus,
+          verifiedAt: decision === "APPROVE" ? new Date() : null,
+        },
+      });
+      const orderUpdate = await transaction.order.updateMany({
+        where: {
+          id: orderId,
+          status: PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION,
+        },
+        data: { status: orderStatus },
+      });
+
+      if (paymentUpdate.count !== 1 || orderUpdate.count !== 1) {
+        throw new SellerOrderStateChangedError();
+      }
+      if (decision === "REJECT") {
+        await restoreOrderInventory(transaction, orderId);
+      }
+
+      const updated = await transaction.order.findUnique({
+        where: { id: orderId },
+        include: sellerOrderInclude(sellerId),
+      });
+
+      return updated ? mapSellerOrder(updated) : null;
+    });
+  }
+
+  async updateOrderStatus(
+    sellerId: string,
+    orderId: string,
+    expectedStatus: OrderStatus,
+    status: OrderStatus,
+  ): Promise<SellerOrderEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      const ownedOrder = await transaction.order.findFirst({
+        where: {
+          id: orderId,
+          ...sellerOrderFilter(sellerId),
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (!ownedOrder) {
+        return null;
+      }
+
+      const update = await transaction.order.updateMany({
+        where: {
+          id: orderId,
+          status: PrismaOrderStatus[expectedStatus],
+        },
+        data: {
+          status: PrismaOrderStatus[status],
+        },
+      });
+      if (update.count !== 1) {
+        throw new SellerOrderStateChangedError();
+      }
+      if (status === "CANCELLED") {
+        await restoreOrderInventory(transaction, orderId);
+      }
+
+      const updated = await transaction.order.findUnique({
+        where: { id: orderId },
+        include: sellerOrderInclude(sellerId),
+      });
+
+      return updated ? mapSellerOrder(updated) : null;
+    });
   }
 
   async getAnalytics(
@@ -416,6 +599,53 @@ function sellerOrderFilter(sellerId: string): Prisma.OrderWhereInput {
   };
 }
 
+function sellerOrderWorkflowStatusFilter(
+  status: OrderStatus,
+): Exclude<Prisma.OrderWhereInput["status"], undefined> {
+  switch (status) {
+    case "PENDING":
+      return {
+        in: [
+          PrismaOrderStatus.PENDING_PAYMENT,
+          PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION,
+          PrismaOrderStatus.PENDING_CONFIRMATION,
+          PrismaOrderStatus.PENDING,
+        ],
+      };
+    case "CONFIRMED":
+      return {
+        in: [
+          PrismaOrderStatus.PAYMENT_VERIFIED,
+          PrismaOrderStatus.CONFIRMED,
+        ],
+      };
+    case "PROCESSING":
+      return {
+        in: [
+          PrismaOrderStatus.PROCESSING,
+          PrismaOrderStatus.READY_FOR_DELIVERY,
+        ],
+      };
+    case "SHIPPED":
+      return {
+        in: [
+          PrismaOrderStatus.OUT_FOR_DELIVERY,
+          PrismaOrderStatus.SHIPPED,
+        ],
+      };
+    case "CANCELLED":
+      return {
+        in: [
+          PrismaOrderStatus.PAYMENT_REJECTED,
+          PrismaOrderStatus.REJECTED,
+          PrismaOrderStatus.CANCELLED,
+        ],
+      };
+    default:
+      return PrismaOrderStatus[status];
+  }
+}
+
 function sellerOrderInclude(sellerId: string) {
   return {
     customer: {
@@ -425,6 +655,7 @@ function sellerOrderInclude(sellerId: string) {
         email: true,
       },
     },
+    payment: true,
     items: {
       where: {
         product: {
@@ -494,6 +725,23 @@ function mapSellerOrder(order: SellerOrderWithRelations): SellerOrderEntity {
     customerId: order.customerId,
     customer: order.customer,
     status: order.status as OrderStatus,
+    paymentMethod: order.paymentMethod,
+    shippingFullName: order.shippingFullName,
+    shippingPhone: order.shippingPhone,
+    shippingCity: order.shippingCity,
+    shippingAddress: order.shippingAddress,
+    shippingNotes: order.shippingNotes,
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          method: order.payment.method,
+          providerName: order.payment.providerName,
+          proofImageUrl: order.payment.proofImageUrl,
+          status: order.payment.status,
+          createdAt: order.payment.createdAt,
+          verifiedAt: order.payment.verifiedAt,
+        }
+      : null,
     sellerTotal: sellerTotal.toFixed(2),
     totalItems,
     items,

@@ -101,12 +101,22 @@ function baseProductRecord() {
     seller: {
       id: "00000000-0000-4000-8000-000000000002",
       name: "Seller One",
+      email: "seller@example.com",
+      phone: null,
+      sellerProfile: null,
     },
     category: {
       id: "00000000-00000000-4000-8000-000000000003",
       name: "Cement",
     },
-    images: [] as Array<{ imageUrl: string }>,
+    brand: null,
+    inventory: [],
+    reviews: [],
+    images: [] as Array<{
+      imageUrl: string;
+      isPrimary?: boolean;
+      type?: string;
+    }>,
     createdAt: new Date("2026-07-17T08:00:00.000Z"),
     updatedAt: new Date("2026-07-17T08:00:00.000Z"),
   };

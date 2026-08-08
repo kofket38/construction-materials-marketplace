@@ -2,7 +2,10 @@ import type { Request, Response } from "express";
 import type { SellerDashboardService } from "../services/seller-dashboard.service.js";
 import { UnauthorizedError } from "../utils/api-error.js";
 import type {
+  SellerOrderIdParams,
+  SellerOrderStatusBody,
   SellerOrdersQueryParams,
+  SellerPaymentDecisionBody,
   SellerProductsQueryParams,
 } from "../validators/seller-dashboard.validators.js";
 
@@ -43,6 +46,52 @@ export class SellerDashboardController {
     res.status(200).json({
       success: true,
       data: result,
+    });
+  };
+
+  findOrderById = async (req: Request, res: Response): Promise<void> => {
+    const { orderId } = req.params as SellerOrderIdParams;
+    const order = await this.sellerDashboardService.findOrderById(
+      this.requireActor(req),
+      orderId,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { order },
+    });
+  };
+
+  verifyPayment = async (req: Request, res: Response): Promise<void> => {
+    const { orderId } = req.params as SellerOrderIdParams;
+    const { decision } = req.body as SellerPaymentDecisionBody;
+    const order = await this.sellerDashboardService.verifyPayment(
+      this.requireActor(req),
+      orderId,
+      decision,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { order },
+    });
+  };
+
+  updateOrderStatus = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const { orderId } = req.params as SellerOrderIdParams;
+    const { status } = req.body as SellerOrderStatusBody;
+    const order = await this.sellerDashboardService.updateOrderStatus(
+      this.requireActor(req),
+      orderId,
+      status,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { order },
     });
   };
 

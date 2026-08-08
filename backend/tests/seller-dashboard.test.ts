@@ -28,6 +28,7 @@ describe("Seller Dashboard API", () => {
   let users: InMemoryUserRepository;
   let app: ReturnType<typeof createApp>;
   let sellerToken: string;
+  let otherSellerToken: string;
   let customerToken: string;
   let adminToken: string;
   let dates: ReturnType<typeof createTestDates>;
@@ -41,6 +42,7 @@ describe("Seller Dashboard API", () => {
     users = new InMemoryUserRepository();
     const adminId = randomUUID();
     users.addUser({ id: sellerId, role: "SELLER" });
+    users.addUser({ id: otherSellerId, role: "SELLER" });
     users.addUser({ id: firstCustomerId, role: "CUSTOMER" });
     users.addUser({ id: adminId, role: "ADMIN" });
 
@@ -53,6 +55,10 @@ describe("Seller Dashboard API", () => {
 
     sellerToken = tokenService.createAccessToken({
       userId: sellerId,
+      role: "SELLER",
+    });
+    otherSellerToken = tokenService.createAccessToken({
+      userId: otherSellerId,
       role: "SELLER",
     });
     customerToken = tokenService.createAccessToken({
@@ -112,6 +118,12 @@ describe("Seller Dashboard API", () => {
         total: 1,
         totalPages: 1,
       },
+      inventorySummary: {
+        totalProducts: 3,
+        lowStock: 1,
+        outOfStock: 1,
+        inventoryValue: "2750.00",
+      },
     });
 
     const paginated = await sellerGet(
@@ -160,6 +172,220 @@ describe("Seller Dashboard API", () => {
       },
     });
     expect(response.body.data.orders[0].items).toHaveLength(2);
+  });
+
+  it("returns seller-owned order details and hides other sellers' orders", async () => {
+    const response = await sellerGet(
+      "/api/seller/orders/00000000-0000-4000-8000-000000000101",
+    ).expect(200);
+
+    expect(response.body.data.order).toMatchObject({
+      id: "00000000-0000-4000-8000-000000000101",
+      customer: {
+        name: "Alice Builder",
+      },
+      paymentMethod: "CASH_ON_DELIVERY",
+      shippingCity: "Addis Ababa",
+      sellerTotal: "200.00",
+      items: [{ productId: cementProductId }],
+    });
+    expect(response.body.data.order.items).toHaveLength(1);
+
+    await sellerGet(
+      "/api/seller/orders/00000000-0000-4000-8000-000000000106",
+    ).expect(404);
+  });
+
+  it("allows the owning seller to approve or reject pending payment proof", async () => {
+    const approvedOrderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "PENDING_PAYMENT_VERIFICATION",
+      paymentMethod: "CBE_BANK",
+      payment: {
+        proofImageUrl: "/uploads/payment-proofs/approved.png",
+      },
+      items: [
+        { productId: cementProductId, quantity: 1, price: "100.00" },
+      ],
+    });
+    dashboard.reserveOrderInventory(approvedOrderId);
+    const rejectedOrderId = dashboard.addOrder({
+      customer: secondCustomer,
+      status: "PENDING_PAYMENT_VERIFICATION",
+      paymentMethod: "TELEBIRR",
+      payment: {
+        method: "TELEBIRR",
+        proofImageUrl: "/uploads/payment-proofs/rejected.png",
+      },
+      items: [{ productId: tileProductId, quantity: 2, price: "50.00" }],
+    });
+    dashboard.reserveOrderInventory(rejectedOrderId);
+    expect(dashboard.getProductQuantity(tileProductId)).toBe(3);
+
+    const approved = await request(app)
+      .patch(`/api/seller/orders/${approvedOrderId}/payment`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({ decision: "APPROVE" })
+      .expect(200);
+    expect(approved.body.data.order).toMatchObject({
+      status: "CONFIRMED",
+      payment: {
+        status: "VERIFIED",
+      },
+    });
+
+    const rejected = await request(app)
+      .patch(`/api/seller/orders/${rejectedOrderId}/payment`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({ decision: "REJECT" })
+      .expect(200);
+    expect(rejected.body.data.order).toMatchObject({
+      status: "PAYMENT_REJECTED",
+      payment: {
+        status: "REJECTED",
+      },
+    });
+    expect(dashboard.getProductQuantity(tileProductId)).toBe(5);
+    expect(dashboard.getInventoryTransactionCount(rejectedOrderId)).toBe(2);
+
+    await request(app)
+      .patch(`/api/seller/orders/${approvedOrderId}/payment`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({ decision: "APPROVE" })
+      .expect(409);
+  });
+
+  it("requires a payment decision while proof verification is pending", async () => {
+    const orderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "PENDING_PAYMENT_VERIFICATION",
+      paymentMethod: "CBE_BANK",
+      payment: {
+        proofImageUrl: "/uploads/payment-proofs/pending.png",
+      },
+      items: [
+        { productId: cementProductId, quantity: 1, price: "100.00" },
+      ],
+    });
+
+    await updateSellerOrderStatus(orderId, "CANCELLED").expect(409);
+
+    const order = await dashboard.findOrderById(sellerId, orderId);
+    expect(order).toMatchObject({
+      status: "PENDING_PAYMENT_VERIFICATION",
+      payment: { status: "PENDING_VERIFICATION" },
+    });
+  });
+
+  it("enforces the seller fulfillment sequence", async () => {
+    const orderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "PENDING_CONFIRMATION",
+      items: [
+        { productId: cementProductId, quantity: 1, price: "100.00" },
+      ],
+    });
+
+    await request(app)
+      .patch(`/api/seller/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({ status: "READY_FOR_DELIVERY" })
+      .expect(400);
+
+    for (const status of [
+      "CONFIRMED",
+      "PROCESSING",
+      "SHIPPED",
+      "DELIVERED",
+    ] as const) {
+      const response = await updateSellerOrderStatus(
+        orderId,
+        status,
+      ).expect(200);
+      expect(response.body.data.order.status).toBe(status);
+    }
+
+    await updateSellerOrderStatus(orderId, "DELIVERED").expect(409);
+  });
+
+  it("keeps reserved inventory unchanged through seller fulfillment", async () => {
+    const orderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "PROCESSING",
+      items: [
+        { productId: cementProductId, quantity: 2, price: "100.00" },
+      ],
+    });
+
+    dashboard.reserveOrderInventory(orderId);
+    expect(dashboard.getProductQuantity(cementProductId)).toBe(23);
+
+    await updateSellerOrderStatus(orderId, "SHIPPED").expect(200);
+
+    expect(dashboard.getProductQuantity(cementProductId)).toBe(23);
+    expect(dashboard.getInventoryTransactionCount(orderId)).toBe(1);
+
+    await updateSellerOrderStatus(orderId, "SHIPPED").expect(409);
+
+    expect(dashboard.getProductQuantity(cementProductId)).toBe(23);
+    expect(dashboard.getInventoryTransactionCount(orderId)).toBe(1);
+  });
+
+  it("allows cancellation before shipment and rejects it after shipment", async () => {
+    const cancellableOrderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "CONFIRMED",
+      items: [
+        { productId: cementProductId, quantity: 1, price: "100.00" },
+      ],
+    });
+    dashboard.reserveOrderInventory(cancellableOrderId);
+    const shippedOrderId = dashboard.addOrder({
+      customer: secondCustomer,
+      status: "SHIPPED",
+      items: [{ productId: tileProductId, quantity: 1, price: "50.00" }],
+    });
+
+    const cancelled = await updateSellerOrderStatus(
+      cancellableOrderId,
+      "CANCELLED",
+    ).expect(200);
+    expect(cancelled.body.data.order.status).toBe("CANCELLED");
+    expect(dashboard.getProductQuantity(cementProductId)).toBe(25);
+    expect(dashboard.getInventoryTransactionCount(cancellableOrderId)).toBe(2);
+
+    await updateSellerOrderStatus(shippedOrderId, "CANCELLED").expect(
+      409,
+    );
+  });
+
+  it("prevents another seller from viewing or mutating the order", async () => {
+    const orderId = dashboard.addOrder({
+      customer: firstCustomer,
+      status: "PENDING_PAYMENT_VERIFICATION",
+      paymentMethod: "CBE_BANK",
+      payment: {
+        proofImageUrl: "/uploads/payment-proofs/private.png",
+      },
+      items: [
+        { productId: cementProductId, quantity: 1, price: "100.00" },
+      ],
+    });
+
+    await request(app)
+      .get(`/api/seller/orders/${orderId}`)
+      .set("Authorization", `Bearer ${otherSellerToken}`)
+      .expect(404);
+    await request(app)
+      .patch(`/api/seller/orders/${orderId}/payment`)
+      .set("Authorization", `Bearer ${otherSellerToken}`)
+      .send({ decision: "APPROVE" })
+      .expect(404);
+    await request(app)
+      .patch(`/api/seller/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${otherSellerToken}`)
+      .send({ status: "PROCESSING" })
+      .expect(404);
   });
 
   it("returns seller analytics without other sellers' sales", async () => {
@@ -276,6 +502,21 @@ describe("Seller Dashboard API", () => {
     return request(app)
       .get(path)
       .set("Authorization", `Bearer ${sellerToken}`);
+  }
+
+  function updateSellerOrderStatus(
+    orderId: string,
+    status:
+      | "CONFIRMED"
+      | "PROCESSING"
+      | "SHIPPED"
+      | "DELIVERED"
+      | "CANCELLED",
+  ) {
+    return request(app)
+      .patch(`/api/seller/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({ status });
   }
 
   function seedProducts(): void {

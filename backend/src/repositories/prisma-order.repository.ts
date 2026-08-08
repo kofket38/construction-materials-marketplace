@@ -20,6 +20,10 @@ import type {
   OrderRepository,
   OrderStatus,
 } from "./order.repository.js";
+import {
+  reserveOrderInventory,
+  restoreOrderInventory,
+} from "./order-inventory.js";
 
 const orderRelations = {
   customer: {
@@ -55,13 +59,21 @@ function mapOrder(order: OrderWithRelations): OrderEntity {
     id: order.id,
     customerId: order.customerId,
     status: order.status as OrderStatus,
+    paymentMethod: order.paymentMethod,
     totalAmount: order.totalAmount.toFixed(2),
+    shippingFullName: order.shippingFullName,
+    shippingPhone: order.shippingPhone,
+    shippingCity: order.shippingCity,
+    shippingAddress: order.shippingAddress,
+    shippingNotes: order.shippingNotes,
     customer: order.customer,
     items: order.items.map((item) => ({
       id: item.id,
       orderId: item.orderId,
       productId: item.productId,
       quantity: item.quantity,
+      unitPrice: item.unitPrice.toFixed(2),
+      subtotal: item.subtotal.toFixed(2),
       price: item.price.toFixed(2),
       product: item.product,
     })),
@@ -84,6 +96,8 @@ export class PrismaOrderRepository implements OrderRepository {
         const orderItems: Array<{
           productId: string;
           quantity: number;
+          unitPrice: Prisma.Decimal;
+          subtotal: Prisma.Decimal;
           price: Prisma.Decimal;
         }> = [];
 
@@ -94,6 +108,7 @@ export class PrismaOrderRepository implements OrderRepository {
               id: true,
               sellerId: true,
               price: true,
+              quantity: true,
             },
           });
 
@@ -103,39 +118,17 @@ export class PrismaOrderRepository implements OrderRepository {
           if (product.sellerId === input.customerId) {
             throw new OwnProductOrderError();
           }
-
-          const stockUpdate = await transaction.product.updateMany({
-            where: {
-              id: product.id,
-              quantity: {
-                gte: requestedItem.quantity,
-              },
-            },
-            data: {
-              quantity: {
-                decrement: requestedItem.quantity,
-              },
-            },
-          });
-
-          if (stockUpdate.count !== 1) {
-            const currentProduct = await transaction.product.findUnique({
-              where: { id: product.id },
-              select: { id: true },
-            });
-
-            if (!currentProduct) {
-              throw new OrderProductNotFoundError(product.id);
-            }
+          if (product.quantity < requestedItem.quantity) {
             throw new InsufficientProductStockError(product.id);
           }
 
-          totalAmount = totalAmount.plus(
-            product.price.mul(requestedItem.quantity),
-          );
+          const subtotal = product.price.mul(requestedItem.quantity);
+          totalAmount = totalAmount.plus(subtotal);
           orderItems.push({
             productId: product.id,
             quantity: requestedItem.quantity,
+            unitPrice: product.price,
+            subtotal,
             price: product.price,
           });
         }
@@ -143,13 +136,22 @@ export class PrismaOrderRepository implements OrderRepository {
         const order = await transaction.order.create({
           data: {
             customerId: input.customerId,
+            status: input.status,
+            paymentMethod: input.paymentMethod,
             totalAmount,
+            shippingFullName: input.shipping.fullName,
+            shippingPhone: input.shipping.phone,
+            shippingCity: input.shipping.city,
+            shippingAddress: input.shipping.address,
+            shippingNotes: input.shipping.notes || null,
             items: {
               create: orderItems,
             },
           },
           include: orderRelations,
         });
+
+        await reserveOrderInventory(transaction, order.id, input.items);
 
         return mapOrder(order);
       });
@@ -200,6 +202,14 @@ export class PrismaOrderRepository implements OrderRepository {
       ) {
         throw new OrderTerminalStatusError();
       }
+      if (currentOrder.status === PrismaOrderStatus[status]) {
+        const order = await transaction.order.findUnique({
+          where: { id },
+          include: orderRelations,
+        });
+
+        return order ? mapOrder(order) : null;
+      }
 
       const updated = await transaction.order.updateMany({
         where: {
@@ -214,7 +224,6 @@ export class PrismaOrderRepository implements OrderRepository {
       if (updated.count !== 1) {
         throw new OrderStateChangedError();
       }
-
       const order = await transaction.order.findUnique({
         where: { id },
         include: orderRelations,
@@ -251,22 +260,17 @@ export class PrismaOrderRepository implements OrderRepository {
 
       if (
         options.onlyIfPending &&
+        currentOrder.status !== PrismaOrderStatus.PENDING_PAYMENT &&
+        currentOrder.status !==
+          PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION &&
+        currentOrder.status !== PrismaOrderStatus.PENDING_CONFIRMATION &&
         currentOrder.status !== PrismaOrderStatus.PENDING
       ) {
         throw new OrderNotPendingError();
       }
 
       if (currentOrder.status !== PrismaOrderStatus.DELIVERED) {
-        for (const item of currentOrder.items) {
-          await transaction.product.update({
-            where: { id: item.productId },
-            data: {
-              quantity: {
-                increment: item.quantity,
-              },
-            },
-          });
-        }
+        await restoreOrderInventory(transaction, id);
       }
 
       const cancelled = await transaction.order.updateMany({
