@@ -6,7 +6,11 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     restoreMocks: true,
     clearMocks: true,
-    testTimeout: 20_000,
+    testTimeout: 60_000,
+    hookTimeout: 30_000,
+    // Run test files sequentially (one at a time) to avoid saturating the
+    // Supabase connection pool under concurrent integration-test load.
+    fileParallelism: false,
     coverage: {
       reporter: ["text", "html"],
     },

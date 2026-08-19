@@ -20,6 +20,7 @@ interface CreatedOrderBase {
     | "CONFIRMED"
     | "SHIPPED"
     | "DELIVERED"
+    | "COMPLETED"
     | "CANCELLED";
   totalAmount: string;
 }
@@ -66,6 +67,7 @@ export async function createOrder(
   >("/orders", {
     items: items.map((item) => ({
       productId: item.productId,
+      sellerId: item.sellerId,
       quantity: item.quantity,
     })),
     shipping,

@@ -33,6 +33,18 @@ export interface SellerDashboardProductSeed {
   imageUrl?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
+  /**
+   * When provided, the inventory summary (lowStock, outOfStock, inventoryValue,
+   * activeProducts) uses this value instead of `quantity`, mirroring the
+   * production split between Product.quantity (legacy) and
+   * SellerInventory.quantity (authoritative).
+   */
+  inventoryQuantity?: number;
+  /**
+   * When provided, the inventory summary uses this price instead of `price`
+   * for inventoryValue calculation, mirroring SellerInventory.price.
+   */
+  inventoryPrice?: string;
 }
 
 export interface SellerDashboardOrderSeed {
@@ -103,6 +115,12 @@ export class InMemorySellerDashboardRepository
   private readonly products = new Map<string, ProductEntity>();
   private readonly orders = new Map<string, StoredOrder>();
   private readonly inventoryTransactions = new Set<string>();
+  // Separate from ProductEntity to mirror the SellerInventory split.
+  // Key: productId, value: { quantity, price }
+  private readonly sellerInventory = new Map<
+    string,
+    { quantity: number; price: string }
+  >();
 
   addProduct(seed: SellerDashboardProductSeed): ProductEntity {
     const now = seed.createdAt ?? new Date();
@@ -128,6 +146,19 @@ export class InMemorySellerDashboardRepository
     };
 
     this.products.set(product.id, product);
+
+    // Store the authoritative inventory quantities/prices when provided.
+    // When not provided, fall back to product.quantity/product.price so
+    // existing tests continue to work without changes.
+    this.sellerInventory.set(product.id, {
+      quantity:
+        seed.inventoryQuantity !== undefined
+          ? seed.inventoryQuantity
+          : seed.quantity,
+      price:
+        seed.inventoryPrice !== undefined ? seed.inventoryPrice : seed.price,
+    });
+
     return product;
   }
 
@@ -186,7 +217,9 @@ export class InMemorySellerDashboardRepository
 
     for (const item of order.items) {
       const product = this.requireProduct(item.productId);
-      if (product.quantity < item.quantity) {
+      const inv = this.sellerInventory.get(product.id);
+      const effectiveQty = inv?.quantity ?? product.quantity;
+      if (effectiveQty < item.quantity) {
         throw new InsufficientProductStockError(item.productId);
       }
     }
@@ -201,6 +234,10 @@ export class InMemorySellerDashboardRepository
       if (!this.inventoryTransactions.has(reservationKey)) {
         product.quantity -= item.quantity;
         product.updatedAt = new Date();
+        const inv = this.sellerInventory.get(product.id);
+        if (inv) {
+          inv.quantity -= item.quantity;
+        }
         this.inventoryTransactions.add(reservationKey);
       }
     }
@@ -212,11 +249,15 @@ export class InMemorySellerDashboardRepository
   ): Promise<SellerDashboardSummary> {
     const products = this.sellerProducts(sellerId);
     const orders = this.sellerOrders(sellerId);
-    const delivered = orders.filter((order) => order.status === "DELIVERED");
+    const delivered = orders.filter((order) =>
+      ["DELIVERED", "COMPLETED"].includes(order.status),
+    );
 
     return {
       totalProducts: products.length,
-      activeProducts: products.filter((product) => product.quantity > 0).length,
+      activeProducts: products.filter(
+        (product) => (this.sellerInventory.get(product.id)?.quantity ?? 0) > 0,
+      ).length,
       totalOrders: orders.length,
       pendingOrders: orders.filter((order) => order.status === "PENDING").length,
       completedOrders: delivered.length,
@@ -282,8 +323,13 @@ export class InMemorySellerDashboardRepository
           query.categoryId === undefined ||
           product.categoryId === query.categoryId,
       )
-      .filter((product) => matchesStock(product.quantity, query.stock))
-      .sort((left, right) => compareProducts(left, right, query));
+      .filter((product) =>
+        matchesStock(
+          this.sellerInventory.get(product.id)?.quantity ?? 0,
+          query.stock,
+        ),
+      )
+      .sort((left, right) => compareProducts(left, right, query, this.sellerInventory));
     const total = products.length;
     const allSellerProducts = this.sellerProducts(sellerId);
 
@@ -294,18 +340,21 @@ export class InMemorySellerDashboardRepository
       pagination: pagination(query.page, query.limit, total),
       inventorySummary: {
         totalProducts: allSellerProducts.length,
-        lowStock: allSellerProducts.filter(
-          (product) => product.quantity > 0 && product.quantity <= 10,
-        ).length,
-        outOfStock: allSellerProducts.filter(
-          (product) => product.quantity === 0,
-        ).length,
+        lowStock: allSellerProducts.filter((product) => {
+          const qty = this.sellerInventory.get(product.id)?.quantity ?? 0;
+          return qty > 0 && qty <= 10;
+        }).length,
+        outOfStock: allSellerProducts.filter((product) => {
+          const qty = this.sellerInventory.get(product.id)?.quantity ?? 0;
+          return qty === 0;
+        }).length,
         inventoryValue: money(
-          allSellerProducts.reduce(
-            (totalValue, product) =>
-              totalValue + Number(product.price) * product.quantity,
-            0,
-          ),
+          allSellerProducts.reduce((totalValue, product) => {
+            const inv = this.sellerInventory.get(product.id);
+            const qty = inv?.quantity ?? 0;
+            const price = inv?.price ?? product.price;
+            return totalValue + Number(price) * qty;
+          }, 0),
         ),
       },
     };
@@ -416,8 +465,8 @@ export class InMemorySellerDashboardRepository
     period: SellerAnalyticsPeriod,
   ): Promise<SellerAnalytics> {
     const sellerOrders = this.sellerOrders(sellerId);
-    const delivered = sellerOrders.filter(
-      (order) => order.status === "DELIVERED",
+    const delivered = sellerOrders.filter((order) =>
+      ["DELIVERED", "COMPLETED"].includes(order.status),
     );
     const productSales = new Map<
       string,
@@ -621,6 +670,10 @@ export class InMemorySellerDashboardRepository
         const product = this.requireProduct(item.productId);
         product.quantity += item.quantity;
         product.updatedAt = new Date();
+        const inv = this.sellerInventory.get(product.id);
+        if (inv) {
+          inv.quantity += item.quantity;
+        }
         this.inventoryTransactions.add(cancellationKey);
       }
     }
@@ -632,6 +685,7 @@ const orderStatuses: OrderStatus[] = [
   "CONFIRMED",
   "SHIPPED",
   "DELIVERED",
+  "COMPLETED",
   "CANCELLED",
 ];
 
@@ -682,6 +736,7 @@ function compareProducts(
   left: ProductEntity,
   right: ProductEntity,
   query: SellerProductQuery,
+  inventoryMap: Map<string, { quantity: number; price: string }>,
 ): number {
   let result: number;
 
@@ -693,7 +748,10 @@ function compareProducts(
       result = Number(left.price) - Number(right.price);
       break;
     case "quantity":
-      result = left.quantity - right.quantity;
+      // Use SellerInventory.quantity — same source of truth as the Prisma repository.
+      result =
+        (inventoryMap.get(left.id)?.quantity ?? 0) -
+        (inventoryMap.get(right.id)?.quantity ?? 0);
       break;
     case "createdAt":
       result = left.createdAt.getTime() - right.createdAt.getTime();

@@ -5,10 +5,12 @@ import {
 import {
   InsufficientProductStockError,
   OrderProductNotFoundError,
+  SellerInventoryNotFoundError,
 } from "./order.errors.js";
 
-interface OrderInventoryItem {
+export interface OrderInventoryItem {
   productId: string;
+  sellerId: string;
   quantity: number;
 }
 
@@ -18,6 +20,7 @@ export async function reserveOrderInventory(
   items: OrderInventoryItem[],
 ): Promise<void> {
   for (const item of items) {
+    // Idempotency: skip if this product's reservation was already recorded.
     const existingTransaction =
       await transaction.inventoryTransaction.findUnique({
         where: {
@@ -34,9 +37,34 @@ export async function reserveOrderInventory(
       continue;
     }
 
-    const stockUpdate = await transaction.product.updateMany({
+    // Fetch the SellerInventory row to get the city and validate existence.
+    const inventoryRow = await transaction.sellerInventory.findUnique({
       where: {
-        id: item.productId,
+        sellerId_productId: {
+          sellerId: item.sellerId,
+          productId: item.productId,
+        },
+      },
+      select: { city: true, quantity: true },
+    });
+
+    if (!inventoryRow) {
+      // Distinguish between a missing product and a missing inventory entry.
+      const productExists = await transaction.product.findUnique({
+        where: { id: item.productId },
+        select: { id: true },
+      });
+      if (!productExists) {
+        throw new OrderProductNotFoundError(item.productId);
+      }
+      throw new SellerInventoryNotFoundError(item.productId, item.sellerId);
+    }
+
+    // Atomic decrement: only succeeds when stock is sufficient.
+    const stockUpdate = await transaction.sellerInventory.updateMany({
+      where: {
+        sellerId: item.sellerId,
+        productId: item.productId,
         quantity: { gte: item.quantity },
       },
       data: {
@@ -45,14 +73,6 @@ export async function reserveOrderInventory(
     });
 
     if (stockUpdate.count !== 1) {
-      const product = await transaction.product.findUnique({
-        where: { id: item.productId },
-        select: { id: true },
-      });
-
-      if (!product) {
-        throw new OrderProductNotFoundError(item.productId);
-      }
       throw new InsufficientProductStockError(item.productId);
     }
 
@@ -60,8 +80,8 @@ export async function reserveOrderInventory(
       data: {
         orderId,
         productId: item.productId,
-        // Keep the legacy enum value so existing migrations and ledger rows
-        // remain compatible; this transaction now records checkout reservation.
+        sellerId: item.sellerId,
+        city: inventoryRow.city,
         type: InventoryTransactionType.ORDER_SHIPMENT,
         quantityChange: -item.quantity,
       },
@@ -81,11 +101,14 @@ export async function restoreOrderInventory(
       },
       select: {
         productId: true,
+        sellerId: true,
+        city: true,
         quantityChange: true,
       },
     });
 
   for (const shipment of shipmentTransactions) {
+    // Idempotency: skip if restoration was already recorded.
     const existingReversal =
       await transaction.inventoryTransaction.findUnique({
         where: {
@@ -103,16 +126,24 @@ export async function restoreOrderInventory(
     }
 
     const restoredQuantity = -shipment.quantityChange;
-    await transaction.product.update({
-      where: { id: shipment.productId },
+
+    // Restore the exact SellerInventory row that was decremented.
+    await transaction.sellerInventory.updateMany({
+      where: {
+        sellerId: shipment.sellerId,
+        productId: shipment.productId,
+      },
       data: {
         quantity: { increment: restoredQuantity },
       },
     });
+
     await transaction.inventoryTransaction.create({
       data: {
         orderId,
         productId: shipment.productId,
+        sellerId: shipment.sellerId,
+        city: shipment.city,
         type: InventoryTransactionType.ORDER_CANCELLATION,
         quantityChange: restoredQuantity,
       },

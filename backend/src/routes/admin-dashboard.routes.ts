@@ -4,6 +4,7 @@ import { authorizeRoles } from "../middleware/authorize-role.js";
 import { validateRequest } from "../middleware/validate-request.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
+  adminOrdersQuerySchema,
   adminProductIdParamsSchema,
   adminProductsQuerySchema,
   adminSellersQuerySchema,
@@ -20,6 +21,16 @@ export function createAdminDashboardRouter(
   const router = Router();
 
   router.use(requireAuthentication, authorizeRoles("ADMIN"));
+
+  router.get(
+    "/orders",
+    validateRequest({
+      body: emptyAdminObjectSchema,
+      params: emptyAdminObjectSchema,
+      query: adminOrdersQuerySchema,
+    }),
+    asyncHandler(controller.findOrders),
+  );
 
   router.get(
     "/dashboard",

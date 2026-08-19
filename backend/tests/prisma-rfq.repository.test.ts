@@ -168,14 +168,22 @@ describe("PrismaRfqRepository", () => {
     ).rejects.toBeInstanceOf(DuplicateSupplierQuoteError);
   });
 
-  it("atomically accepts a quote, reserves stock, and creates a quoted-price order", async () => {
+  it("atomically accepts a quote, reserves SellerInventory, and creates a quoted-price order", async () => {
     client.requestForQuote.findMany.mockResolvedValue([]);
     client.supplierQuote.findUnique
       .mockResolvedValueOnce({ rfqId })
       .mockResolvedValueOnce(acceptanceQuoteRecord());
-    client.product.updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce({ count: 1 });
+    // inventoryTransaction.findUnique (idempotency check) — not found, proceed
+    client.inventoryTransaction.findUnique.mockResolvedValue(null);
+    // sellerInventory.findUnique — return inventory with sufficient stock
+    client.sellerInventory.findUnique.mockResolvedValue({
+      city: "Nairobi",
+      quantity: 100,
+    });
+    // sellerInventory.updateMany — atomic decrement succeeds
+    client.sellerInventory.updateMany.mockResolvedValue({ count: 1 });
+    // inventoryTransaction.create — record the deduction
+    client.inventoryTransaction.create.mockResolvedValue({});
     client.order.create.mockResolvedValue(orderRecord());
     client.supplierQuote.update.mockResolvedValue({});
     client.supplierQuote.updateMany.mockResolvedValue({ count: 1 });
@@ -200,15 +208,10 @@ describe("PrismaRfqRepository", () => {
       status: "PENDING",
       totalAmount: "650.00",
     });
-    expect(client.product.updateMany).toHaveBeenNthCalledWith(1, {
-      where: {
-        id: productId,
-        sellerId,
-        categoryId,
-        quantity: { gte: 50 },
-      },
-      data: { quantity: { decrement: 50 } },
-    });
+    // SellerInventory must be decremented, not Product.quantity
+    expect(client.sellerInventory.updateMany).toHaveBeenCalled();
+    expect(client.product.updateMany).not.toHaveBeenCalled();
+    expect(client.inventoryTransaction.create).toHaveBeenCalled();
     expect(client.order.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: {
@@ -240,19 +243,20 @@ describe("PrismaRfqRepository", () => {
     });
   });
 
-  it("does not create an order when a quoted line lacks stock", async () => {
+  it("does not create an order when a quoted line lacks SellerInventory stock", async () => {
     client.requestForQuote.findMany.mockResolvedValue([]);
     client.supplierQuote.findUnique
       .mockResolvedValueOnce({ rfqId })
       .mockResolvedValueOnce(acceptanceQuoteRecord());
-    client.product.updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce({ count: 0 });
-    client.product.findUnique.mockResolvedValue({ id: secondProductId });
+    // Pre-validation: first item has stock, second item has insufficient stock
+    client.sellerInventory.findUnique
+      .mockResolvedValueOnce({ city: "Nairobi", quantity: 100 }) // first OK
+      .mockResolvedValueOnce({ city: "Nairobi", quantity: 1 });  // second: quantity < offeredQuantity (40)
 
     await expect(
       repository.acceptQuote(quoteId, customerId),
     ).rejects.toBeInstanceOf(RfqInsufficientStockError);
+    // Order must NOT be created when stock check fails
     expect(client.order.create).not.toHaveBeenCalled();
     expect(client.requestForQuote.update).not.toHaveBeenCalled();
   });
@@ -316,6 +320,14 @@ function createPrismaClientMock() {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       updateMany: vi.fn(),
+    },
+    sellerInventory: {
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    inventoryTransaction: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
     },
     requestForQuote: {
       create: vi.fn(),

@@ -14,6 +14,7 @@ const orderQuantitySchema = z
 const orderItemSchema = z
   .object({
     productId: z.string().uuid(),
+    sellerId: z.string().uuid(),
     quantity: orderQuantitySchema,
   })
   .strict();

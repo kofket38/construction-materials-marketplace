@@ -41,6 +41,7 @@ const orderStatusLabels: Record<OrderStatus, string> = {
   READY_FOR_DELIVERY: "Ready for pickup",
   OUT_FOR_DELIVERY: "Out for delivery",
   DELIVERED: "Delivered",
+  COMPLETED: "Completed",
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",
   PENDING: "Awaiting seller",

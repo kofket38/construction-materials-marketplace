@@ -91,10 +91,21 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: typeof productRelations;
 }>;
 
-function mapProduct(product: ProductWithRelations): ProductEntity {
+function mapProduct(
+  product: ProductWithRelations,
+  city?: string,
+): ProductEntity {
   const parsedDescription = parseProductDescription(product.description);
   const rating = summarizeRatings(product.reviews);
   const primaryInventory = product.inventory[0];
+
+  // When a city context is available, find the matching SellerInventory entry.
+  const cityInventory =
+    city !== undefined
+      ? product.inventory.find(
+          (inv) => inv.city.trim().toLowerCase() === city.trim().toLowerCase(),
+        ) ?? null
+      : null;
 
   return {
     id: product.id,
@@ -107,6 +118,14 @@ function mapProduct(product: ProductWithRelations): ProductEntity {
     imageUrl: product.images[0]?.imageUrl ?? product.imageUrl,
     averageRating: rating.averageRating,
     reviewCount: rating.reviewCount,
+    // City-specific fields — present only when a city context exists.
+    ...(cityInventory !== null
+      ? {
+          inventoryPrice: cityInventory.price.toFixed(2),
+          inventoryQuantity: cityInventory.quantity,
+          inventoryCity: cityInventory.city,
+        }
+      : {}),
     seller: {
       id: product.seller.id,
       name: product.seller.name,
@@ -206,11 +225,11 @@ export class PrismaProductRepository implements ProductRepository {
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
     const totalPages = Math.ceil(totalItems / query.limit);
 
     return {
-      products: products.map(mapProduct),
+      products: products.map((p) => mapProduct(p, query.city)),
       totalItems,
       totalPages,
       currentPage: query.page,

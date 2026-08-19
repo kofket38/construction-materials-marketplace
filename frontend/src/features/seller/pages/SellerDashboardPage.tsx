@@ -21,6 +21,7 @@ import {
   formatOrderNumber,
 } from "@/features/orders/lib/order-display";
 import { getSellerDashboard } from "@/features/seller/api/seller-orders.api";
+import { SellerOnboardingBanner } from "@/features/seller/components/SellerOnboardingBanner";
 import type { SellerDashboardSummary } from "@/features/seller/model/seller-order";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
@@ -101,6 +102,11 @@ export function SellerDashboardPage() {
           <ClipboardCheck aria-hidden="true" className="size-4" />
           Manage orders
         </Link>
+      </div>
+
+      {/* Onboarding checklist — hidden once profile + inventory are complete */}
+      <div className="mt-6">
+        <SellerOnboardingBanner />
       </div>
 
       <section

@@ -3,6 +3,7 @@ import type { PaymentService } from "../services/payment.service.js";
 import { UnauthorizedError } from "../utils/api-error.js";
 import type {
   CheckoutPaymentOptionsBody,
+  PaymentFilenameParams,
   PaymentOrderIdParams,
   SubmitManualPaymentBody,
 } from "../validators/payment.validators.js";
@@ -59,6 +60,23 @@ export class PaymentController {
       success: true,
       data: details,
     });
+  };
+
+  serveProof = async (req: Request, res: Response): Promise<void> => {
+    const { filename } = req.params as PaymentFilenameParams;
+    const result = await this.paymentService.serveProofFile(
+      this.requireActor(req),
+      filename,
+    );
+
+    res.set({
+      "Content-Type": result.contentType,
+      "Content-Disposition": `inline; filename="${result.filename}"`,
+      "Content-Length": String(result.buffer.length),
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    });
+    res.status(200).end(result.buffer);
   };
 
   private requireActor(req: Request) {

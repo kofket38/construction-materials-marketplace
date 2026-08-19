@@ -8,6 +8,8 @@ import type { ProductController } from "../controllers/product.controller.js";
 import type { ReviewController } from "../controllers/review.controller.js";
 import type { RfqController } from "../controllers/rfq.controller.js";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
+import type { SellerInventoryController } from "../controllers/seller-inventory.controller.js";
+import type { SellerProfileController } from "../controllers/seller-profile.controller.js";
 import type { WishlistController } from "../controllers/wishlist.controller.js";
 import { authenticate } from "../middleware/authentication.js";
 import { createAuthRateLimiter } from "../middleware/rate-limit.js";
@@ -22,6 +24,8 @@ import { createProductRouter } from "./product.routes.js";
 import { createReviewRouter } from "./review.routes.js";
 import { createRfqRouter } from "./rfq.routes.js";
 import { createSellerDashboardRouter } from "./seller-dashboard.routes.js";
+import { createSellerInventoryRouter } from "./seller-inventory.routes.js";
+import { createSellerProfileRouter } from "./seller-profile.routes.js";
 import { createWishlistRouter } from "./wishlist.routes.js";
 
 export function createApiRouter(
@@ -34,6 +38,8 @@ export function createApiRouter(
   reviewController: ReviewController,
   rfqController: RfqController,
   sellerDashboardController: SellerDashboardController,
+  sellerInventoryController: SellerInventoryController,
+  sellerProfileController: SellerProfileController,
   wishlistController: WishlistController,
   tokenService: TokenService,
   userRepository: UserRepository,
@@ -71,6 +77,22 @@ export function createApiRouter(
   );
   router.use(createReviewRouter(reviewController, requireAuthentication));
   router.use(createRfqRouter(rfqController, requireAuthentication));
+  // More-specific /seller/* routes must be registered before the
+  // catch-all /seller router so they are matched first.
+  router.use(
+    "/seller/inventory",
+    createSellerInventoryRouter(
+      sellerInventoryController,
+      requireAuthentication,
+    ),
+  );
+  router.use(
+    "/seller/profile",
+    createSellerProfileRouter(
+      sellerProfileController,
+      requireAuthentication,
+    ),
+  );
   router.use(
     "/seller",
     createSellerDashboardRouter(

@@ -26,6 +26,7 @@ export interface ManualPaymentDetails {
       | "CONFIRMED"
       | "SHIPPED"
       | "DELIVERED"
+      | "COMPLETED"
       | "CANCELLED";
     paymentMethod: ManualPaymentMethod;
     totalAmount: string;

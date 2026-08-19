@@ -33,7 +33,8 @@ import {
   getSellerPrimaryOrderAction,
 } from "@/features/orders/lib/seller-order-workflow";
 import { formatProductPrice } from "@/features/products/lib/product-display";
-import { resolvePaymentProofUrl } from "@/features/seller/lib/seller-order-display";
+import { useProofObjectUrl } from "@/features/payments/hooks/use-proof-object-url";
+import { AuthenticatedProofImage } from "@/features/payments/components/AuthenticatedProofImage";
 import type {
   SellerOrder,
   SellerOrderItem,
@@ -479,6 +480,9 @@ function OrderItemRow({ item }: { item: SellerOrderItem }) {
 }
 
 function PaymentProof({ order }: { order: SellerOrder }) {
+  const proofFilename = order.payment?.proofImageUrl ?? null;
+  const { objectUrl: proofObjectUrl } = useProofObjectUrl(proofFilename);
+
   if (!order.payment) {
     return (
       <div className="flex items-start gap-3 text-sm text-zinc-600">
@@ -502,8 +506,6 @@ function PaymentProof({ order }: { order: SellerOrder }) {
     );
   }
 
-  const proofUrl = resolvePaymentProofUrl(order.payment.proofImageUrl);
-
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
       <div>
@@ -514,28 +516,26 @@ function PaymentProof({ order }: { order: SellerOrder }) {
         <p className="mt-1 text-xs text-zinc-500">
           Submitted {formatOrderDateTime(order.payment.createdAt)}
         </p>
-        <a
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-          href={proofUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <ExternalLink aria-hidden="true" className="size-4" />
-          Open payment proof
-        </a>
+        {proofObjectUrl ? (
+          <a
+            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            download={proofFilename ?? undefined}
+            href={proofObjectUrl}
+          >
+            <ExternalLink aria-hidden="true" className="size-4" />
+            Open payment proof
+          </a>
+        ) : null}
       </div>
-      <a
-        className="block overflow-hidden rounded-md border border-zinc-200 bg-zinc-100"
-        href={proofUrl}
-        rel="noreferrer"
-        target="_blank"
-      >
-        <img
-          alt={`Payment proof for ${formatOrderNumber(order.id)}`}
-          className="aspect-[4/3] size-full object-contain"
-          src={proofUrl}
-        />
-      </a>
+      <div className="overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+        {proofFilename ? (
+          <AuthenticatedProofImage
+            alt={`Payment proof for ${formatOrderNumber(order.id)}`}
+            className="aspect-[4/3] size-full object-contain"
+            filename={proofFilename}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

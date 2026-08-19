@@ -44,11 +44,29 @@ export interface ProductEntity {
   categoryId: string;
   name: string;
   description: string;
+  /** Legacy catalog price. When a city filter is active, use inventoryPrice. */
   price: string;
+  /** Legacy catalog quantity. When a city filter is active, use inventoryQuantity. */
   quantity: number;
   imageUrl: string | null;
   averageRating?: number | null;
   reviewCount?: number;
+  /**
+   * City-specific price from SellerInventory.
+   * Present when the product was fetched with a city filter
+   * or through a seller store page with a city context.
+   */
+  inventoryPrice?: string | null;
+  /**
+   * City-specific stock from SellerInventory.
+   * Present when the product was fetched with a city filter
+   * or through a seller store page with a city context.
+   */
+  inventoryQuantity?: number | null;
+  /**
+   * The city for which inventoryPrice and inventoryQuantity are valid.
+   */
+  inventoryCity?: string | null;
   seller: ProductSellerSummary;
   category: ProductCategorySummary;
   brand?: ProductBrandSummary | null;

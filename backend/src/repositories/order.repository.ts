@@ -12,6 +12,7 @@ export type OrderStatus =
   | "CONFIRMED"
   | "SHIPPED"
   | "DELIVERED"
+  | "COMPLETED"
   | "CANCELLED";
 
 export type PaymentMethod =
@@ -69,6 +70,7 @@ export interface OrderEntity {
 
 export interface CreateOrderItemInput {
   productId: string;
+  sellerId: string;
   quantity: number;
 }
 
@@ -100,6 +102,10 @@ export interface OrderRepository {
   updateStatus(
     id: string,
     status: OrderStatus,
+  ): Promise<OrderEntity | null>;
+  complete(
+    id: string,
+    customerId: string,
   ): Promise<OrderEntity | null>;
   cancel(
     id: string,

@@ -12,6 +12,15 @@ export class InsufficientProductStockError extends Error {
   }
 }
 
+export class SellerInventoryNotFoundError extends Error {
+  constructor(productId: string, sellerId: string) {
+    super(
+      `No seller inventory found for product ${productId} and seller ${sellerId}.`,
+    );
+    this.name = "SellerInventoryNotFoundError";
+  }
+}
+
 export class OwnProductOrderError extends Error {
   constructor() {
     super("Customers cannot order their own products.");
@@ -42,7 +51,7 @@ export class OrderAlreadyCancelledError extends Error {
 
 export class OrderTerminalStatusError extends Error {
   constructor() {
-    super("A delivered or cancelled order cannot change status.");
+    super("A delivered, completed, or cancelled order cannot change status.");
     this.name = "OrderTerminalStatusError";
   }
 }

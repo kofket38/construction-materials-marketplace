@@ -82,12 +82,16 @@ class InMemoryPaymentProofStorage implements PaymentProofStorage {
     this.saved.push(input);
     return {
       path: `memory://${input.orderId}`,
-      url: `/uploads/payment-proofs/${input.orderId}.png`,
+      filename: `${input.orderId}.png`,
     };
   }
 
   async remove(storedProof: StoredPaymentProof): Promise<void> {
     this.removed.push(storedProof);
+  }
+
+  async fetch(_filename: string) {
+    return null;
   }
 }
 
@@ -303,7 +307,7 @@ describe("Payment API", () => {
       .post("/api/orders")
       .set("Authorization", `Bearer ${customerToken}`)
       .send({
-        items: [{ productId, quantity: 1 }],
+        items: [{ productId, sellerId, quantity: 1 }],
         shipping,
         paymentMethod,
       })

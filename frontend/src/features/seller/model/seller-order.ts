@@ -53,6 +53,7 @@ export interface SellerOrder {
 }
 
 export interface SellerDashboardSummary {
+  completedOrders: number;
   pendingPaymentVerification: number;
   paymentVerified: number;
   processing: number;
@@ -77,6 +78,7 @@ export interface SellerOrdersResult {
 export type SellerOrderStatusUpdate =
   | "CONFIRMED"
   | "PROCESSING"
+  | "READY_FOR_DELIVERY"
   | "SHIPPED"
   | "DELIVERED"
   | "CANCELLED";

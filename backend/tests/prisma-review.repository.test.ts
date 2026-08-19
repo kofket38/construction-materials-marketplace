@@ -43,7 +43,9 @@ describe("PrismaReviewRepository", () => {
         order: {
           is: {
             customerId,
-            status: "DELIVERED",
+            status: {
+              in: ["DELIVERED", "COMPLETED"],
+            },
           },
         },
       },

@@ -7,6 +7,7 @@ export type SellerWorkflowStatus =
   | "PROCESSING"
   | "SHIPPED"
   | "DELIVERED"
+  | "COMPLETED"
   | "CANCELLED";
 
 const workflowLabels: Record<SellerWorkflowStatus, string> = {
@@ -15,6 +16,7 @@ const workflowLabels: Record<SellerWorkflowStatus, string> = {
   PROCESSING: "Processing",
   SHIPPED: "Shipped",
   DELIVERED: "Delivered",
+  COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
 
@@ -38,6 +40,8 @@ export function getSellerWorkflowStatus(
       return "SHIPPED";
     case "DELIVERED":
       return "DELIVERED";
+    case "COMPLETED":
+      return "COMPLETED";
     case "PAYMENT_REJECTED":
     case "REJECTED":
     case "CANCELLED":
@@ -62,6 +66,10 @@ export function getSellerPrimaryOrderAction(
     case "CONFIRMED":
       return { label: "Mark processing", status: "PROCESSING" };
     case "PROCESSING":
+      return {
+        label: "Mark ready for delivery",
+        status: "READY_FOR_DELIVERY",
+      };
     case "READY_FOR_DELIVERY":
       return { label: "Mark shipped", status: "SHIPPED" };
     case "OUT_FOR_DELIVERY":

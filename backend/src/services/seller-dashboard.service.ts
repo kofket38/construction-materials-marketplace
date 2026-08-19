@@ -214,6 +214,7 @@ function nextOrderStatuses(status: OrderStatus): OrderStatus[] {
     case "CONFIRMED":
       return ["PROCESSING", "CANCELLED"];
     case "PROCESSING":
+      return ["READY_FOR_DELIVERY", "CANCELLED"];
     case "READY_FOR_DELIVERY":
       return ["SHIPPED", "CANCELLED"];
     case "SHIPPED":

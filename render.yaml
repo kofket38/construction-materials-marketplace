@@ -1,0 +1,46 @@
+services:
+  # ── Backend — Render Web Service ──────────────────────────────────────────
+  - type: web
+    name: cmm-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm run build
+    startCommand: npm run prisma:deploy && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false           # Supplied via Render dashboard (Supabase session-pooler URL)
+      - key: JWT_ACCESS_SECRET
+        generateValue: true   # Or supply via dashboard — must be ≥32 chars
+      - key: JWT_REFRESH_SECRET
+        generateValue: true   # Must differ from JWT_ACCESS_SECRET
+      - key: ACCESS_TOKEN_EXPIRES
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRES
+        value: 7d
+      - key: CLIENT_URL
+        sync: false           # Supplied after frontend is deployed, e.g. https://cmm.onrender.com
+      - key: SUPABASE_URL
+        sync: false           # https://<project>.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false           # BACKEND ONLY — never expose to frontend
+      - key: SUPABASE_STORAGE_BUCKET
+        value: payment-proofs
+      # PORT is injected automatically by Render — do NOT set it here
+
+  # ── Frontend — Render Static Site ─────────────────────────────────────────
+  - type: web
+    name: cmm-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false           # https://cmm-backend.onrender.com/api (set after backend deploys)

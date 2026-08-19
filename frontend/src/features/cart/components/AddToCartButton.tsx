@@ -7,6 +7,7 @@ import {
   useCartStore,
 } from "@/features/cart/model/cart.store";
 import type { CartMutationResult } from "@/features/cart/model/cart";
+import { effectiveQuantity } from "@/features/cart/model/cart";
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import type { Product } from "@/features/products/model/product";
 
@@ -36,12 +37,14 @@ export function AddToCartButton({
   const [wasAdded, setWasAdded] = useState(false);
   const currentQuantity =
     cartItems.find((item) => item.productId === product.id)?.quantity ?? 0;
+  // Use city-specific stock when available; fall back to catalog quantity.
+  const availableStock = effectiveQuantity(product);
   const inventoryLimitReached =
-    product.quantity > 0 && currentQuantity >= product.quantity;
+    availableStock > 0 && currentQuantity >= availableStock;
   const isDisabled =
     isAdding ||
     hydrationStatus !== "ready" ||
-    product.quantity < 1 ||
+    availableStock < 1 ||
     inventoryLimitReached;
 
   async function handleAddToCart(): Promise<void> {
@@ -80,7 +83,7 @@ export function AddToCartButton({
       ? "Cart unavailable"
       : hydrationStatus !== "ready"
         ? "Loading cart..."
-        : product.quantity < 1
+        : availableStock < 1
       ? "Out of stock"
       : inventoryLimitReached
         ? "Inventory limit reached"

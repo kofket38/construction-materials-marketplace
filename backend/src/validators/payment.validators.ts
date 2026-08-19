@@ -27,6 +27,20 @@ export const paymentOrderIdParamsSchema = z
 
 export const emptyPaymentObjectSchema = z.object({}).strict();
 
+// Filename: alphanumeric, hyphens, dots only — no slashes, no traversal
+export const paymentFilenameParamsSchema = z
+  .object({
+    filename: z
+      .string()
+      .min(1)
+      .max(255)
+      .regex(
+        /^[a-zA-Z0-9._-]+$/,
+        "Invalid filename.",
+      ),
+  })
+  .strict();
+
 export type SubmitManualPaymentBody = z.infer<
   typeof submitManualPaymentBodySchema
 >;
@@ -35,4 +49,7 @@ export type CheckoutPaymentOptionsBody = z.infer<
 >;
 export type PaymentOrderIdParams = z.infer<
   typeof paymentOrderIdParamsSchema
+>;
+export type PaymentFilenameParams = z.infer<
+  typeof paymentFilenameParamsSchema
 >;

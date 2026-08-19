@@ -7,6 +7,7 @@ import {
   OrderStateChangedError,
   OrderTerminalStatusError,
   OwnProductOrderError,
+  SellerInventoryNotFoundError,
 } from "../repositories/order.errors.js";
 import type {
   OrderEntity,
@@ -110,6 +111,18 @@ export class OrderService {
   ): Promise<OrderEntity> {
     this.requireAdmin(actor);
 
+    // Fetch current state to enforce the admin transition policy.
+    const current = await this.requireOrder(id);
+    const allowed = allowedAdminTransitions(current.status);
+
+    if (!allowed.includes(input.status)) {
+      throw new ConflictError(
+        allowed.length > 0
+          ? `Cannot transition from ${current.status} to ${input.status}. Allowed: ${allowed.join(", ")}.`
+          : `Order is in a terminal state (${current.status}) and cannot be updated.`,
+      );
+    }
+
     try {
       const order =
         input.status === "CANCELLED"
@@ -121,6 +134,36 @@ export class OrderService {
       }
 
       return order;
+    } catch (error) {
+      this.handleRepositoryError(error);
+    }
+  }
+
+  async complete(
+    id: string,
+    actor: AuthenticatedUser,
+  ): Promise<OrderEntity> {
+    this.requireCustomer(actor);
+    const order = await this.requireOrder(id);
+
+    if (order.customerId !== actor.userId) {
+      throw new ForbiddenError("You can only complete your own orders.");
+    }
+    if (order.status === "COMPLETED") {
+      return order;
+    }
+    if (order.status !== "DELIVERED") {
+      throw new ConflictError(
+        "Only delivered orders can be marked completed.",
+      );
+    }
+
+    try {
+      const completed = await this.orders.complete(id, actor.userId);
+      if (!completed) {
+        throw new NotFoundError("Order not found.");
+      }
+      return completed;
     } catch (error) {
       this.handleRepositoryError(error);
     }
@@ -207,6 +250,9 @@ export class OrderService {
     if (error instanceof OrderProductNotFoundError) {
       throw new NotFoundError(error.message);
     }
+    if (error instanceof SellerInventoryNotFoundError) {
+      throw new NotFoundError(error.message);
+    }
     if (error instanceof InsufficientProductStockError) {
       throw new ConflictError(error.message);
     }
@@ -256,4 +302,71 @@ function isCustomerCancellableStatus(status: OrderEntity["status"]): boolean {
     status === "PENDING_CONFIRMATION" ||
     status === "PENDING"
   );
+}
+
+/**
+ * Returns the set of statuses an ADMIN may transition to from the given
+ * current status.
+ *
+ * Policy:
+ * - COMPLETED and CANCELLED are terminal — no further transitions.
+ * - DELIVERED may only be cancelled (no inventory restoration applies —
+ *   the repository's cancel() skips restoration for DELIVERED orders).
+ * - All other statuses allow forward progression according to the
+ *   marketplace workflow plus admin-only emergency cancellation.
+ * - Retrograde transitions (e.g. DELIVERED → CONFIRMED) are never allowed.
+ *
+ * This mirrors the seller's nextOrderStatuses() but is kept separate because
+ * admin and seller have different sets of meaningful actions.
+ */
+function allowedAdminTransitions(
+  status: OrderEntity["status"],
+): OrderEntity["status"][] {
+  switch (status) {
+    // ── Terminal states ────────────────────────────────────────────────────
+    case "COMPLETED":
+    case "CANCELLED":
+      return [];
+
+    // ── DELIVERED: admin may only cancel (no inventory restoration) ────────
+    case "DELIVERED":
+      return ["CANCELLED"];
+
+    // ── Payment-pending states ─────────────────────────────────────────────
+    case "PENDING_PAYMENT":
+      return ["PENDING_PAYMENT_VERIFICATION", "CANCELLED"];
+
+    case "PENDING_PAYMENT_VERIFICATION":
+      return ["CONFIRMED", "PAYMENT_REJECTED", "CANCELLED"];
+
+    case "PAYMENT_REJECTED":
+      return ["CANCELLED"];
+
+    // ── Confirmation-pending states ────────────────────────────────────────
+    case "PENDING_CONFIRMATION":
+    case "PENDING":
+    case "PAYMENT_VERIFIED":
+      return ["CONFIRMED", "CANCELLED"];
+
+    // ── Fulfilment states ──────────────────────────────────────────────────
+    case "CONFIRMED":
+      return ["PROCESSING", "CANCELLED"];
+
+    case "PROCESSING":
+      return ["READY_FOR_DELIVERY", "CANCELLED"];
+
+    case "READY_FOR_DELIVERY":
+      return ["SHIPPED", "CANCELLED"];
+
+    case "OUT_FOR_DELIVERY":
+    case "SHIPPED":
+      return ["DELIVERED", "CANCELLED"];
+
+    // ── Rejected/legacy states ─────────────────────────────────────────────
+    case "REJECTED":
+      return ["CANCELLED"];
+
+    default:
+      return [];
+  }
 }

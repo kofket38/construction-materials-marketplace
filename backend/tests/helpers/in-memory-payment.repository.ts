@@ -6,6 +6,7 @@ import {
 import type {
   CreateManualPaymentInput,
   PaymentEntity,
+  PaymentProofAuthorization,
   PaymentRepository,
 } from "../../src/repositories/payment.repository.js";
 import { isManualPaymentMethod } from "../../src/types/payment.js";
@@ -55,5 +56,25 @@ export class InMemoryPaymentRepository implements PaymentRepository {
 
   async findByOrderId(orderId: string): Promise<PaymentEntity | null> {
     return this.payments.get(orderId) ?? null;
+  }
+
+  async findByProofFilename(
+    filename: string,
+  ): Promise<PaymentProofAuthorization | null> {
+    for (const payment of this.payments.values()) {
+      if (payment.proofImageUrl === filename) {
+        const order = await this.orders.findById(payment.orderId);
+        if (!order) return null;
+        const sellerIds = [
+          ...new Set(order.items.map((item) => item.product.sellerId)),
+        ];
+        return {
+          proofFilename: payment.proofImageUrl,
+          customerId: order.customerId,
+          sellerIds,
+        };
+      }
+    }
+    return null;
   }
 }

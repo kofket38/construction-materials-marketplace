@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/async-handler.js";
 import {
   checkoutPaymentOptionsBodySchema,
   emptyPaymentObjectSchema,
+  paymentFilenameParamsSchema,
   paymentOrderIdParamsSchema,
   submitManualPaymentBodySchema,
 } from "../validators/payment.validators.js";
@@ -40,6 +41,19 @@ export function createPaymentRouter(
       query: emptyPaymentObjectSchema,
     }),
     asyncHandler(controller.submitManualPayment),
+  );
+
+  // Authenticated proof serving — must come before /:orderId
+  router.get(
+    "/proof/:filename",
+    requireAuthentication,
+    authorizeRoles("CUSTOMER", "SELLER", "ADMIN"),
+    validateRequest({
+      body: emptyPaymentObjectSchema,
+      params: paymentFilenameParamsSchema,
+      query: emptyPaymentObjectSchema,
+    }),
+    asyncHandler(controller.serveProof),
   );
 
   router.get(

@@ -64,9 +64,22 @@ export function createOrderRouter(
     asyncHandler(controller.updateStatus),
   );
 
+  router.post(
+    "/:id/complete",
+    requireAuthentication,
+    authorizeRoles("CUSTOMER"),
+    validateRequest({
+      body: emptyOrderObjectSchema,
+      params: orderIdParamsSchema,
+      query: emptyOrderObjectSchema,
+    }),
+    asyncHandler(controller.complete),
+  );
+
   router.get(
     "/:id",
     requireAuthentication,
+    authorizeRoles("CUSTOMER", "ADMIN"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,
@@ -78,6 +91,7 @@ export function createOrderRouter(
   router.delete(
     "/:id",
     requireAuthentication,
+    authorizeRoles("CUSTOMER", "ADMIN"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,

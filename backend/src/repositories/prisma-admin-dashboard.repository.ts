@@ -1,5 +1,6 @@
-import {
+﻿import {
   OrderStatus,
+  PaymentStatus,
   Prisma,
   Role,
   type PrismaClient,
@@ -9,6 +10,9 @@ import type {
   AdminDashboardPeriod,
   AdminDashboardRepository,
   AdminDashboardSummary,
+  AdminOrderEntity,
+  AdminOrderQuery,
+  AdminOrdersResult,
   AdminPagination,
   AdminProductEntity,
   AdminProductQuery,
@@ -116,12 +120,18 @@ export class PrismaAdminDashboardRepository
       this.client.category.count(),
       this.client.order.count(),
       this.client.order.aggregate({
-        where: { status: OrderStatus.DELIVERED },
+        where: {
+          status: {
+            in: [OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+          },
+        },
         _sum: { totalAmount: true },
       }),
       this.client.order.aggregate({
         where: {
-          status: OrderStatus.DELIVERED,
+          status: {
+            in: [OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+          },
           createdAt: {
             gte: period.monthStart,
             lt: period.nextMonthStart,
@@ -247,7 +257,7 @@ export class PrismaAdminDashboardRepository
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
 
     return {
       users: users.map(mapAdminUser),
@@ -325,7 +335,7 @@ export class PrismaAdminDashboardRepository
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
     const aggregates = await this.findSellerAggregates(
       sellers.map((seller) => seller.id),
     );
@@ -433,12 +443,115 @@ export class PrismaAdminDashboardRepository
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
 
     return {
       products: products.map(mapAdminProduct),
       pagination: pagination(query.page, query.limit, total),
     };
+  }
+
+  async findOrders(query: AdminOrderQuery): Promise<AdminOrdersResult> {
+    const where: Prisma.OrderWhereInput = {
+      ...(query.status !== undefined
+        ? { status: query.status as OrderStatus }
+        : {}),
+      ...(query.paymentStatus !== undefined
+        ? {
+            payment: {
+              is: {
+                status: query.paymentStatus as PaymentStatus,
+              },
+            },
+          }
+        : {}),
+      ...(query.search !== undefined
+        ? {
+            OR: [
+              {
+                customer: {
+                  is: {
+                    name: { contains: query.search, mode: "insensitive" as const },
+                  },
+                },
+              },
+              {
+                customer: {
+                  is: {
+                    email: { contains: query.search, mode: "insensitive" as const },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const orderRelations = {
+      customer: { select: { id: true, name: true, email: true } },
+      items: {
+        include: {
+          product: { select: { id: true, sellerId: true, name: true, imageUrl: true } },
+        },
+        orderBy: { id: "asc" as const },
+      },
+      payment: {
+        select: {
+          method: true,
+          status: true,
+          proofImageUrl: true,
+          verifiedAt: true,
+        },
+      },
+    } satisfies Prisma.OrderInclude;
+
+    const [total, orders] = await this.client.$transaction([
+      this.client.order.count({ where }),
+      this.client.order.findMany({
+        where,
+        include: orderRelations,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+    ], { timeout: 30_000 });
+
+    const mapped: AdminOrderEntity[] = orders.map((order) => ({
+      id: order.id,
+      customerId: order.customerId,
+      customer: order.customer,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      totalAmount: order.totalAmount.toFixed(2),
+      shippingFullName: order.shippingFullName,
+      shippingPhone: order.shippingPhone,
+      shippingCity: order.shippingCity,
+      shippingAddress: order.shippingAddress,
+      shippingNotes: order.shippingNotes,
+      itemCount: order.items.length,
+      items: order.items.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.product.name,
+        productImageUrl: item.product.imageUrl,
+        sellerId: item.product.sellerId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice.toFixed(2),
+        subtotal: item.subtotal.toFixed(2),
+      })),
+      payment: order.payment
+        ? {
+            method: order.payment.method,
+            status: order.payment.status,
+            proofImageUrl: order.payment.proofImageUrl,
+            verifiedAt: order.payment.verifiedAt,
+          }
+        : null,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    }));
+
+    return { orders: mapped, pagination: pagination(query.page, query.limit, total) };
   }
 
   async deleteProduct(id: string): Promise<boolean> {
@@ -473,7 +586,7 @@ export class PrismaAdminDashboardRepository
         COALESCE(
           SUM(
             CASE
-              WHEN o."status" = 'DELIVERED'
+              WHEN o."status" IN ('DELIVERED', 'COMPLETED')
               THEN oi."quantity" * oi."price"
               ELSE 0
             END

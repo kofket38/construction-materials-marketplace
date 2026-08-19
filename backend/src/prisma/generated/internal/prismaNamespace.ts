@@ -1873,6 +1873,8 @@ export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof t
 export const InventoryTransactionScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
+  sellerId: 'sellerId',
+  city: 'city',
   orderId: 'orderId',
   type: 'type',
   quantityChange: 'quantityChange',

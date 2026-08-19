@@ -15,6 +15,7 @@ const manualPaymentSteps: TimelineStep[] = [
   { label: "Ready for Pickup" },
   { label: "Out for Delivery" },
   { label: "Delivered" },
+  { label: "Completed" },
 ];
 
 const cashOnDeliverySteps: TimelineStep[] = [
@@ -24,6 +25,7 @@ const cashOnDeliverySteps: TimelineStep[] = [
   { label: "Ready for Pickup" },
   { label: "Out for Delivery" },
   { label: "Delivered" },
+  { label: "Completed" },
 ];
 
 export function OrderTimeline({ order }: { order: CustomerOrder }) {
@@ -39,7 +41,9 @@ export function OrderTimeline({ order }: { order: CustomerOrder }) {
           (terminalState !== null && index === 0) ||
           (terminalState === null &&
             (index < currentStep ||
-              (order.status === "DELIVERED" && index === currentStep)));
+              ((order.status === "DELIVERED" ||
+                order.status === "COMPLETED") &&
+                index === currentStep)));
         const isCurrent =
           terminalState === null && index === currentStep;
         const isLast = index === steps.length - 1;
@@ -140,6 +144,8 @@ function getCurrentStep(
       return 4 + offset;
     case "DELIVERED":
       return 5 + offset;
+    case "COMPLETED":
+      return 6 + offset;
     case "PAYMENT_REJECTED":
     case "REJECTED":
     case "CANCELLED":

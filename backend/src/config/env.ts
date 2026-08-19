@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config();
 import { z } from "zod";
 
 const jwtDurationSchema = z
@@ -17,11 +18,19 @@ const environmentSchema = z
     ACCESS_TOKEN_EXPIRES: jwtDurationSchema.default("15m"),
     REFRESH_TOKEN_EXPIRES: jwtDurationSchema.default("7d"),
     CLIENT_URL: z.string().url().default("http://localhost:5173"),
+    // Local filesystem upload directory — used in development/test only.
+    // In production on Render, use Supabase Storage instead.
     PAYMENT_PROOF_UPLOAD_DIR: z
       .string()
       .trim()
       .min(1)
       .default("uploads/payment-proofs"),
+    // ── Supabase Storage (production only) ─────────────────────────────────
+    // When all three are present the backend uses SupabasePaymentProofStorage.
+    // The service-role key must NEVER appear in any VITE_* variable.
+    SUPABASE_URL: z.string().url().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    SUPABASE_STORAGE_BUCKET: z.string().min(1).optional(),
   })
   .refine(
     (values) => values.JWT_ACCESS_SECRET !== values.JWT_REFRESH_SECRET,

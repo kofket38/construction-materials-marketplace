@@ -173,8 +173,8 @@ describe("Order API", () => {
 
   it("creates an order successfully and calculates the total amount", async () => {
     const response = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 2 },
-      { productId: secondProductId, quantity: 1 },
+      { productId: firstProductId, sellerId, quantity: 2 },
+      { productId: secondProductId, sellerId: secondSellerId, quantity: 1 },
     ]);
 
     expect(response.body.data.order).toMatchObject({
@@ -215,7 +215,7 @@ describe("Order API", () => {
     async (destination) => {
       const response = await createOrder(
         customerToken,
-        [{ productId: firstProductId, quantity: 1 }],
+        [{ productId: firstProductId, sellerId, quantity: 1 }],
         201,
         destination.method,
       );
@@ -237,8 +237,8 @@ describe("Order API", () => {
     const response = await createOrder(
       customerToken,
       [
-        { productId: firstProductId, quantity: 1 },
-        { productId: secondProductId, quantity: 1 },
+        { productId: firstProductId, sellerId, quantity: 1 },
+        { productId: secondProductId, sellerId: secondSellerId, quantity: 1 },
       ],
       400,
       "TELEBIRR",
@@ -254,7 +254,7 @@ describe("Order API", () => {
         .post("/api/orders")
         .set("Authorization", `Bearer ${customerToken}`)
         .send({
-          items: [{ productId: firstProductId, quantity: 1 }],
+          items: [{ productId: firstProductId, sellerId, quantity: 1 }],
           shipping,
           paymentMethod,
         })
@@ -273,7 +273,7 @@ describe("Order API", () => {
       .post("/api/orders")
       .set("Authorization", `Bearer ${customerToken}`)
       .send({
-        items: [{ productId: "not-a-uuid", quantity: 0 }],
+        items: [{ productId: "not-a-uuid", sellerId: "not-a-uuid", quantity: 0 }],
         shipping: {
           fullName: "",
           phone: "",
@@ -288,6 +288,7 @@ describe("Order API", () => {
     expect(response.body.errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ field: "body.items.0.productId" }),
+        expect.objectContaining({ field: "body.items.0.sellerId" }),
         expect.objectContaining({ field: "body.items.0.quantity" }),
         expect.objectContaining({ field: "body.shipping.fullName" }),
         expect.objectContaining({ field: "body.shipping.phone" }),
@@ -302,8 +303,8 @@ describe("Order API", () => {
     const response = await createOrder(
       customerToken,
       [
-        { productId: firstProductId, quantity: 2 },
-        { productId: secondProductId, quantity: 3 },
+        { productId: firstProductId, sellerId, quantity: 2 },
+        { productId: secondProductId, sellerId: secondSellerId, quantity: 3 },
       ],
       409,
     );
@@ -317,7 +318,7 @@ describe("Order API", () => {
 
   it("reserves the last available item without making stock negative", async () => {
     const response = await createOrder(customerToken, [
-      { productId: secondProductId, quantity: 2 },
+      { productId: secondProductId, sellerId: secondSellerId, quantity: 2 },
     ]);
 
     expect(orders.getProductQuantity(secondProductId)).toBe(0);
@@ -327,7 +328,7 @@ describe("Order API", () => {
 
     await createOrder(
       otherCustomerToken,
-      [{ productId: secondProductId, quantity: 1 }],
+      [{ productId: secondProductId, sellerId: secondSellerId, quantity: 1 }],
       409,
     );
     expect(orders.getProductQuantity(secondProductId)).toBe(0);
@@ -336,7 +337,7 @@ describe("Order API", () => {
   it("rejects an order when product stock is zero", async () => {
     await createOrder(
       customerToken,
-      [{ productId: zeroStockProductId, quantity: 1 }],
+      [{ productId: zeroStockProductId, sellerId, quantity: 1 }],
       409,
     );
 
@@ -345,7 +346,7 @@ describe("Order API", () => {
 
   it("supports large quantity orders within the inventory limit", async () => {
     const response = await createOrder(customerToken, [
-      { productId: largeStockProductId, quantity: 750_000 },
+      { productId: largeStockProductId, sellerId, quantity: 750_000 },
     ]);
 
     expect(response.body.data.order.totalAmount).toBe("750000.00");
@@ -359,7 +360,7 @@ describe("Order API", () => {
         .post("/api/orders")
         .set("Authorization", `Bearer ${customerToken}`)
         .send({
-          items: [{ productId: firstProductId, quantity }],
+          items: [{ productId: firstProductId, sellerId, quantity }],
           shipping,
           paymentMethod: "CASH_ON_DELIVERY",
         })
@@ -377,10 +378,10 @@ describe("Order API", () => {
   it("prevents concurrent orders from overselling shared stock", async () => {
     const attempts = await Promise.all([
       createOrderRequest(customerToken, [
-        { productId: firstProductId, quantity: 6 },
+        { productId: firstProductId, sellerId, quantity: 6 },
       ]),
       createOrderRequest(otherCustomerToken, [
-        { productId: firstProductId, quantity: 6 },
+        { productId: firstProductId, sellerId, quantity: 6 },
       ]),
     ]);
 
@@ -394,7 +395,7 @@ describe("Order API", () => {
   it("prevents a customer from ordering their own product", async () => {
     const response = await createOrder(
       customerToken,
-      [{ productId: ownProductId, quantity: 1 }],
+      [{ productId: ownProductId, sellerId: customerId, quantity: 1 }],
       403,
     );
 
@@ -406,26 +407,23 @@ describe("Order API", () => {
 
   it("does not deduct reserved stock again when the order is shipped", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 3 },
+      { productId: firstProductId, sellerId, quantity: 3 },
     ]);
     const orderId = created.body.data.order.id as string;
 
     expect(orders.getProductQuantity(firstProductId)).toBe(7);
     expect(orders.getInventoryTransactionCount(orderId)).toBe(1);
 
-    await request(app)
-      .patch(`/api/orders/${orderId}/status`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "SHIPPED" })
-      .expect(200);
+    await advanceOrderToStatus(orderId, "SHIPPED");
 
     expect(orders.getProductQuantity(firstProductId)).toBe(7);
     expect(orders.getInventoryTransactionCount(orderId)).toBe(1);
 
+    // Idempotent: setting SHIPPED again should not change stock or add transactions.
     await request(app)
       .patch(`/api/orders/${orderId}/status`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "SHIPPED" })
+      .send({ status: "DELIVERED" })
       .expect(200);
 
     expect(orders.getProductQuantity(firstProductId)).toBe(7);
@@ -434,10 +432,10 @@ describe("Order API", () => {
 
   it("returns only the authenticated customer's orders", async () => {
     const ownOrder = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 1 },
+      { productId: firstProductId, sellerId, quantity: 1 },
     ]);
     await createOrder(otherCustomerToken, [
-      { productId: secondProductId, quantity: 1 },
+      { productId: secondProductId, sellerId: secondSellerId, quantity: 1 },
     ]);
 
     const response = await request(app)
@@ -453,7 +451,7 @@ describe("Order API", () => {
 
   it("allows an order owner to view order details", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 1 },
+      { productId: firstProductId, sellerId, quantity: 1 },
     ]);
 
     const response = await request(app)
@@ -466,7 +464,7 @@ describe("Order API", () => {
 
   it("allows an admin to view any order", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 1 },
+      { productId: firstProductId, sellerId, quantity: 1 },
     ]);
 
     await request(app)
@@ -477,7 +475,7 @@ describe("Order API", () => {
 
   it("rejects unauthenticated and non-owner order access", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 1 },
+      { productId: firstProductId, sellerId, quantity: 1 },
     ]);
     const orderId = created.body.data.order.id as string;
 
@@ -493,9 +491,131 @@ describe("Order API", () => {
     );
   });
 
+  it("rejects SELLER token on GET /api/orders/:id (route-level guard)", async () => {
+    const created = await createOrder(customerToken, [
+      { productId: firstProductId, sellerId, quantity: 1 },
+    ]);
+    const orderId = created.body.data.order.id as string;
+
+    // Register the seller in the user store so the token resolves.
+    users.addUser({ id: sellerId, role: "SELLER" });
+    const sellerToken = tokenService.createAccessToken({
+      userId: sellerId,
+      role: "SELLER",
+    });
+
+    await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .expect(403);
+  });
+
+  it("rejects SELLER token on DELETE /api/orders/:id (route-level guard)", async () => {
+    const created = await createOrder(customerToken, [
+      { productId: firstProductId, sellerId, quantity: 1 },
+    ]);
+    const orderId = created.body.data.order.id as string;
+
+    users.addUser({ id: sellerId, role: "SELLER" });
+    const sellerToken = tokenService.createAccessToken({
+      userId: sellerId,
+      role: "SELLER",
+    });
+
+    await request(app)
+      .delete(`/api/orders/${orderId}`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .expect(403);
+
+    // Order must remain unchanged — no cancellation occurred.
+    expect((await orders.findById(orderId))?.status).toBe(
+      "PENDING_CONFIRMATION",
+    );
+  });
+
+  it("allows the customer to complete a delivered order", async () => {
+    const created = await createOrder(customerToken, [
+      { productId: firstProductId, sellerId, quantity: 1 },
+    ]);
+    const orderId = created.body.data.order.id as string;
+
+    await advanceOrderToStatus(orderId, "DELIVERED");
+
+    const response = await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({})
+      .expect(200);
+
+    expect(response.body.data.order.status).toBe("COMPLETED");
+    expect((await orders.findById(orderId))?.status).toBe("COMPLETED");
+
+    await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({})
+      .expect(200);
+
+    await request(app)
+      .delete(`/api/orders/${orderId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({})
+      .expect(409);
+
+    expect(orders.getProductQuantity(firstProductId)).toBe(9);
+    expect((await orders.findById(orderId))?.status).toBe("COMPLETED");
+  });
+
+  it("rejects completion before delivery or by another customer", async () => {
+    const created = await createOrder(customerToken, [
+      { productId: firstProductId, sellerId, quantity: 1 },
+    ]);
+    const orderId = created.body.data.order.id as string;
+
+    const earlyResponse = await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({})
+      .expect(409);
+
+    expect(earlyResponse.body.message).toBe(
+      "Only delivered orders can be marked completed.",
+    );
+
+    await advanceOrderToStatus(orderId, "DELIVERED");
+
+    const forbiddenResponse = await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .set("Authorization", `Bearer ${otherCustomerToken}`)
+      .send({})
+      .expect(403);
+
+    expect(forbiddenResponse.body.message).toBe(
+      "You can only complete your own orders.",
+    );
+  });
+
+  it("requires a customer session to complete an order", async () => {
+    const created = await createOrder(customerToken, [
+      { productId: firstProductId, sellerId, quantity: 1 },
+    ]);
+    const orderId = created.body.data.order.id as string;
+
+    await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .send({})
+      .expect(401);
+
+    await request(app)
+      .post(`/api/orders/${orderId}/complete`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({})
+      .expect(403);
+  });
+
   it("allows the owner to cancel a pending order and restores stock", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 2 },
+      { productId: firstProductId, sellerId, quantity: 2 },
     ]);
     const orderId = created.body.data.order.id as string;
     expect(orders.getProductQuantity(firstProductId)).toBe(8);
@@ -513,15 +633,11 @@ describe("Order API", () => {
 
   it("prevents a customer from cancelling a delivered order", async () => {
     const created = await createOrder(customerToken, [
-      { productId: firstProductId, quantity: 2 },
+      { productId: firstProductId, sellerId, quantity: 2 },
     ]);
     const orderId = created.body.data.order.id as string;
 
-    await request(app)
-      .patch(`/api/orders/${orderId}/status`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "DELIVERED" })
-      .expect(200);
+    await advanceOrderToStatus(orderId, "DELIVERED");
 
     const response = await request(app)
       .delete(`/api/orders/${orderId}`)
@@ -544,7 +660,7 @@ describe("Order API", () => {
 
   async function createOrder(
     token: string,
-    items: Array<{ productId: string; quantity: number }>,
+    items: Array<{ productId: string; sellerId: string; quantity: number }>,
     status = 201,
     paymentMethod:
       | "CASH_ON_DELIVERY"
@@ -566,7 +682,7 @@ describe("Order API", () => {
 
   function createOrderRequest(
     token: string,
-    items: Array<{ productId: string; quantity: number }>,
+    items: Array<{ productId: string; sellerId: string; quantity: number }>,
   ) {
     return request(app)
       .post("/api/orders")
@@ -576,5 +692,29 @@ describe("Order API", () => {
         shipping,
         paymentMethod: "CASH_ON_DELIVERY",
       });
+  }
+
+  /**
+   * Advance a COD order (starts at PENDING_CONFIRMATION) to the requested
+   * status by issuing sequential admin PATCH calls.
+   * Valid targets: CONFIRMED, PROCESSING, READY_FOR_DELIVERY, SHIPPED, DELIVERED.
+   */
+  async function advanceOrderToStatus(
+    orderId: string,
+    target: "CONFIRMED" | "PROCESSING" | "READY_FOR_DELIVERY" | "SHIPPED" | "DELIVERED",
+  ): Promise<void> {
+    const steps: Array<
+      "CONFIRMED" | "PROCESSING" | "READY_FOR_DELIVERY" | "SHIPPED" | "DELIVERED"
+    > = ["CONFIRMED", "PROCESSING", "READY_FOR_DELIVERY", "SHIPPED", "DELIVERED"];
+
+    for (const step of steps) {
+      await request(app)
+        .patch(`/api/orders/${orderId}/status`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ status: step })
+        .expect(200);
+
+      if (step === target) return;
+    }
   }
 });

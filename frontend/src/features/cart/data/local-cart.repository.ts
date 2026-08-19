@@ -3,8 +3,8 @@ import { z } from "zod";
 import type { CartRepository } from "@/features/cart/data/cart.repository";
 import type { UserCarts } from "@/features/cart/model/cart";
 
-const CART_STORAGE_KEY = "cmm-marketplace-cart-v1";
-const CART_STORAGE_VERSION = 1;
+const CART_STORAGE_KEY = "cmm-marketplace-cart-v2";
+const CART_STORAGE_VERSION = 2;
 
 const cartItemSchema = z
   .object({
@@ -18,6 +18,7 @@ const cartItemSchema = z
     price: z.string(),
     productId: z.string(),
     quantity: z.number().int().min(1),
+    sellerId: z.string(),
     sellerName: z.string(),
     updatedAt: z.string(),
   })

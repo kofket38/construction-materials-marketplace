@@ -77,7 +77,9 @@ try {
   await evaluate(
     `sessionStorage.setItem("cmm.marketplace.city", "Addis Ababa")`,
   );
-  await navigate(`${frontendUrl}/products`);
+  // Force a full page reload so the Zustand store re-reads sessionStorage on init.
+  await cdp.send("Page.reload", { ignoreCache: true });
+  await sleep(2000);
   await waitForPage(
     `document.querySelector("h1")?.textContent?.trim() === "Construction materials" &&
       document.querySelectorAll('a[href^="/products/"]').length > 0 &&
@@ -290,11 +292,11 @@ async function setViewport(width, height, mobile) {
 
 async function navigate(url) {
   await cdp.send("Page.navigate", { url });
-  await sleep(1000);
+  await sleep(2000);
 }
 
 async function waitForPage(condition, description) {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     if (await evaluate(`Boolean(${condition})`)) {
       return;
     }

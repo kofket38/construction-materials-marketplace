@@ -118,6 +118,83 @@ The default API base URL is `http://localhost:3000`. The health endpoint is:
 GET /health
 ```
 
+## Production Deployment
+
+### Required environment variables
+
+Set every variable in the production environment before starting the server.
+Do not use the `.env.example` values as-is in production.
+
+| Variable | Production requirement |
+| --- | --- |
+| `NODE_ENV` | Must be `production` |
+| `DATABASE_URL` | Full PostgreSQL connection URL to the production database |
+| `JWT_ACCESS_SECRET` | Random secret, **at least 32 characters**, unique to this deployment |
+| `JWT_REFRESH_SECRET` | A **different** random secret, at least 32 characters |
+| `ACCESS_TOKEN_EXPIRES` | `15m` recommended; adjust to suit your session policy |
+| `REFRESH_TOKEN_EXPIRES` | `7d` recommended; adjust to suit your session policy |
+| `CLIENT_URL` | The exact origin of the production frontend, e.g. `https://app.example.com` — controls CORS |
+| `PORT` | The port the server will listen on |
+| `PAYMENT_PROOF_UPLOAD_DIR` | Absolute path to a **persistent** directory for uploaded payment receipts (see note below) |
+
+Generate strong secrets:
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
+```
+
+Run the command twice and use one value for `JWT_ACCESS_SECRET` and a
+different value for `JWT_REFRESH_SECRET`. The server refuses to start if
+they are identical or shorter than 32 characters.
+
+### Payment proof storage
+
+`PAYMENT_PROOF_UPLOAD_DIR` must point to a directory that survives process
+restarts and deployments. In a containerised or horizontally scaled
+environment this must be a mounted persistent volume shared across all
+instances — local container storage is not sufficient. Proof images uploaded
+to one instance must be readable by every other instance serving the
+`GET /api/payments/proof/:filename` endpoint.
+
+### HTTPS requirement
+
+The production server must be served over HTTPS. The refresh-token cookie
+has its `Secure` flag enabled when `NODE_ENV=production`, which means it
+will not be sent over plain HTTP connections. Unenforced HTTP in production
+will break the authentication refresh flow.
+
+### Deployment sequence
+
+```bash
+# 1. Install production dependencies
+npm ci --omit=dev
+
+# 2. Apply pending database migrations (non-destructive, safe to re-run)
+npm run prisma:deploy
+
+# 3. Compile TypeScript to JavaScript
+npm run build
+
+# 4. Start the server
+npm start
+```
+
+Verify the server is healthy:
+
+```bash
+curl https://your-api-domain/health
+# Expected: {"success":true,"data":{"status":"ok"}}
+```
+
+### Development seed data
+
+> **WARNING: Do NOT run `npm run seed` in production.**
+>
+> The seed command (`npm run seed`) creates development seller accounts with
+> the known default password `DevSeller123!`. It is intended for local
+> development and staging environments only. Running it against a production
+> database will create insecure accounts with a publicly known password.
+
 ## Authentication API
 
 | Method | Route | Authentication |
@@ -581,10 +658,18 @@ Manual payment routes require a customer access token.
 | `POST` | `/api/payments/options` | Resolve payment destinations for a single-seller cart |
 | `POST` | `/api/payments/manual` | Upload a JPEG, PNG, or WebP receipt up to 5 MB |
 | `GET` | `/api/payments/:orderId` | Read the customer's payment and destination details |
+| `GET` | `/api/payments/proof/:filename` | Stream an uploaded payment proof image |
 
 Digital payment is limited to single-seller carts. Cash on delivery remains
 available for mixed-seller carts. Uploaded receipts are stored beneath
-`PAYMENT_PROOF_UPLOAD_DIR` and served from `/uploads/payment-proofs`.
+`PAYMENT_PROOF_UPLOAD_DIR` and served through the authenticated
+`GET /api/payments/proof/:filename` endpoint. This endpoint requires a valid
+`CUSTOMER`, `SELLER`, or `ADMIN` access token and enforces ownership
+verification: customers may only access proofs belonging to their own orders,
+sellers may only access proofs for orders that contain their products, and
+administrators may access any proof. Unauthenticated requests return `401`;
+requests from an authenticated user without the required ownership return
+`403`. The upload directory is never exposed through a public static route.
 
 ## Seller Dashboard API
 

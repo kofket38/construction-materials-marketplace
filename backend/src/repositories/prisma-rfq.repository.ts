@@ -1,4 +1,4 @@
-import {
+﻿import {
   Prisma,
   type PrismaClient,
 } from "../prisma/generated/client.js";
@@ -28,6 +28,8 @@ import {
   SupplierQuoteSellerInactiveError,
   SupplierQuoteValidityError,
 } from "./rfq.errors.js";
+import { reserveOrderInventory } from "./order-inventory.js";
+import { InsufficientProductStockError, SellerInventoryNotFoundError } from "./order.errors.js";
 import type {
   AcceptQuoteResult,
   CreateRfqInput,
@@ -213,7 +215,7 @@ export class PrismaRfqRepository implements RfqRepository {
         });
 
         return mapRfq(rfq);
-      });
+      }, { timeout: 30_000, maxWait: 10_000 });
     } catch (error) {
       this.translateWriteError(error);
     }
@@ -673,28 +675,6 @@ export class PrismaRfqRepository implements RfqRepository {
             throw new RfqQuotedProductUnavailableError(product.id);
           }
 
-          const stockUpdate = await transaction.product.updateMany({
-            where: {
-              id: product.id,
-              sellerId: quote.sellerId,
-              categoryId: rfqItem.categoryId ?? undefined,
-              quantity: { gte: item.offeredQuantity },
-            },
-            data: {
-              quantity: { decrement: item.offeredQuantity },
-            },
-          });
-          if (stockUpdate.count !== 1) {
-            const currentProduct = await transaction.product.findUnique({
-              where: { id: product.id },
-              select: { id: true },
-            });
-            if (!currentProduct) {
-              throw new RfqQuotedProductUnavailableError(product.id);
-            }
-            throw new RfqInsufficientStockError(product.id);
-          }
-
           totalAmount = totalAmount.plus(item.unitPrice.mul(item.offeredQuantity));
           orderItems.push({
             productId: product.id,
@@ -707,6 +687,28 @@ export class PrismaRfqRepository implements RfqRepository {
           throw new RfqStateChangedError();
         }
 
+        // Pre-validate SellerInventory stock for every item before creating
+        // the order â€” this way, if any item lacks stock, the order is never
+        // created and the transaction rolls back cleanly.
+        for (const oi of orderItems) {
+          const inv = await transaction.sellerInventory.findUnique({
+            where: {
+              sellerId_productId: {
+                sellerId: quote.sellerId,
+                productId: oi.productId,
+              },
+            },
+            select: { quantity: true },
+          });
+          if (!inv) {
+            throw new RfqQuotedProductUnavailableError(oi.productId);
+          }
+          if (inv.quantity < oi.quantity) {
+            throw new RfqInsufficientStockError(oi.productId);
+          }
+        }
+
+        // All stock checks passed â€” create the order and then reserve atomically.
         const order = await transaction.order.create({
           data: {
             customerId,
@@ -715,6 +717,32 @@ export class PrismaRfqRepository implements RfqRepository {
           },
           include: orderRelations,
         });
+
+        // Reserve SellerInventory using the same path as normal checkout:
+        // decrements SellerInventory.quantity and writes InventoryTransaction
+        // records with sellerId + city. Cancellation/restoration will then
+        // work identically to a regular order.
+        try {
+          await reserveOrderInventory(
+            transaction,
+            order.id,
+            orderItems.map((oi) => ({
+              productId: oi.productId,
+              sellerId: quote.sellerId,
+              quantity: oi.quantity,
+            })),
+          );
+        } catch (error) {
+          if (error instanceof InsufficientProductStockError) {
+            throw new RfqInsufficientStockError(
+              error.message.match(/product (\S+)/)?.[1] ?? "unknown",
+            );
+          }
+          if (error instanceof SellerInventoryNotFoundError) {
+            throw new RfqQuotedProductUnavailableError(null);
+          }
+          throw error;
+        }
 
         await transaction.supplierQuote.update({
           where: { id },
@@ -771,7 +799,7 @@ export class PrismaRfqRepository implements RfqRepository {
         skip: (input.query.page - 1) * input.query.limit,
         take: input.query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
     return {
       rfqs: rfqs.map(mapRfq),
       pagination: {
@@ -814,7 +842,7 @@ export class PrismaRfqRepository implements RfqRepository {
         },
         data: { status: "CLOSED" },
       });
-    });
+    }, { timeout: 15_000, maxWait: 5_000 });
   }
 
   private async loadRfqItemSnapshots(
@@ -1011,6 +1039,8 @@ export class PrismaRfqRepository implements RfqRepository {
   ): Promise<T> {
     return this.client.$transaction(operation, {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      timeout: 30_000,
+      maxWait: 10_000,
     });
   }
 

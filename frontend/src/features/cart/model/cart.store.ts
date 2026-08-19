@@ -1,8 +1,11 @@
 import { create } from "zustand";
 
-import { cartRepository } from "@/features/cart/data/local-cart.repository";
+import {
+  cartRepository,
+} from "@/features/cart/data/local-cart.repository";
 import {
   createCartItem,
+  effectiveQuantity,
   updateCartItemProduct,
   type CartItem,
   type CartMutationResult,
@@ -75,7 +78,8 @@ export const useCartStore = create<CartState & CartActions>()((set, get) => {
   return {
     ...initialState,
     addItem: async (userId, product, requestedQuantity = 1) => {
-      if (product.quantity < 1) {
+      const available = effectiveQuantity(product);
+      if (available < 1) {
         return {
           message: `${product.name} is currently out of stock.`,
           productId: product.id,
@@ -90,7 +94,7 @@ export const useCartStore = create<CartState & CartActions>()((set, get) => {
       const quantityToAdd = normalizeRequestedQuantity(requestedQuantity);
       const nextQuantity = Math.min(
         (existingItem?.quantity ?? 0) + quantityToAdd,
-        product.quantity,
+        available,
       );
 
       if (existingItem && nextQuantity === existingItem.quantity) {
@@ -191,9 +195,10 @@ export const useCartStore = create<CartState & CartActions>()((set, get) => {
       const currentItems = get().cartsByUserId[userId] ?? [];
       const nextItems = currentItems.flatMap((item) => {
         const product = productById.get(item.productId);
+        const available = product ? effectiveQuantity(product) : 0;
         if (
           unavailableIds.has(item.productId) ||
-          (product && product.quantity < 1)
+          (product && available < 1)
         ) {
           removedProductNames.push(item.name);
           return [];
@@ -202,7 +207,7 @@ export const useCartStore = create<CartState & CartActions>()((set, get) => {
           return [item];
         }
 
-        const quantity = Math.min(item.quantity, product.quantity);
+        const quantity = Math.min(item.quantity, available);
         if (quantity !== item.quantity) {
           adjustedProductNames.push(item.name);
         }

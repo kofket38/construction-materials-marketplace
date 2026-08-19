@@ -60,6 +60,19 @@ export class OrderController {
     });
   };
 
+  complete = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params as OrderIdParams;
+    const order = await this.orderService.complete(
+      id,
+      this.requireActor(req),
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { order },
+    });
+  };
+
   cancel = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params as OrderIdParams;
     await this.orderService.cancel(id, this.requireActor(req));

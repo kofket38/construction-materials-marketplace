@@ -85,6 +85,40 @@ export async function removeProductFromWishlist(
   );
 }
 
+export interface SubmitReviewInput {
+  rating: number;
+  comment?: string;
+}
+
+export interface ReviewEntity {
+  id: string;
+  productId: string;
+  customerId: string;
+  rating: number;
+  comment: string | null;
+  customer: { id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ReviewData {
+  review: ReviewEntity;
+}
+
+export async function submitReview(
+  productId: string,
+  input: SubmitReviewInput,
+): Promise<ReviewEntity> {
+  const response = await apiClient.post<ApiSuccessResponse<ReviewData>>(
+    `/products/${encodeURIComponent(productId)}/reviews`,
+    {
+      rating: input.rating,
+      ...(input.comment?.trim() ? { comment: input.comment.trim() } : {}),
+    },
+  );
+  return response.data.data.review;
+}
+
 export async function requestProductQuote(
   input: ProductQuoteRequestInput,
 ): Promise<ProductQuoteRequestResult> {

@@ -80,7 +80,7 @@ describe("authentication API", () => {
       const refreshCookie = readRefreshCookie(response);
       expect(refreshCookie).toContain("HttpOnly");
       expect(refreshCookie).toContain("Path=/api/auth");
-      expect(refreshCookie).toContain("SameSite=Strict");
+      expect(refreshCookie).toContain("SameSite=Lax");
     });
 
     it("registers with canonical name input and defaults to CUSTOMER", async () => {

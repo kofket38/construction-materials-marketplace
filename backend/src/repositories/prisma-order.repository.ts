@@ -12,6 +12,7 @@ import {
   OrderStateChangedError,
   OrderTerminalStatusError,
   OwnProductOrderError,
+  SellerInventoryNotFoundError,
 } from "./order.errors.js";
 import type {
   CancelOrderOptions,
@@ -102,14 +103,10 @@ export class PrismaOrderRepository implements OrderRepository {
         }> = [];
 
         for (const requestedItem of input.items) {
+          // Own-product guard: still derived from the canonical Product row.
           const product = await transaction.product.findUnique({
             where: { id: requestedItem.productId },
-            select: {
-              id: true,
-              sellerId: true,
-              price: true,
-              quantity: true,
-            },
+            select: { id: true, sellerId: true },
           });
 
           if (!product) {
@@ -118,18 +115,36 @@ export class PrismaOrderRepository implements OrderRepository {
           if (product.sellerId === input.customerId) {
             throw new OwnProductOrderError();
           }
-          if (product.quantity < requestedItem.quantity) {
-            throw new InsufficientProductStockError(product.id);
+
+          // Authoritative price and stock come from SellerInventory.
+          const inventory = await transaction.sellerInventory.findUnique({
+            where: {
+              sellerId_productId: {
+                sellerId: requestedItem.sellerId,
+                productId: requestedItem.productId,
+              },
+            },
+            select: { price: true, quantity: true },
+          });
+
+          if (!inventory) {
+            throw new SellerInventoryNotFoundError(
+              requestedItem.productId,
+              requestedItem.sellerId,
+            );
+          }
+          if (inventory.quantity < requestedItem.quantity) {
+            throw new InsufficientProductStockError(requestedItem.productId);
           }
 
-          const subtotal = product.price.mul(requestedItem.quantity);
+          const subtotal = inventory.price.mul(requestedItem.quantity);
           totalAmount = totalAmount.plus(subtotal);
           orderItems.push({
             productId: product.id,
             quantity: requestedItem.quantity,
-            unitPrice: product.price,
+            unitPrice: inventory.price,
             subtotal,
-            price: product.price,
+            price: inventory.price,
           });
         }
 
@@ -151,10 +166,12 @@ export class PrismaOrderRepository implements OrderRepository {
           include: orderRelations,
         });
 
+        // reserveOrderInventory now receives sellerId per item so it can
+        // operate on SellerInventory rows rather than Product.quantity.
         await reserveOrderInventory(transaction, order.id, input.items);
 
         return mapOrder(order);
-      });
+      }, { timeout: 30_000, maxWait: 10_000 });
     } catch (error) {
       if (hasPrismaCode(error, "P2003")) {
         throw new OrderCustomerNotFoundError();
@@ -197,8 +214,9 @@ export class PrismaOrderRepository implements OrderRepository {
       }
       if (
         currentOrder.status === PrismaOrderStatus.CANCELLED ||
-        (currentOrder.status === PrismaOrderStatus.DELIVERED &&
-          status !== "DELIVERED")
+        ((currentOrder.status === PrismaOrderStatus.DELIVERED ||
+          currentOrder.status === PrismaOrderStatus.COMPLETED) &&
+          status !== currentOrder.status)
       ) {
         throw new OrderTerminalStatusError();
       }
@@ -230,7 +248,58 @@ export class PrismaOrderRepository implements OrderRepository {
       });
 
       return order ? mapOrder(order) : null;
-    });
+    }, { timeout: 30_000, maxWait: 10_000 });
+  }
+
+  async complete(
+    id: string,
+    customerId: string,
+  ): Promise<OrderEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      const currentOrder = await transaction.order.findUnique({
+        where: { id },
+        select: {
+          customerId: true,
+          status: true,
+        },
+      });
+
+      if (!currentOrder || currentOrder.customerId !== customerId) {
+        return null;
+      }
+      if (currentOrder.status === PrismaOrderStatus.COMPLETED) {
+        const order = await transaction.order.findUnique({
+          where: { id },
+          include: orderRelations,
+        });
+        return order ? mapOrder(order) : null;
+      }
+      if (currentOrder.status !== PrismaOrderStatus.DELIVERED) {
+        throw new OrderStateChangedError();
+      }
+
+      const updated = await transaction.order.updateMany({
+        where: {
+          id,
+          customerId,
+          status: PrismaOrderStatus.DELIVERED,
+        },
+        data: {
+          status: PrismaOrderStatus.COMPLETED,
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new OrderStateChangedError();
+      }
+
+      const order = await transaction.order.findUnique({
+        where: { id },
+        include: orderRelations,
+      });
+
+      return order ? mapOrder(order) : null;
+    }, { timeout: 30_000, maxWait: 10_000 });
   }
 
   async cancel(
@@ -256,6 +325,9 @@ export class PrismaOrderRepository implements OrderRepository {
 
       if (currentOrder.status === PrismaOrderStatus.CANCELLED) {
         throw new OrderAlreadyCancelledError();
+      }
+      if (currentOrder.status === PrismaOrderStatus.COMPLETED) {
+        throw new OrderTerminalStatusError();
       }
 
       if (
@@ -293,6 +365,6 @@ export class PrismaOrderRepository implements OrderRepository {
       });
 
       return order ? mapOrder(order) : null;
-    });
+    }, { timeout: 30_000, maxWait: 10_000 });
   }
 }

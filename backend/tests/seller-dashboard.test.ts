@@ -202,7 +202,7 @@ describe("Seller Dashboard API", () => {
       status: "PENDING_PAYMENT_VERIFICATION",
       paymentMethod: "CBE_BANK",
       payment: {
-        proofImageUrl: "/uploads/payment-proofs/approved.png",
+        proofImageUrl: "approved.png",
       },
       items: [
         { productId: cementProductId, quantity: 1, price: "100.00" },
@@ -215,7 +215,7 @@ describe("Seller Dashboard API", () => {
       paymentMethod: "TELEBIRR",
       payment: {
         method: "TELEBIRR",
-        proofImageUrl: "/uploads/payment-proofs/rejected.png",
+        proofImageUrl: "rejected.png",
       },
       items: [{ productId: tileProductId, quantity: 2, price: "50.00" }],
     });
@@ -261,7 +261,7 @@ describe("Seller Dashboard API", () => {
       status: "PENDING_PAYMENT_VERIFICATION",
       paymentMethod: "CBE_BANK",
       payment: {
-        proofImageUrl: "/uploads/payment-proofs/pending.png",
+        proofImageUrl: "pending.png",
       },
       items: [
         { productId: cementProductId, quantity: 1, price: "100.00" },
@@ -290,11 +290,12 @@ describe("Seller Dashboard API", () => {
       .patch(`/api/seller/orders/${orderId}/status`)
       .set("Authorization", `Bearer ${sellerToken}`)
       .send({ status: "READY_FOR_DELIVERY" })
-      .expect(400);
+      .expect(409);
 
     for (const status of [
       "CONFIRMED",
       "PROCESSING",
+      "READY_FOR_DELIVERY",
       "SHIPPED",
       "DELIVERED",
     ] as const) {
@@ -320,6 +321,10 @@ describe("Seller Dashboard API", () => {
     dashboard.reserveOrderInventory(orderId);
     expect(dashboard.getProductQuantity(cementProductId)).toBe(23);
 
+    await updateSellerOrderStatus(
+      orderId,
+      "READY_FOR_DELIVERY",
+    ).expect(200);
     await updateSellerOrderStatus(orderId, "SHIPPED").expect(200);
 
     expect(dashboard.getProductQuantity(cementProductId)).toBe(23);
@@ -365,7 +370,7 @@ describe("Seller Dashboard API", () => {
       status: "PENDING_PAYMENT_VERIFICATION",
       paymentMethod: "CBE_BANK",
       payment: {
-        proofImageUrl: "/uploads/payment-proofs/private.png",
+        proofImageUrl: "private.png",
       },
       items: [
         { productId: cementProductId, quantity: 1, price: "100.00" },
@@ -439,6 +444,7 @@ describe("Seller Dashboard API", () => {
       { status: "CONFIRMED", count: 1 },
       { status: "SHIPPED", count: 0 },
       { status: "DELIVERED", count: 2 },
+      { status: "COMPLETED", count: 0 },
       { status: "CANCELLED", count: 1 },
     ]);
     expect(analytics.topCategories).toEqual([
@@ -498,6 +504,373 @@ describe("Seller Dashboard API", () => {
     ).expect(400);
   });
 
+  // ── Stock filter uses SellerInventory.quantity ─────────────────────────────
+
+  it("stock=out_of_stock includes products with SellerInventory.quantity=0 even when Product.quantity=100", async () => {
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const isolatedSellerId = randomUUID();
+    isolatedUsers.addUser({ id: isolatedSellerId, role: "SELLER" });
+    const catId = randomUUID();
+    const outOfStockProductId = randomUUID();
+    const inStockProductId = randomUUID();
+
+    // Product.quantity=100 but SellerInventory.quantity=0 → should show as out_of_stock
+    isolatedDashboard.addProduct({
+      id: outOfStockProductId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Misleading Legacy Stock",
+      price: "100.00",
+      quantity: 100,         // legacy — must NOT drive stock filter
+      inventoryQuantity: 0,  // authoritative → out of stock
+    });
+    // Product.quantity=0 but SellerInventory.quantity=100 → must NOT show as out_of_stock
+    isolatedDashboard.addProduct({
+      id: inStockProductId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Correct Inventory Stock",
+      price: "100.00",
+      quantity: 0,             // legacy — must NOT drive stock filter
+      inventoryQuantity: 100,  // authoritative → in stock
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const token = tokenService.createAccessToken({
+      userId: isolatedSellerId,
+      role: "SELLER",
+    });
+
+    const res = await request(isolatedApp)
+      .get("/api/seller/products?stock=out_of_stock")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const ids = res.body.data.products.map((p: { id: string }) => p.id);
+    // outOfStockProductId must appear (SellerInventory.quantity=0)
+    expect(ids).toContain(outOfStockProductId);
+    // inStockProductId must NOT appear (SellerInventory.quantity=100 → in stock)
+    expect(ids).not.toContain(inStockProductId);
+  });
+
+  it("stock=in_stock excludes products where SellerInventory.quantity=0 even when Product.quantity=999", async () => {
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const isolatedSellerId = randomUUID();
+    isolatedUsers.addUser({ id: isolatedSellerId, role: "SELLER" });
+    const catId = randomUUID();
+    const ghostProductId = randomUUID();
+
+    // Product.quantity=999 but SellerInventory.quantity=0 → must NOT appear as in_stock
+    isolatedDashboard.addProduct({
+      id: ghostProductId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Ghost Stock",
+      price: "100.00",
+      quantity: 999,
+      inventoryQuantity: 0,
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const token = tokenService.createAccessToken({
+      userId: isolatedSellerId,
+      role: "SELLER",
+    });
+
+    const res = await request(isolatedApp)
+      .get("/api/seller/products?stock=in_stock")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const ids = res.body.data.products.map((p: { id: string }) => p.id);
+    expect(ids).not.toContain(ghostProductId);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  // ── Quantity sort uses SellerInventory.quantity ────────────────────────────
+
+  it("sortBy=quantity orders by SellerInventory.quantity regardless of Product.quantity", async () => {
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const isolatedSellerId = randomUUID();
+    isolatedUsers.addUser({ id: isolatedSellerId, role: "SELLER" });
+    const catId = randomUUID();
+
+    const productAId = randomUUID();
+    const productBId = randomUUID();
+    const productCId = randomUUID();
+
+    // Product.quantity order: A=5, B=20, C=1 → ascending Product order: C,A,B
+    // SellerInventory.quantity order: A=100, B=5, C=50 → ascending Inventory order: B,C,A
+    // The test verifies the result matches SellerInventory order (B,C,A), not Product order.
+    isolatedDashboard.addProduct({
+      id: productAId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Product A",
+      price: "100.00",
+      quantity: 5,            // legacy
+      inventoryQuantity: 100, // authoritative
+    });
+    isolatedDashboard.addProduct({
+      id: productBId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Product B",
+      price: "100.00",
+      quantity: 20,           // legacy
+      inventoryQuantity: 5,   // authoritative — lowest
+    });
+    isolatedDashboard.addProduct({
+      id: productCId,
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Product C",
+      price: "100.00",
+      quantity: 1,            // legacy
+      inventoryQuantity: 50,  // authoritative — middle
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const token = tokenService.createAccessToken({
+      userId: isolatedSellerId,
+      role: "SELLER",
+    });
+
+    // ASC: SellerInventory.quantity 5→50→100 = B,C,A
+    const ascRes = await request(isolatedApp)
+      .get("/api/seller/products?sortBy=quantity&sortOrder=asc")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    const ascIds = ascRes.body.data.products.map((p: { id: string }) => p.id);
+    expect(ascIds).toEqual([productBId, productCId, productAId]);
+
+    // DESC: SellerInventory.quantity 100→50→5 = A,C,B
+    const descRes = await request(isolatedApp)
+      .get("/api/seller/products?sortBy=quantity&sortOrder=desc")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    const descIds = descRes.body.data.products.map((p: { id: string }) => p.id);
+    expect(descIds).toEqual([productAId, productCId, productBId]);
+  });
+
+  // ── Price validation: zero is rejected ────────────────────────────────────
+  // (Tested via the seller-inventory.test.ts; documented here for traceability)
+  // The validator is tested directly in seller-inventory.test.ts.
+
+  // ── Inventory source-of-truth regression tests ─────────────────────────────
+
+  it("dashboard activeProducts reflects SellerInventory.quantity, not Product.quantity", async () => {
+    // Clear existing products so we have full control over quantities.
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const isolatedSellerId = randomUUID();
+    isolatedUsers.addUser({ id: isolatedSellerId, role: "SELLER" });
+
+    // Product.quantity = 100 (misleading legacy value)
+    // SellerInventory.quantity = 0 (authoritative — this is what matters)
+    const catId = randomUUID();
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Product A",
+      price: "100.00",
+      quantity: 100,          // legacy Product.quantity — should NOT be used
+      inventoryQuantity: 0,   // SellerInventory.quantity — must be used
+    });
+    // Product.quantity = 0, SellerInventory.quantity = 50 → counts as active
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Product B",
+      price: "200.00",
+      quantity: 0,            // legacy Product.quantity — should NOT be used
+      inventoryQuantity: 50,  // SellerInventory.quantity — must be used
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const token = tokenService.createAccessToken({
+      userId: isolatedSellerId,
+      role: "SELLER",
+    });
+
+    const res = await request(isolatedApp)
+      .get("/api/seller/dashboard")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const { totalProducts, activeProducts } = res.body.data.dashboard;
+    // Total products = 2 (both exist in catalog)
+    expect(totalProducts).toBe(2);
+    // Active = 1: only Product B has SellerInventory.quantity > 0
+    // Would be 2 if it read Product.quantity (both were 100 and 50 from legacy)
+    // Would be 1 if it read Product.quantity wrong direction (0 and 0)
+    expect(activeProducts).toBe(1);
+  });
+
+  it("findProducts inventorySummary uses SellerInventory values, not Product values", async () => {
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const isolatedSellerId = randomUUID();
+    isolatedUsers.addUser({ id: isolatedSellerId, role: "SELLER" });
+
+    const catId = randomUUID();
+    // Product.quantity = 100, Product.price = "999.00" — legacy, must NOT appear in summary
+    // SellerInventory.quantity = 0,  SellerInventory.price = "50.00" → outOfStock
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Out of Stock Product",
+      price: "999.00",
+      quantity: 100,
+      inventoryQuantity: 0,
+      inventoryPrice: "50.00",
+    });
+    // Product.quantity = 0 — legacy; SellerInventory.quantity = 5 → lowStock
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Low Stock Product",
+      price: "999.00",
+      quantity: 0,
+      inventoryQuantity: 5,
+      inventoryPrice: "200.00",
+    });
+    // SellerInventory.quantity = 50 → in stock; contributes 50 × 100.00 = 5000.00
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: isolatedSellerId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "In Stock Product",
+      price: "999.00",
+      quantity: 999,
+      inventoryQuantity: 50,
+      inventoryPrice: "100.00",
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const token = tokenService.createAccessToken({
+      userId: isolatedSellerId,
+      role: "SELLER",
+    });
+
+    const res = await request(isolatedApp)
+      .get("/api/seller/products")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const { inventorySummary } = res.body.data;
+    expect(inventorySummary.totalProducts).toBe(3);
+    // outOfStock: 1 (SellerInventory.quantity = 0)
+    expect(inventorySummary.outOfStock).toBe(1);
+    // lowStock: 1 (SellerInventory.quantity = 5, 0 < qty <= 10)
+    expect(inventorySummary.lowStock).toBe(1);
+    // inventoryValue = 0×50 + 5×200 + 50×100 = 6000.00
+    // If it used Product.price/quantity: 100×999 + 0×999 + 999×999 = huge wrong number
+    expect(inventorySummary.inventoryValue).toBe("6000.00");
+  });
+
+  it("inventory summary is scoped to the requesting seller and excludes other sellers", async () => {
+    const isolatedDashboard = new InMemorySellerDashboardRepository();
+    const isolatedUsers = new InMemoryUserRepository();
+    const sellerAId = randomUUID();
+    const sellerBId = randomUUID();
+    isolatedUsers.addUser({ id: sellerAId, role: "SELLER" });
+    isolatedUsers.addUser({ id: sellerBId, role: "SELLER" });
+
+    const catId = randomUUID();
+    // Seller A: SellerInventory.quantity = 0 → outOfStock
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: sellerAId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Seller A Product",
+      price: "100.00",
+      quantity: 0,
+      inventoryQuantity: 0,
+      inventoryPrice: "100.00",
+    });
+    // Seller B: SellerInventory.quantity = 50, price = 200.00
+    isolatedDashboard.addProduct({
+      id: randomUUID(),
+      sellerId: sellerBId,
+      categoryId: catId,
+      categoryName: "Cement",
+      name: "Seller B Product",
+      price: "200.00",
+      quantity: 50,
+      inventoryQuantity: 50,
+      inventoryPrice: "200.00",
+    });
+
+    const isolatedApp = createApp({
+      userRepository: isolatedUsers,
+      sellerDashboardRepository: isolatedDashboard,
+      tokenService,
+      logger: pino({ level: "silent" }),
+    });
+    const tokenA = tokenService.createAccessToken({
+      userId: sellerAId,
+      role: "SELLER",
+    });
+
+    const res = await request(isolatedApp)
+      .get("/api/seller/products")
+      .set("Authorization", `Bearer ${tokenA}`)
+      .expect(200);
+
+    const { inventorySummary } = res.body.data;
+    // Seller A sees only their own product (qty=0)
+    expect(inventorySummary.totalProducts).toBe(1);
+    expect(inventorySummary.outOfStock).toBe(1);
+    expect(inventorySummary.lowStock).toBe(0);
+    // Seller B's 50×200=10000 must NOT appear here
+    expect(inventorySummary.inventoryValue).toBe("0.00");
+  });
+
   function sellerGet(path: string) {
     return request(app)
       .get(path)
@@ -509,6 +882,7 @@ describe("Seller Dashboard API", () => {
     status:
       | "CONFIRMED"
       | "PROCESSING"
+      | "READY_FOR_DELIVERY"
       | "SHIPPED"
       | "DELIVERED"
       | "CANCELLED",

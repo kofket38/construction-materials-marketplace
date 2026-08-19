@@ -2,6 +2,7 @@ import { AdminProductInUseError } from "../repositories/admin-dashboard.errors.j
 import type {
   AdminDashboardRepository,
   AdminDashboardSummary,
+  AdminOrdersResult,
   AdminProductsResult,
   AdminSellersResult,
   AdminUserEntity,
@@ -14,6 +15,7 @@ import {
   NotFoundError,
 } from "../utils/api-error.js";
 import type {
+  AdminOrdersQueryParams,
   AdminProductsQueryParams,
   AdminSellersQueryParams,
   AdminUsersQueryParams,
@@ -82,6 +84,23 @@ export class AdminDashboardService {
       limit: Number(input.limit ?? "20"),
       ...(input.search !== undefined
         ? { search: input.search.trim() }
+        : {}),
+    });
+  }
+
+  findOrders(
+    actor: AuthenticatedUser,
+    input: AdminOrdersQueryParams,
+  ): Promise<AdminOrdersResult> {
+    this.requireAdmin(actor);
+
+    return this.admin.findOrders({
+      page: Number(input.page ?? "1"),
+      limit: Number(input.limit ?? "20"),
+      ...(input.search !== undefined ? { search: input.search.trim() } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      ...(input.paymentStatus !== undefined
+        ? { paymentStatus: input.paymentStatus }
         : {}),
     });
   }

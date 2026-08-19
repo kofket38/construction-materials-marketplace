@@ -65,7 +65,9 @@ export class PrismaReviewRepository implements ReviewRepository {
             order: {
               is: {
                 customerId: input.customerId,
-                status: "DELIVERED",
+                status: {
+                  in: ["DELIVERED", "COMPLETED"],
+                },
               },
             },
           },

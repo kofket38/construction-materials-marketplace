@@ -94,7 +94,9 @@ describe("PrismaAdminDashboardRepository", () => {
     ]);
     expect(client.order.aggregate).toHaveBeenNthCalledWith(2, {
       where: {
-        status: "DELIVERED",
+        status: {
+          in: ["DELIVERED", "COMPLETED"],
+        },
         createdAt: {
           gte: new Date("2026-07-01T00:00:00.000Z"),
           lt: new Date("2026-08-01T00:00:00.000Z"),

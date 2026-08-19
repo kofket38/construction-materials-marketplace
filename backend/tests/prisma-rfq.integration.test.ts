@@ -63,7 +63,7 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
     await Promise.all([prisma.$disconnect(), lockClient.$disconnect()]);
   });
 
-  it("accepts an RFQ quote and persists the awarded order and stock reservation", async () => {
+  it("accepts an RFQ quote and reserves SellerInventory (not Product.quantity)", async () => {
     resources = emptyResources();
     const scenario = await seedScenario(prisma, repository, resources);
 
@@ -83,7 +83,7 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       totalAmount: "650.00",
     });
 
-    const [rfq, quote, products] = await Promise.all([
+    const [rfq, quote, products, sellerInventories, txns] = await Promise.all([
       prisma.requestForQuote.findUniqueOrThrow({
         where: { id: scenario.rfqId },
       }),
@@ -93,6 +93,15 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       prisma.product.findMany({
         where: { id: { in: scenario.seller.productIds } },
         orderBy: { id: "asc" },
+      }),
+      prisma.sellerInventory.findMany({
+        where: { sellerId: scenario.seller.id },
+        orderBy: { id: "asc" },
+      }),
+      prisma.inventoryTransaction.findMany({
+        where: { orderId: result.order.id },
+        select: { type: true, quantityChange: true, sellerId: true, city: true },
+        orderBy: { createdAt: "asc" },
       }),
     ]);
 
@@ -104,30 +113,40 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       status: "ACCEPTED",
       orderId: result.order.id,
     });
-    expect(products.map((product) => product.quantity).sort((a, b) => a - b)).toEqual([
-      50,
-      60,
-    ]);
+
+    // Product.quantity must remain UNCHANGED — SellerInventory is authoritative.
+    expect(products.map((p) => p.quantity)).toEqual([100, 100]);
+
+    // SellerInventory.quantity must be decremented by the offered quantities.
+    const sortedInvQty = sellerInventories.map((si) => si.quantity).sort((a, b) => a - b);
+    expect(sortedInvQty).toEqual([50, 60]);
+
+    // InventoryTransaction records must be created.
+    expect(txns).toHaveLength(2);
+    expect(txns.every((t) => t.type === "ORDER_SHIPMENT")).toBe(true);
+    expect(txns.every((t) => t.sellerId === scenario.seller.id)).toBe(true);
+    expect(txns.map((t) => t.quantityChange).sort((a, b) => a - b)).toEqual([-50, -40]);
   });
 
-  it("rolls back earlier stock decrements when a later quoted item lacks stock", async () => {
+  it("rolls back SellerInventory reservations when a later quoted item lacks stock", async () => {
     resources = emptyResources();
     const scenario = await seedScenario(prisma, repository, resources);
     const quote = await prisma.supplierQuote.findUniqueOrThrow({
       where: { id: scenario.quoteId },
-      include: {
-        items: {
-          orderBy: { id: "asc" },
-        },
-      },
+      include: { items: { orderBy: { id: "asc" } } },
     });
     const firstItem = quote.items[0]!;
     const secondItem = quote.items[1]!;
-    const firstProductBefore = await prisma.product.findUniqueOrThrow({
-      where: { id: firstItem.productId! },
+
+    // Record the first product's SellerInventory before the attempt.
+    const firstInvBefore = await prisma.sellerInventory.findFirstOrThrow({
+      where: { sellerId: scenario.seller.id, productId: firstItem.productId! },
+      select: { quantity: true },
     });
-    await prisma.product.update({
-      where: { id: secondItem.productId! },
+
+    // Zero out the second product's SellerInventory to force a stock failure.
+    await prisma.sellerInventory.updateMany({
+      where: { sellerId: scenario.seller.id, productId: secondItem.productId! },
       data: { quantity: secondItem.offeredQuantity - 1 },
     });
 
@@ -135,10 +154,11 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       repository.acceptQuote(scenario.quoteId, scenario.customerId),
     ).rejects.toBeInstanceOf(RfqInsufficientStockError);
 
-    const [firstProductAfter, rfq, persistedQuote, orderCount] =
+    const [firstInvAfter, rfq, persistedQuote, orderCount] =
       await Promise.all([
-        prisma.product.findUniqueOrThrow({
-          where: { id: firstItem.productId! },
+        prisma.sellerInventory.findFirstOrThrow({
+          where: { sellerId: scenario.seller.id, productId: firstItem.productId! },
+          select: { quantity: true },
         }),
         prisma.requestForQuote.findUniqueOrThrow({
           where: { id: scenario.rfqId },
@@ -151,7 +171,8 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
         }),
       ]);
 
-    expect(firstProductAfter.quantity).toBe(firstProductBefore.quantity);
+    // First product's SellerInventory must be rolled back.
+    expect(firstInvAfter.quantity).toBe(firstInvBefore.quantity);
     expect(rfq.status).toBe("OPEN");
     expect(persistedQuote.status).toBe("SUBMITTED");
     expect(orderCount).toBe(0);
@@ -208,19 +229,21 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       acceptedSeller.id === scenario.seller.id
         ? scenario.secondSeller!
         : scenario.seller;
-    const [acceptedProducts, rejectedProducts] = await Promise.all([
-      prisma.product.findMany({
-        where: { id: { in: acceptedSeller.productIds } },
+    const [acceptedInventories, rejectedInventories] = await Promise.all([
+      prisma.sellerInventory.findMany({
+        where: { sellerId: acceptedSeller.id },
       }),
-      prisma.product.findMany({
-        where: { id: { in: rejectedSeller.productIds } },
+      prisma.sellerInventory.findMany({
+        where: { sellerId: rejectedSeller.id },
       }),
     ]);
 
+    // Accepted seller's SellerInventory is decremented.
     expect(
-      acceptedProducts.map((product) => product.quantity).sort((a, b) => a - b),
+      acceptedInventories.map((si) => si.quantity).sort((a, b) => a - b),
     ).toEqual([50, 60]);
-    expect(rejectedProducts.map((product) => product.quantity)).toEqual([
+    // Rejected seller's SellerInventory is untouched.
+    expect(rejectedInventories.map((si) => si.quantity).sort((a, b) => a - b)).toEqual([
       100,
       100,
     ]);
@@ -480,16 +503,16 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
       repository.acceptQuote(scenario.quoteId, scenario.customerId),
     ).rejects.toBeInstanceOf(SupplierQuoteSellerInactiveError);
 
-    const [orderCount, products] = await Promise.all([
+    const [orderCount, inventories] = await Promise.all([
       prisma.order.count({
         where: { customerId: scenario.customerId },
       }),
-      prisma.product.findMany({
-        where: { id: { in: scenario.seller.productIds } },
+      prisma.sellerInventory.findMany({
+        where: { sellerId: scenario.seller.id },
       }),
     ]);
     expect(orderCount).toBe(0);
-    expect(products.map((product) => product.quantity)).toEqual([100, 100]);
+    expect(inventories.map((si) => si.quantity)).toEqual([100, 100]);
   });
 });
 
@@ -672,6 +695,29 @@ async function createSellerFixture(
     }),
   ]);
 
+  // SellerInventory is the authoritative stock source — must have entries
+  // for reserveOrderInventory to work during RFQ acceptance.
+  await Promise.all([
+    prisma.sellerInventory.create({
+      data: {
+        sellerId: seller.id,
+        productId: products[0].id,
+        price: new Prisma.Decimal("6.00"),
+        quantity: 100,
+        city: "Nairobi",
+      },
+    }),
+    prisma.sellerInventory.create({
+      data: {
+        sellerId: seller.id,
+        productId: products[1].id,
+        price: new Prisma.Decimal("12.00"),
+        quantity: 100,
+        city: "Nairobi",
+      },
+    }),
+  ]);
+
   return {
     id: seller.id,
     productIds: [products[0].id, products[1].id],
@@ -714,6 +760,9 @@ async function cleanupResources(
   });
   await prisma.order.deleteMany({
     where: { customerId: { in: resources.userIds } },
+  });
+  await prisma.sellerInventory.deleteMany({
+    where: { sellerId: { in: resources.userIds } },
   });
   await prisma.product.deleteMany({
     where: { sellerId: { in: resources.userIds } },

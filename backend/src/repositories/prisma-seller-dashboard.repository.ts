@@ -1,4 +1,4 @@
-import {
+﻿import {
   OrderStatus as PrismaOrderStatus,
   PaymentStatus as PrismaPaymentStatus,
   Prisma,
@@ -28,6 +28,7 @@ const orderStatuses: OrderStatus[] = [
   "CONFIRMED",
   "SHIPPED",
   "DELIVERED",
+  "COMPLETED",
   "CANCELLED",
 ];
 
@@ -133,7 +134,7 @@ export class PrismaSellerDashboardRepository
       recentOrders,
     ] = await Promise.all([
       this.client.product.count({ where: { sellerId } }),
-      this.client.product.count({
+      this.client.sellerInventory.count({
         where: {
           sellerId,
           quantity: { gt: 0 },
@@ -171,7 +172,7 @@ export class PrismaSellerDashboardRepository
         INNER JOIN "products" p ON p."id" = oi."productId"
         INNER JOIN "orders" o ON o."id" = oi."orderId"
         WHERE p."sellerId" = ${sellerId}::uuid
-          AND o."status" = 'DELIVERED'
+          AND o."status" IN ('DELIVERED', 'COMPLETED')
       `),
       this.client.order.findMany({
         where: sellerOrderWhere,
@@ -194,7 +195,8 @@ export class PrismaSellerDashboardRepository
         0,
       ),
       pendingOrders: counts.get("PENDING") ?? 0,
-      completedOrders: counts.get("DELIVERED") ?? 0,
+      completedOrders:
+        (counts.get("DELIVERED") ?? 0) + (counts.get("COMPLETED") ?? 0),
       cancelledOrders: counts.get("CANCELLED") ?? 0,
       totalRevenue: formatMoney(revenue?.totalRevenue),
       monthlyRevenue: formatMoney(revenue?.monthlyRevenue),
@@ -213,6 +215,13 @@ export class PrismaSellerDashboardRepository
     sellerId: string,
     query: SellerProductQuery,
   ): Promise<SellerProductsResult> {
+    // Stock filtering is expressed as a SellerInventory relation condition
+    // so that SellerInventory.quantity is authoritative, not Product.quantity.
+    const inventoryStockFilter: Prisma.SellerInventoryListRelationFilter | undefined =
+      query.stock !== undefined
+        ? { some: { sellerId, ...sellerInventoryStockFilter(query.stock) } }
+        : undefined;
+
     const where: Prisma.ProductWhereInput = {
       sellerId,
       ...(query.search !== undefined
@@ -246,10 +255,20 @@ export class PrismaSellerDashboardRepository
       ...(query.categoryId !== undefined
         ? { categoryId: query.categoryId }
         : {}),
-      ...(query.stock !== undefined
-        ? { quantity: stockFilter(query.stock) }
+      ...(inventoryStockFilter !== undefined
+        ? { inventory: inventoryStockFilter }
         : {}),
     };
+
+    if (query.sortBy === "quantity") {
+      // SellerInventory.quantity sort cannot be expressed as a Prisma relation
+      // orderBy. Use a targeted raw query to join seller_inventory for ordering.
+      return this.findProductsSortedByInventoryQuantity(
+        sellerId,
+        query,
+        where,
+      );
+    }
 
     const [total, products, inventoryRows] = await this.client.$transaction([
       this.client.product.count({ where }),
@@ -271,10 +290,10 @@ export class PrismaSellerDashboardRepository
           )::text AS "outOfStock",
           COALESCE(SUM("price" * "quantity"), 0)::text
             AS "inventoryValue"
-        FROM "products"
+        FROM "seller_inventory"
         WHERE "sellerId" = ${sellerId}::uuid
       `),
-    ]);
+    ], { timeout: 30_000 });
     const inventorySummary = inventoryRows[0];
 
     return {
@@ -344,7 +363,7 @@ export class PrismaSellerDashboardRepository
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ]);
+    ], { timeout: 30_000 });
 
     return {
       orders: orders.map(mapSellerOrder),
@@ -500,7 +519,7 @@ export class PrismaSellerDashboardRepository
           INNER JOIN "products" p ON p."id" = oi."productId"
           INNER JOIN "orders" o ON o."id" = oi."orderId"
           WHERE p."sellerId" = ${sellerId}::uuid
-            AND o."status" = 'DELIVERED'
+            AND o."status" IN ('DELIVERED', 'COMPLETED')
           GROUP BY p."id", p."name"
           ORDER BY SUM(oi."quantity") DESC,
             SUM(oi."quantity" * oi."price") DESC,
@@ -518,7 +537,7 @@ export class PrismaSellerDashboardRepository
           INNER JOIN "products" p ON p."id" = oi."productId"
           INNER JOIN "orders" o ON o."id" = oi."orderId"
           WHERE p."sellerId" = ${sellerId}::uuid
-            AND o."status" = 'DELIVERED'
+            AND o."status" IN ('DELIVERED', 'COMPLETED')
             AND o."createdAt" >= ${period.startDate}
             AND o."createdAt" < ${period.endDate}
           GROUP BY DATE_TRUNC('month', o."createdAt")
@@ -540,7 +559,7 @@ export class PrismaSellerDashboardRepository
           INNER JOIN "categories" c ON c."id" = p."categoryId"
           INNER JOIN "orders" o ON o."id" = oi."orderId"
           WHERE p."sellerId" = ${sellerId}::uuid
-            AND o."status" = 'DELIVERED'
+            AND o."status" IN ('DELIVERED', 'COMPLETED')
           GROUP BY c."id", c."name"
           ORDER BY SUM(oi."quantity" * oi."price") DESC,
             SUM(oi."quantity") DESC,
@@ -583,6 +602,81 @@ export class PrismaSellerDashboardRepository
         unitsSold: Number(row.unitsSold),
         revenue: formatMoney(row.revenue),
       })),
+    };
+  }
+
+  /**
+   * Handles the `sortBy=quantity` case for findProducts() by ordering products
+   * by their SellerInventory.quantity rather than the legacy Product.quantity.
+   * Uses a raw SQL query for ordering (Prisma cannot sort by a related row's
+   * scalar), then re-fetches full product details by ID.
+   */
+  private async findProductsSortedByInventoryQuantity(
+    sellerId: string,
+    query: SellerProductQuery,
+    where: Prisma.ProductWhereInput,
+  ): Promise<SellerProductsResult> {
+    const dir = query.sortOrder === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    const offset = (query.page - 1) * query.limit;
+
+    const [total, pagedRows, inventoryRows] =
+      await this.client.$transaction([
+        this.client.product.count({ where }),
+        // Order ALL seller products by their SellerInventory.quantity.
+        // Pagination is applied here so the raw query stays O(page).
+        this.client.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+          SELECT p."id"
+          FROM "products" p
+          LEFT JOIN "seller_inventory" si
+            ON si."productId" = p."id"
+           AND si."sellerId" = ${sellerId}::uuid
+          WHERE p."sellerId" = ${sellerId}::uuid
+          ORDER BY COALESCE(si."quantity", 0) ${dir}, p."id" ASC
+          LIMIT ${query.limit} OFFSET ${offset}
+        `),
+        this.client.$queryRaw<InventorySummaryRow[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::text AS "totalProducts",
+            COUNT(*) FILTER (
+              WHERE "quantity" > 0 AND "quantity" <= 10
+            )::text AS "lowStock",
+            COUNT(*) FILTER (
+              WHERE "quantity" = 0
+            )::text AS "outOfStock",
+            COALESCE(SUM("price" * "quantity"), 0)::text
+              AS "inventoryValue"
+          FROM "seller_inventory"
+          WHERE "sellerId" = ${sellerId}::uuid
+        `),
+      ], { timeout: 30_000 });
+
+    // Re-fetch this page's full product records (with includes) by ID.
+    const pageIds = pagedRows.map((r) => r.id);
+    const products =
+      pageIds.length > 0
+        ? await this.client.product.findMany({
+            where: { id: { in: pageIds } },
+            include: productRelations,
+          })
+        : [];
+
+    // Restore raw-query ordering in the Prisma result set.
+    const productById = new Map(products.map((p) => [p.id, p]));
+    const orderedProducts = pageIds
+      .map((id) => productById.get(id))
+      .filter((p): p is NonNullable<typeof p> => p !== undefined);
+
+    const inventorySummary = inventoryRows[0];
+
+    return {
+      products: orderedProducts.map(mapProduct),
+      pagination: pagination(query.page, query.limit, total),
+      inventorySummary: {
+        totalProducts: Number(inventorySummary?.totalProducts ?? 0),
+        lowStock: Number(inventorySummary?.lowStock ?? 0),
+        outOfStock: Number(inventorySummary?.outOfStock ?? 0),
+        inventoryValue: formatMoney(inventorySummary?.inventoryValue),
+      },
     };
   }
 }
@@ -641,6 +735,8 @@ function sellerOrderWorkflowStatusFilter(
           PrismaOrderStatus.CANCELLED,
         ],
       };
+    case "COMPLETED":
+      return PrismaOrderStatus.COMPLETED;
     default:
       return PrismaOrderStatus[status];
   }
@@ -750,16 +846,16 @@ function mapSellerOrder(order: SellerOrderWithRelations): SellerOrderEntity {
   };
 }
 
-function stockFilter(
+function sellerInventoryStockFilter(
   stock: SellerProductQuery["stock"],
-): Prisma.IntFilter {
+): Prisma.SellerInventoryWhereInput {
   switch (stock) {
     case "in_stock":
-      return { gt: 0 };
+      return { quantity: { gt: 0 } };
     case "low_stock":
-      return { gt: 0, lte: 10 };
+      return { quantity: { gt: 0, lte: 10 } };
     case "out_of_stock":
-      return { equals: 0 };
+      return { quantity: { equals: 0 } };
     default:
       return {};
   }
@@ -773,10 +869,11 @@ function productOrderBy(
       return [{ name: query.sortOrder }, { id: "asc" }];
     case "price":
       return [{ price: query.sortOrder }, { id: "asc" }];
-    case "quantity":
-      return [{ quantity: query.sortOrder }, { id: "asc" }];
     case "createdAt":
       return [{ createdAt: query.sortOrder }, { id: "asc" }];
+    // "quantity" is handled separately via raw SQL â€” see findProducts()
+    case "quantity":
+      return [{ id: "asc" }];
   }
 }
 

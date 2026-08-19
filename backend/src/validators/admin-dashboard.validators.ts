@@ -69,6 +69,40 @@ export const updateAdminUserStatusBodySchema = z
 
 export const emptyAdminObjectSchema = z.object({}).strict();
 
+export const adminOrdersQuerySchema = z
+  .object({
+    page: pageSchema.optional(),
+    limit: limitSchema.optional(),
+    search: searchSchema.optional(),
+    status: z
+      .enum([
+        "PENDING_PAYMENT",
+        "PENDING_PAYMENT_VERIFICATION",
+        "PAYMENT_VERIFIED",
+        "PAYMENT_REJECTED",
+        "PENDING_CONFIRMATION",
+        "PROCESSING",
+        "READY_FOR_DELIVERY",
+        "OUT_FOR_DELIVERY",
+        "REJECTED",
+        "PENDING",
+        "CONFIRMED",
+        "SHIPPED",
+        "DELIVERED",
+        "COMPLETED",
+        "CANCELLED",
+      ])
+      .optional(),
+    paymentStatus: z
+      .enum(["PENDING_VERIFICATION", "VERIFIED", "REJECTED"])
+      .optional(),
+  })
+  .strict();
+
+export const adminOrderIdParamsSchema = z
+  .object({ id: z.string().uuid() })
+  .strict();
+
 export type AdminUsersQueryParams = z.infer<
   typeof adminUsersQuerySchema
 >;
@@ -78,12 +112,16 @@ export type AdminSellersQueryParams = z.infer<
 export type AdminProductsQueryParams = z.infer<
   typeof adminProductsQuerySchema
 >;
+export type AdminOrdersQueryParams = z.infer<
+  typeof adminOrdersQuerySchema
+>;
 export type AdminUserIdParams = z.infer<
   typeof adminUserIdParamsSchema
 >;
 export type AdminProductIdParams = z.infer<
   typeof adminProductIdParamsSchema
 >;
+export type AdminOrderIdParams = z.infer<typeof adminOrderIdParamsSchema>;
 export type UpdateAdminUserStatusBody = z.infer<
   typeof updateAdminUserStatusBodySchema
 >;

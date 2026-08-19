@@ -3,6 +3,9 @@ import type {
   AdminDashboardPeriod,
   AdminDashboardRepository,
   AdminDashboardSummary,
+  AdminOrderEntity,
+  AdminOrderQuery,
+  AdminOrdersResult,
   AdminPagination,
   AdminProductEntity,
   AdminProductQuery,
@@ -151,7 +154,8 @@ export class InMemoryAdminDashboardRepository
     const products = [...this.products.values()];
     const orders = [...this.orders.values()];
     const deliveredOrders = orders.filter(
-      (order) => order.status === "DELIVERED",
+      (order) =>
+        order.status === "DELIVERED" || order.status === "COMPLETED",
     );
     const recentActivity = [
       ...sortByNewest(users)
@@ -265,7 +269,7 @@ export class InMemoryAdminDashboardRepository
           order.items.some((item) => sellerProductIds.has(item.productId)),
         );
         const deliveredLineTotals = sellerOrders.flatMap((order) =>
-          order.status === "DELIVERED"
+          order.status === "DELIVERED" || order.status === "COMPLETED"
             ? order.items
                 .filter((item) => sellerProductIds.has(item.productId))
                 .map((item) => Number(item.price) * item.quantity)
@@ -326,6 +330,63 @@ export class InMemoryAdminDashboardRepository
         this.mapAdminProduct(product),
       ),
       pagination: pagination(query.page, query.limit, products.length),
+    };
+  }
+
+  async findOrders(query: AdminOrderQuery): Promise<AdminOrdersResult> {
+    const search = normalizeSearch(query.search);
+    const orders = sortByNewest([...this.orders.values()]).filter((order) => {
+      const customer = this.users.allUsers().find((u) => u.id === order.customerId);
+      const matchesStatus =
+        query.status === undefined || order.status === query.status;
+      const matchesSearch =
+        search === undefined ||
+        order.id.toLowerCase().startsWith(search) ||
+        includesSearch(customer?.name, search) ||
+        includesSearch(customer?.email, search);
+      return matchesStatus && matchesSearch;
+      // paymentStatus not tracked in in-memory — ignored for test helper
+    });
+
+    return {
+      orders: paginate(orders, query).map((order) => {
+        const customer = this.users.allUsers().find((u) => u.id === order.customerId);
+        return {
+          id: order.id,
+          customerId: order.customerId,
+          customer: {
+            id: order.customerId,
+            name: customer?.name ?? "Unknown",
+            email: customer?.email ?? "",
+          },
+          status: order.status,
+          paymentMethod: "CASH_ON_DELIVERY",
+          totalAmount: order.totalAmount,
+          shippingFullName: "Test Customer",
+          shippingPhone: "+251911000000",
+          shippingCity: "Addis Ababa",
+          shippingAddress: "Test Address",
+          shippingNotes: null,
+          itemCount: order.items.length,
+          items: order.items.map((item) => {
+            const product = this.products.get(item.productId);
+            return {
+              id: `${order.id}:${item.productId}`,
+              productId: item.productId,
+              productName: product?.name ?? item.productId,
+              productImageUrl: null,
+              sellerId: product?.sellerId ?? "",
+              quantity: item.quantity,
+              unitPrice: item.price,
+              subtotal: formatMoney(Number(item.price) * item.quantity),
+            };
+          }),
+          payment: null,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+        } satisfies AdminOrderEntity;
+      }),
+      pagination: pagination(query.page, query.limit, orders.length),
     };
   }
 

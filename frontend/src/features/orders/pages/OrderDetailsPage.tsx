@@ -5,23 +5,33 @@ import {
   Box,
   Building2,
   CalendarDays,
+  CheckCircle2,
   Clock3,
   ExternalLink,
   FileImage,
   Hash,
+  LoaderCircle,
   MapPin,
   PackageOpen,
   ReceiptText,
   RefreshCw,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import {
   getManualPayment,
   type ManualPayment,
 } from "@/features/checkout/api/payments.api";
-import { getOrder } from "@/features/orders/api/orders.api";
+import {
+  completeOrder,
+  getOrder,
+} from "@/features/orders/api/orders.api";
 import { OrderDetailsPageSkeleton } from "@/features/orders/components/OrderPageSkeletons";
 import { OrderPaymentStatusBadge } from "@/features/orders/components/OrderPaymentStatusBadge";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
@@ -41,14 +51,16 @@ import type {
 } from "@/features/orders/model/order";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
-import { resolveApiAssetUrl } from "@/shared/api/resolve-api-asset-url";
+import { useProofObjectUrl } from "@/features/payments/hooks/use-proof-object-url";
+import { AuthenticatedProofImage } from "@/features/payments/components/AuthenticatedProofImage";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
-
 const ORDER_REFRESH_INTERVAL = 30_000;
 
 export function OrderDetailsPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const queryClient = useQueryClient();
+  const [isConfirmingCompletion, setIsConfirmingCompletion] =
+    useState(false);
   const orderQuery = useQuery({
     queryKey: ["orders", "details", orderId],
     enabled: Boolean(orderId),
@@ -59,6 +71,30 @@ export function OrderDetailsPage() {
       return getOrder(orderId, signal);
     },
     refetchInterval: ORDER_REFRESH_INTERVAL,
+  });
+  const completeMutation = useMutation({
+    mutationFn: () => {
+      if (!orderId) {
+        throw new Error("An order ID is required.");
+      }
+      return completeOrder(orderId);
+    },
+    onSuccess: (completedOrder) => {
+      setIsConfirmingCompletion(false);
+      queryClient.setQueryData(
+        ["orders", "details", completedOrder.id],
+        completedOrder,
+      );
+      queryClient.setQueryData<CustomerOrder[]>(
+        ["orders", "mine"],
+        (currentOrders) =>
+          currentOrders?.map((currentOrder) =>
+            currentOrder.id === completedOrder.id
+              ? completedOrder
+              : currentOrder,
+          ),
+      );
+    },
   });
   const order = orderQuery.data;
   const sellerNames = useOrderSellerNames(order ? [order] : []);
@@ -267,6 +303,88 @@ export function OrderDetailsPage() {
             </div>
           </section>
 
+          {order.status === "DELIVERED" ? (
+            <section className="rounded-md border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex items-center gap-3">
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="size-5 text-emerald-700"
+                />
+                <h2 className="text-lg font-semibold text-zinc-950">
+                  Confirm Receipt
+                </h2>
+              </div>
+              {isConfirmingCompletion ? (
+                <>
+                  <p className="mt-3 text-sm leading-6 text-zinc-700">
+                    Confirm that this order arrived and the delivery is
+                    complete.
+                  </p>
+                  {completeMutation.isError ? (
+                    <p
+                      className="mt-3 text-sm font-medium text-red-700"
+                      role="alert"
+                    >
+                      {getApiErrorMessage(
+                        completeMutation.error,
+                        "The order could not be completed.",
+                      )}
+                    </p>
+                  ) : null}
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                      disabled={completeMutation.isPending}
+                      onClick={() => {
+                        completeMutation.reset();
+                        setIsConfirmingCompletion(false);
+                      }}
+                      type="button"
+                    >
+                      Not yet
+                    </button>
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+                      disabled={completeMutation.isPending}
+                      onClick={() => completeMutation.mutate()}
+                      type="button"
+                    >
+                      {completeMutation.isPending ? (
+                        <LoaderCircle
+                          aria-hidden="true"
+                          className="size-4 animate-spin"
+                        />
+                      ) : (
+                        <CheckCircle2
+                          aria-hidden="true"
+                          className="size-4"
+                        />
+                      )}
+                      Confirm
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-3 text-sm leading-6 text-zinc-700">
+                    The seller marked this order as delivered.
+                  </p>
+                  <button
+                    className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+                    onClick={() => setIsConfirmingCompletion(true)}
+                    type="button"
+                  >
+                    <CheckCircle2
+                      aria-hidden="true"
+                      className="size-4"
+                    />
+                    I received this order
+                  </button>
+                </>
+              )}
+            </section>
+          ) : null}
+
           <section className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-zinc-950">
               Order Timeline
@@ -385,6 +503,10 @@ function PaymentSection({
   order: CustomerOrder;
   payment: ManualPayment | null | undefined;
 }) {
+  // Called unconditionally before any early return — Rules of Hooks
+  const proofFilename = payment?.proofImageUrl ?? null;
+  const { objectUrl: proofObjectUrl } = useProofObjectUrl(proofFilename);
+
   if (order.paymentMethod === "CASH_ON_DELIVERY") {
     return (
       <div className="mt-4 flex items-start gap-3 border-y border-zinc-200 py-5">
@@ -463,22 +585,15 @@ function PaymentSection({
     );
   }
 
-  const proofUrl = resolveApiAssetUrl(payment.proofImageUrl);
-
   return (
     <div className="mt-4 grid gap-5 border-y border-zinc-200 py-5 sm:grid-cols-[12rem_minmax(0,1fr)]">
-      <a
-        className="block overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
-        href={proofUrl}
-        rel="noreferrer"
-        target="_blank"
-      >
-        <img
+      <div className="overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+        <AuthenticatedProofImage
           alt={`Payment proof for order ${formatOrderNumber(order.id)}`}
           className="aspect-[4/3] size-full object-contain"
-          src={proofUrl}
+          filename={proofFilename ?? ""}
         />
-      </a>
+      </div>
       <div className="min-w-0">
         <OrderPaymentStatusBadge
           state={getOrderPaymentState(order, payment)}
@@ -498,15 +613,16 @@ function PaymentSection({
             value={formatOrderDateTime(payment.createdAt)}
           />
         </dl>
-        <a
-          className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
-          href={proofUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <ExternalLink aria-hidden="true" className="size-4" />
-          Open screenshot
-        </a>
+        {proofObjectUrl ? (
+          <a
+            className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            download={proofFilename}
+            href={proofObjectUrl}
+          >
+            <ExternalLink aria-hidden="true" className="size-4" />
+            Open screenshot
+          </a>
+        ) : null}
       </div>
     </div>
   );

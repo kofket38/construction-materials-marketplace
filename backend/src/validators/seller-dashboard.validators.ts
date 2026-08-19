@@ -79,6 +79,7 @@ export const sellerOrdersQuerySchema = z
         "CONFIRMED",
         "SHIPPED",
         "DELIVERED",
+        "COMPLETED",
         "CANCELLED",
       ])
       .optional(),
@@ -117,6 +118,7 @@ export const sellerOrderStatusBodySchema = z
     status: z.enum([
       "CONFIRMED",
       "PROCESSING",
+      "READY_FOR_DELIVERY",
       "SHIPPED",
       "DELIVERED",
       "CANCELLED",

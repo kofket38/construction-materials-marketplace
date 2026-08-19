@@ -4,8 +4,10 @@ import {
   OrderAlreadyCancelledError,
   OrderNotPendingError,
   OrderProductNotFoundError,
+  OrderStateChangedError,
   OrderTerminalStatusError,
   OwnProductOrderError,
+  SellerInventoryNotFoundError,
 } from "../../src/repositories/order.errors.js";
 import type {
   CancelOrderOptions,
@@ -28,11 +30,21 @@ interface CustomerSeed {
   email: string;
 }
 
+// Per-seller, per-product inventory entry used by the in-memory repo.
+// Mirrors SellerInventory(sellerId, productId) → { price, quantity, city }.
+interface InventorySeed {
+  price: string;
+  quantity: number;
+  city: string;
+}
+
 export class InMemoryOrderRepository implements OrderRepository {
   private readonly products = new Map<string, ProductSeed>();
   private readonly customers = new Map<string, CustomerSeed>();
   private readonly orders = new Map<string, OrderEntity>();
   private readonly inventoryTransactions = new Set<string>();
+  // key: `${sellerId}:${productId}`
+  private readonly sellerInventory = new Map<string, InventorySeed>();
 
   addProduct(product: ProductSeed): void {
     this.products.set(product.id, { ...product });
@@ -42,13 +54,39 @@ export class InMemoryOrderRepository implements OrderRepository {
     this.customers.set(customer.id, { ...customer });
   }
 
+  /**
+   * Seed a SellerInventory entry. If not called for a product/seller pair,
+   * create() falls back to the ProductSeed price/quantity so existing tests
+   * that do not call addInventory continue to work transparently.
+   */
+  addInventory(
+    sellerId: string,
+    productId: string,
+    inventory: InventorySeed,
+  ): void {
+    this.sellerInventory.set(
+      sellerInventoryKey(sellerId, productId),
+      { ...inventory },
+    );
+  }
+
   getProductQuantity(productId: string): number | null {
     return this.products.get(productId)?.quantity ?? null;
   }
 
+  getSellerInventoryQuantity(
+    sellerId: string,
+    productId: string,
+  ): number | null {
+    return (
+      this.sellerInventory.get(sellerInventoryKey(sellerId, productId))
+        ?.quantity ?? null
+    );
+  }
+
   getInventoryTransactionCount(orderId: string): number {
-    return [...this.inventoryTransactions].filter((transaction) =>
-      transaction.startsWith(`${orderId}:`),
+    return [...this.inventoryTransactions].filter((t) =>
+      t.startsWith(`${orderId}:`),
     ).length;
   }
 
@@ -61,10 +99,25 @@ export class InMemoryOrderRepository implements OrderRepository {
       if (product.sellerId === input.customerId) {
         throw new OwnProductOrderError();
       }
-      if (product.quantity < item.quantity) {
-        throw new InsufficientProductStockError(item.productId);
+
+      // Use SellerInventory when available; fall back to ProductSeed so
+      // tests that don't seed inventory (pre-existing HTTP tests) still pass.
+      const invKey = sellerInventoryKey(item.sellerId, item.productId);
+      const inv = this.sellerInventory.get(invKey);
+
+      if (inv) {
+        if (inv.quantity < item.quantity) {
+          throw new InsufficientProductStockError(item.productId);
+        }
+      } else {
+        // No explicit inventory seed — check product-level stock.
+        // This branch keeps all pre-existing orders.test.ts cases working.
+        if (product.quantity < item.quantity) {
+          throw new InsufficientProductStockError(item.productId);
+        }
       }
-      return { item, product };
+
+      return { item, product, inv: inv ?? null };
     });
 
     const orderId = randomUUID();
@@ -72,20 +125,21 @@ export class InMemoryOrderRepository implements OrderRepository {
     let totalCents = 0;
 
     const items: OrderItemEntity[] = requestedProducts.map(
-      ({ item, product }) => {
-        totalCents += toCents(product.price) * item.quantity;
+      ({ item, product, inv }) => {
+        const unitPrice = inv ? inv.price : product.price;
+        totalCents += toCents(unitPrice) * item.quantity;
 
         return {
           id: randomUUID(),
           orderId,
           productId: product.id,
           quantity: item.quantity,
-          unitPrice: Number(product.price).toFixed(2),
+          unitPrice: Number(unitPrice).toFixed(2),
           subtotal: (
-            (toCents(product.price) * item.quantity) /
+            (toCents(unitPrice) * item.quantity) /
             100
           ).toFixed(2),
-          price: Number(product.price).toFixed(2),
+          price: Number(unitPrice).toFixed(2),
           product: {
             id: product.id,
             sellerId: product.sellerId,
@@ -108,8 +162,7 @@ export class InMemoryOrderRepository implements OrderRepository {
       shippingAddress: input.shipping.address,
       shippingNotes: input.shipping.notes ?? null,
       customer:
-        this.customers.get(input.customerId) ??
-        {
+        this.customers.get(input.customerId) ?? {
           id: input.customerId,
           name: "Test Customer",
           email: "customer@example.com",
@@ -119,10 +172,15 @@ export class InMemoryOrderRepository implements OrderRepository {
       updatedAt: now,
     };
 
-    for (const { item, product } of requestedProducts) {
-      product.quantity -= item.quantity;
+    // Deduct from SellerInventory when present, otherwise deduct from product.
+    for (const { item, product, inv } of requestedProducts) {
+      if (inv) {
+        inv.quantity -= item.quantity;
+      } else {
+        product.quantity -= item.quantity;
+      }
       this.inventoryTransactions.add(
-        inventoryTransactionKey(order.id, product.id, "SHIPMENT"),
+        inventoryTransactionKey(order.id, item.sellerId, product.id, "SHIPMENT"),
       );
     }
 
@@ -153,7 +211,8 @@ export class InMemoryOrderRepository implements OrderRepository {
     }
     if (
       order.status === "CANCELLED" ||
-      (order.status === "DELIVERED" && status !== "DELIVERED")
+      ((order.status === "DELIVERED" || order.status === "COMPLETED") &&
+        status !== order.status)
     ) {
       throw new OrderTerminalStatusError();
     }
@@ -161,6 +220,25 @@ export class InMemoryOrderRepository implements OrderRepository {
       return order;
     }
     order.status = status;
+    order.updatedAt = new Date();
+    return order;
+  }
+
+  async complete(
+    id: string,
+    customerId: string,
+  ): Promise<OrderEntity | null> {
+    const order = this.orders.get(id);
+    if (!order || order.customerId !== customerId) {
+      return null;
+    }
+    if (order.status === "COMPLETED") {
+      return order;
+    }
+    if (order.status !== "DELIVERED") {
+      throw new OrderStateChangedError();
+    }
+    order.status = "COMPLETED";
     order.updatedAt = new Date();
     return order;
   }
@@ -176,6 +254,9 @@ export class InMemoryOrderRepository implements OrderRepository {
     if (order.status === "CANCELLED") {
       throw new OrderAlreadyCancelledError();
     }
+    if (order.status === "COMPLETED") {
+      throw new OrderTerminalStatusError();
+    }
     if (
       options.onlyIfPending &&
       order.status !== "PENDING_PAYMENT" &&
@@ -188,23 +269,33 @@ export class InMemoryOrderRepository implements OrderRepository {
 
     if (order.status !== "DELIVERED") {
       for (const item of order.items) {
-        const product = this.products.get(item.productId);
+        const sellerId = item.product.sellerId;
+        const invKey = sellerInventoryKey(sellerId, item.productId);
+        const inv = this.sellerInventory.get(invKey);
         const shipmentKey = inventoryTransactionKey(
           order.id,
+          sellerId,
           item.productId,
           "SHIPMENT",
         );
         const cancellationKey = inventoryTransactionKey(
           order.id,
+          sellerId,
           item.productId,
           "CANCELLATION",
         );
         if (
-          product &&
           this.inventoryTransactions.has(shipmentKey) &&
           !this.inventoryTransactions.has(cancellationKey)
         ) {
-          product.quantity += item.quantity;
+          if (inv) {
+            inv.quantity += item.quantity;
+          } else {
+            const product = this.products.get(item.productId);
+            if (product) {
+              product.quantity += item.quantity;
+            }
+          }
           this.inventoryTransactions.add(cancellationKey);
         }
       }
@@ -220,10 +311,15 @@ function toCents(value: string): number {
   return Math.round(Number(value) * 100);
 }
 
+function sellerInventoryKey(sellerId: string, productId: string): string {
+  return `${sellerId}:${productId}`;
+}
+
 function inventoryTransactionKey(
   orderId: string,
+  sellerId: string,
   productId: string,
   type: "SHIPMENT" | "CANCELLATION",
 ): string {
-  return `${orderId}:${productId}:${type}`;
+  return `${orderId}:${sellerId}:${productId}:${type}`;
 }

@@ -24,9 +24,19 @@ export interface CreateManualPaymentInput {
   proofImageUrl: string;
 }
 
+/** Minimal projection used by the proof-serve endpoint for authorization */
+export interface PaymentProofAuthorization {
+  /** The opaque filename stored in DB (equals proofImageUrl) */
+  proofFilename: string;
+  customerId: string;
+  /** All seller IDs that have items in this order */
+  sellerIds: string[];
+}
+
 export interface PaymentRepository {
   createManual(
     input: CreateManualPaymentInput,
   ): Promise<PaymentEntity>;
   findByOrderId(orderId: string): Promise<PaymentEntity | null>;
+  findByProofFilename(filename: string): Promise<PaymentProofAuthorization | null>;
 }

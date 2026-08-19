@@ -31,6 +31,7 @@ export interface SellerOrdersQuery {
     | "PROCESSING"
     | "SHIPPED"
     | "DELIVERED"
+    | "COMPLETED"
     | "CANCELLED"
   >;
 }

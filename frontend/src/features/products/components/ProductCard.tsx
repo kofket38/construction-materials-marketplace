@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Product } from "@/features/products/model/product";
+import { effectivePrice, effectiveQuantity } from "@/features/cart/model/cart";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { resolveLocalProductImage } from "@/features/products/lib/product-images";
 import { AddToCartButton } from "@/features/cart/components/AddToCartButton";
@@ -26,8 +27,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const localImage = resolveLocalProductImage(product);
   const [imageSource] = useState<string | null>(localImage.src);
   const [imageFailed, setImageFailed] = useState(false);
-  const isInStock = product.quantity > 0;
+
+  // Use city-specific inventory values when present; fall back to catalog values.
+  const displayPrice = effectivePrice(product);
+  const displayQuantity = effectiveQuantity(product);
+  const displayCity = product.inventoryCity ?? product.seller.city;
+  const isInStock = displayQuantity > 0;
   const sellerName = product.seller.shopName || product.seller.name;
+
+  // Preserve city in the "View Store" link so the store page opens pre-filtered.
+  const storeHref = product.inventoryCity
+    ? `/stores/${product.sellerId}?city=${encodeURIComponent(product.inventoryCity)}`
+    : `/stores/${product.sellerId}`;
 
   function handleImageError(): void {
     setImageFailed(true);
@@ -75,7 +86,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="flex min-w-0 items-center gap-2">
             <MapPin aria-hidden="true" className="size-4 shrink-0" />
             <span className="truncate">
-              {product.seller.city || "City not provided"}
+              {displayCity || "City not provided"}
             </span>
           </p>
           {product.averageRating !== null &&
@@ -93,8 +104,15 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         <div className="mt-auto pt-5">
+          {/* Show city-specific price badge when a city filter is active */}
+          {product.inventoryCity ? (
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+              <MapPin aria-hidden="true" className="size-3" />
+              {product.inventoryCity} price
+            </div>
+          ) : null}
           <p className="text-xl font-semibold text-zinc-950">
-            {formatProductPrice(product.price)}
+            {formatProductPrice(displayPrice)}
           </p>
           <div className="mt-3 flex items-center justify-between gap-3 text-xs">
             <p className="text-zinc-500">Available stock</p>
@@ -104,7 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
               }`}
             >
               {isInStock
-                ? `${product.quantity.toLocaleString()} available`
+                ? `${displayQuantity.toLocaleString()} available`
                 : "Out of stock"}
             </p>
           </div>
@@ -119,7 +137,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </Link>
             <Link
               className="col-span-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-700 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
-              to={`/stores/${product.sellerId}`}
+              to={storeHref}
             >
               <Store aria-hidden="true" className="size-4" />
               View Store

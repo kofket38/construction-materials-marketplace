@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { AdminDashboardService } from "../services/admin-dashboard.service.js";
 import { UnauthorizedError } from "../utils/api-error.js";
 import type {
+  AdminOrdersQueryParams,
   AdminProductIdParams,
   AdminProductsQueryParams,
   AdminSellersQueryParams,
@@ -59,6 +60,18 @@ export class AdminDashboardController {
     const result = await this.adminDashboardService.findSellers(
       this.requireActor(req),
       req.query as AdminSellersQueryParams,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  };
+
+  findOrders = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminDashboardService.findOrders(
+      this.requireActor(req),
+      req.query as AdminOrdersQueryParams,
     );
 
     res.status(200).json({

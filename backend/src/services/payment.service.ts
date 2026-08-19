@@ -29,6 +29,7 @@ import {
 import type { SubmitManualPaymentBody } from "../validators/payment.validators.js";
 import type {
   PaymentProofStorage,
+  ProofFileBuffer,
   SupportedPaymentProofMimeType,
 } from "./payment-proof-storage.js";
 
@@ -68,6 +69,13 @@ export interface CheckoutPaymentOptions {
 type ManualPaymentOrder = OrderEntity & {
   paymentMethod: ManualPaymentMethod;
 };
+
+export interface ProofFileResult {
+  buffer: Buffer;
+  contentType: string;
+  /** Filename only, safe for Content-Disposition */
+  filename: string;
+}
 
 export class PaymentService {
   constructor(
@@ -144,7 +152,7 @@ export class PaymentService {
         customerId: actor.userId,
         method: paymentDestination.method,
         providerName: paymentDestination.providerName,
-        proofImageUrl: storedProof.url,
+        proofImageUrl: storedProof.filename,
       });
     } catch (error) {
       await this.proofStorage.remove(storedProof);
@@ -182,6 +190,63 @@ export class PaymentService {
       },
       payment,
       paymentDestination,
+    };
+  }
+
+  /**
+   * Authorizes access to a payment proof and returns its bytes.
+   * All authorization checks (customer/seller/admin ownership) happen here
+   * before fetching from the storage backend.
+   */
+  async serveProofFile(
+    actor: AuthenticatedUser,
+    filename: string,
+  ): Promise<ProofFileResult> {
+    // Prevent path traversal: filename must be a bare name with no directory separators
+    if (
+      filename.includes("/") ||
+      filename.includes("\\") ||
+      filename.includes("..") ||
+      filename.trim() !== filename
+    ) {
+      throw new NotFoundError("Payment proof not found.");
+    }
+
+    const authInfo = await this.payments.findByProofFilename(filename);
+    if (!authInfo) {
+      throw new NotFoundError("Payment proof not found.");
+    }
+
+    // Authorization — unchanged from original
+    if (actor.role === "ADMIN") {
+      // admins may view all proofs
+    } else if (actor.role === "CUSTOMER") {
+      if (authInfo.customerId !== actor.userId) {
+        throw new ForbiddenError(
+          "You do not have permission to view this payment proof.",
+        );
+      }
+    } else if (actor.role === "SELLER") {
+      if (!authInfo.sellerIds.includes(actor.userId)) {
+        throw new ForbiddenError(
+          "You do not have permission to view this payment proof.",
+        );
+      }
+    } else {
+      throw new ForbiddenError(
+        "You do not have permission to view this payment proof.",
+      );
+    }
+
+    const proofFile = await this.proofStorage.fetch(filename);
+    if (!proofFile) {
+      throw new NotFoundError("Payment proof not found.");
+    }
+
+    return {
+      buffer: proofFile.buffer,
+      contentType: proofFile.contentType,
+      filename,
     };
   }
 

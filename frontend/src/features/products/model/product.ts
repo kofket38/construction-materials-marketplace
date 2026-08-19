@@ -35,12 +35,28 @@ export interface Product {
   brand?: ProductBrand | null;
   name: string;
   description: string;
+  /** Legacy catalog price. Use inventoryPrice when present (city-filtered context). */
   price: string;
+  /** Legacy catalog quantity. Use inventoryQuantity when present (city-filtered context). */
   quantity: number;
   imageUrl: string | null;
   averageRating?: number | null;
   reviewCount?: number;
   sku?: string | null;
+  /**
+   * City-specific price from SellerInventory.
+   * Present when the product was fetched with a city filter.
+   */
+  inventoryPrice?: string | null;
+  /**
+   * City-specific stock from SellerInventory.
+   * Present when the product was fetched with a city filter.
+   */
+  inventoryQuantity?: number | null;
+  /**
+   * The city for which inventoryPrice and inventoryQuantity are valid.
+   */
+  inventoryCity?: string | null;
   seller: ProductSeller;
   category: ProductCategory;
   createdAt: string;

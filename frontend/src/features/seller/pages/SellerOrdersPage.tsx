@@ -45,6 +45,7 @@ const statusOptions: Array<{
   { label: "Processing", value: "PROCESSING" },
   { label: "Shipped", value: "SHIPPED" },
   { label: "Delivered", value: "DELIVERED" },
+  { label: "Completed", value: "COMPLETED" },
   { label: "Cancelled", value: "CANCELLED" },
 ];
 
@@ -330,6 +331,7 @@ function getInitialStatus(
     value === "PROCESSING" ||
     value === "SHIPPED" ||
     value === "DELIVERED" ||
+    value === "COMPLETED" ||
     value === "CANCELLED"
   ) {
     return value;

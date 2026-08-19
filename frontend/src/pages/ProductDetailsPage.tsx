@@ -344,6 +344,7 @@ export function ProductDetailsPage() {
               }
               isLoading={reviewsQuery.isPending}
               onRetry={() => void reviewsQuery.refetch()}
+              productId={loadedProduct.id}
               reviewCount={reviewCount}
               reviews={reviews}
             />

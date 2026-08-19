@@ -604,6 +604,111 @@ describe("Product API", () => {
     });
   });
 
+  it("includes city-specific inventoryPrice and inventoryQuantity when city filter is active", async () => {
+    const product = await seedProduct();
+
+    // Seed a SellerInventory entry for Addis Ababa at a different price and quantity
+    products.setInventoryEntry(
+      sellerId,
+      product.id,
+      "Addis Ababa",
+      "475.00",
+      15,
+    );
+
+    const withCity = await request(app)
+      .get(`/api/products?city=Addis%20Ababa`)
+      .expect(200);
+
+    const found = withCity.body.data.products.find(
+      (p: { id: string }) => p.id === product.id,
+    );
+    expect(found).toBeDefined();
+    expect(found.inventoryPrice).toBe("475.00");
+    expect(found.inventoryQuantity).toBe(15);
+    expect(found.inventoryCity).toBe("Addis Ababa");
+    // Legacy catalog fields are still present
+    expect(found.price).toBe(productInput.price);
+    expect(found.quantity).toBe(productInput.quantity);
+
+    // Without city filter, inventoryPrice/inventoryQuantity are absent
+    const withoutCity = await request(app)
+      .get(`/api/products`)
+      .expect(200);
+
+    const foundNoCity = withoutCity.body.data.products.find(
+      (p: { id: string }) => p.id === product.id,
+    );
+    expect(foundNoCity).toBeDefined();
+    expect(foundNoCity.inventoryPrice).toBeUndefined();
+    expect(foundNoCity.inventoryQuantity).toBeUndefined();
+    expect(foundNoCity.inventoryCity).toBeUndefined();
+  });
+
+  it("different sellers can offer the same product at different city prices", async () => {
+    // Both sellers create separate products (each owns their own product)
+    const productA = (
+      await createProduct(sellerToken, productInput, 201)
+    ).body.data.product as { id: string };
+    const productB = (
+      await createProduct(
+        otherSellerToken,
+        { ...productInput, categoryId },
+        201,
+      )
+    ).body.data.product as { id: string };
+
+    // Seller A: Addis Ababa @ 475
+    products.setInventoryEntry(sellerId, productA.id, "Addis Ababa", "475.00", 20);
+    // Seller B (Bishoftu): same product type, different price/stock
+    products.setInventoryEntry(otherSellerId, productB.id, "Bishoftu", "500.00", 5);
+
+    const addisProducts = await request(app)
+      .get("/api/products?city=Addis%20Ababa")
+      .expect(200);
+    const addisEntry = addisProducts.body.data.products.find(
+      (p: { id: string }) => p.id === productA.id,
+    );
+    expect(addisEntry?.inventoryPrice).toBe("475.00");
+    expect(addisEntry?.inventoryQuantity).toBe(20);
+    expect(addisEntry?.inventoryCity).toBe("Addis Ababa");
+
+    const bishoProducts = await request(app)
+      .get("/api/products?city=Bishoftu")
+      .expect(200);
+    const bishoEntry = bishoProducts.body.data.products.find(
+      (p: { id: string }) => p.id === productB.id,
+    );
+    expect(bishoEntry?.inventoryPrice).toBe("500.00");
+    expect(bishoEntry?.inventoryQuantity).toBe(5);
+    expect(bishoEntry?.inventoryCity).toBe("Bishoftu");
+
+    // Seller A's product does NOT appear in Bishoftu results
+    const sellerAInBisho = bishoProducts.body.data.products.find(
+      (p: { id: string }) => p.id === productA.id,
+    );
+    expect(sellerAInBisho).toBeUndefined();
+  });
+
+  it("products without a matching SellerInventory entry for the city are not shown", async () => {
+    // Seller A has inventory in Addis Ababa
+    const product = await seedProduct();
+    products.setInventoryEntry(sellerId, product.id, "Addis Ababa", "475.00", 20);
+
+    // Querying Hawassa (no inventory there) returns no products
+    const hawassaRes = await request(app)
+      .get("/api/products?city=Hawassa")
+      .expect(200);
+    expect(hawassaRes.body.data.products).toHaveLength(0);
+
+    // Querying Addis Ababa returns the product with city-specific fields
+    const addisRes = await request(app)
+      .get("/api/products?city=Addis%20Ababa")
+      .expect(200);
+    expect(addisRes.body.data.products).toHaveLength(1);
+    expect(addisRes.body.data.products[0].inventoryPrice).toBe("475.00");
+  });
+
   it("rejects missing categories and malformed product IDs", async () => {
     const missingCategoryResponse = await createProduct(
       sellerToken,

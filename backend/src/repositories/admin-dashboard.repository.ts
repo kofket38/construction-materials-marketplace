@@ -131,6 +131,64 @@ export interface AdminPagination {
   totalPages: number;
 }
 
+// ── Order types ───────────────────────────────────────────────────────────────
+
+export interface AdminOrderCustomer {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface AdminOrderItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productImageUrl: string | null;
+  sellerId: string;
+  quantity: number;
+  unitPrice: string;
+  subtotal: string;
+}
+
+export interface AdminOrderPayment {
+  method: string;
+  status: string;
+  proofImageUrl: string | null;
+  verifiedAt: Date | null;
+}
+
+export interface AdminOrderEntity {
+  id: string;
+  customerId: string;
+  customer: AdminOrderCustomer;
+  status: string;
+  paymentMethod: string;
+  totalAmount: string;
+  shippingFullName: string;
+  shippingPhone: string;
+  shippingCity: string;
+  shippingAddress: string;
+  shippingNotes: string | null;
+  itemCount: number;
+  items: AdminOrderItem[];
+  payment: AdminOrderPayment | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdminOrderQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+  paymentStatus?: string;
+}
+
+export interface AdminOrdersResult {
+  orders: AdminOrderEntity[];
+  pagination: AdminPagination;
+}
+
 export interface AdminDashboardRepository {
   getDashboard(
     period: AdminDashboardPeriod,
@@ -143,4 +201,5 @@ export interface AdminDashboardRepository {
   findSellers(query: AdminSellerQuery): Promise<AdminSellersResult>;
   findProducts(query: AdminProductQuery): Promise<AdminProductsResult>;
   deleteProduct(id: string): Promise<boolean>;
+  findOrders(query: AdminOrderQuery): Promise<AdminOrdersResult>;
 }

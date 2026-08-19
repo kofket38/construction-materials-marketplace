@@ -3,6 +3,7 @@ import {
   Building2,
   ClipboardList,
   CreditCard,
+  Heart,
   LayoutDashboard,
   LoaderCircle,
   LogIn,
@@ -103,6 +104,23 @@ export function PublicLayout() {
                 My Orders
               </NavLink>
             ) : null}
+            {status === "authenticated" &&
+            user?.role === "CUSTOMER" ? (
+              <NavLink className={navLinkClassName} to="/rfqs">
+                My RFQs
+              </NavLink>
+            ) : null}
+            {status === "authenticated" &&
+            user?.role === "CUSTOMER" ? (
+              <NavLink className={navLinkClassName} to="/wishlist">
+                Wishlist
+              </NavLink>
+            ) : null}
+            {status === "authenticated" && user?.role === "ADMIN" ? (
+              <NavLink className={navLinkClassName} to="/admin/dashboard">
+                Admin
+              </NavLink>
+            ) : null}
             {status === "authenticated" && user?.role === "SELLER" ? (
               <>
                 <NavLink
@@ -120,6 +138,9 @@ export function PublicLayout() {
                 <NavLink className={navLinkClassName} to="/seller/orders">
                   Orders
                 </NavLink>
+                <NavLink className={navLinkClassName} to="/seller/rfqs">
+                  RFQs
+                </NavLink>
                 <NavLink
                   className={navLinkClassName}
                   to="/seller/payments"
@@ -131,7 +152,7 @@ export function PublicLayout() {
                 </NavLink>
                 <NavLink
                   className={navLinkClassName}
-                  to="/seller/settings"
+                  to="/seller/profile"
                 >
                   Settings
                 </NavLink>
@@ -150,6 +171,17 @@ export function PublicLayout() {
                 to="/orders"
               >
                 <ClipboardList aria-hidden="true" className="size-5" />
+              </Link>
+            ) : null}
+            {status === "authenticated" &&
+            user?.role === "CUSTOMER" ? (
+              <Link
+                aria-label="My Wishlist"
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 sm:hidden"
+                title="My Wishlist"
+                to="/wishlist"
+              >
+                <Heart aria-hidden="true" className="size-5" />
               </Link>
             ) : null}
             {status === "authenticated" && user?.role === "SELLER" ? (
@@ -190,6 +222,12 @@ export function PublicLayout() {
                       to="/seller/orders"
                     />
                     <SellerMenuLink
+                      icon={ClipboardList}
+                      label="RFQs"
+                      onClick={() => setIsSellerMenuOpen(false)}
+                      to="/seller/rfqs"
+                    />
+                    <SellerMenuLink
                       icon={CreditCard}
                       label="Payments"
                       onClick={() => setIsSellerMenuOpen(false)}
@@ -205,7 +243,7 @@ export function PublicLayout() {
                       icon={Settings}
                       label="Settings"
                       onClick={() => setIsSellerMenuOpen(false)}
-                      to="/seller/settings"
+                      to="/seller/profile"
                     />
                   </nav>
                 ) : null}

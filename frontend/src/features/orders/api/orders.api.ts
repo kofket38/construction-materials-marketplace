@@ -31,3 +31,13 @@ export async function getMyOrders(
 
   return response.data.data.orders;
 }
+
+export async function completeOrder(
+  orderId: string,
+): Promise<CustomerOrder> {
+  const response = await apiClient.post<
+    ApiSuccessResponse<OrderDetailsData>
+  >(`/orders/${encodeURIComponent(orderId)}/complete`, {});
+
+  return response.data.data.order;
+}

@@ -9,6 +9,7 @@ import {
 import type {
   CreateManualPaymentInput,
   PaymentEntity,
+  PaymentProofAuthorization,
   PaymentRepository,
 } from "./payment.repository.js";
 
@@ -77,6 +78,41 @@ export class PrismaPaymentRepository implements PaymentRepository {
     return {
       ...payment,
       method: payment.method,
+    };
+  }
+
+  async findByProofFilename(
+    filename: string,
+  ): Promise<PaymentProofAuthorization | null> {
+    const payment = await this.client.payment.findFirst({
+      where: { proofImageUrl: filename },
+      select: {
+        proofImageUrl: true,
+        order: {
+          select: {
+            customerId: true,
+            items: {
+              select: {
+                product: {
+                  select: { sellerId: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!payment) return null;
+
+    const sellerIds = [
+      ...new Set(payment.order.items.map((item) => item.product.sellerId)),
+    ];
+
+    return {
+      proofFilename: payment.proofImageUrl,
+      customerId: payment.order.customerId,
+      sellerIds,
     };
   }
 }

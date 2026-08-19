@@ -23,6 +23,11 @@ interface CategorySeed {
   name: string;
 }
 
+interface InventoryEntry {
+  price: string;
+  quantity: number;
+}
+
 export class InMemoryProductRepository implements ProductRepository {
   private readonly products = new Map<string, ProductEntity>();
   private readonly reviewRatings = new Map<string, number[]>();
@@ -32,6 +37,22 @@ export class InMemoryProductRepository implements ProductRepository {
   private readonly sellerShopNames = new Map<string, string>();
   private readonly sellerCities = new Map<string, string>();
   private readonly popularity = new Map<string, number>();
+  // key: `${sellerId}:${productId}:${city.toLowerCase()}`
+  private readonly inventoryEntries = new Map<string, InventoryEntry>();
+
+  /** Seed a city-specific SellerInventory entry for a product. */
+  setInventoryEntry(
+    sellerId: string,
+    productId: string,
+    city: string,
+    price: string,
+    quantity: number,
+  ): void {
+    this.inventoryEntries.set(
+      `${sellerId}:${productId}:${city.toLowerCase()}`,
+      { price, quantity },
+    );
+  }
 
   addCategory(category: CategorySeed): void {
     this.categories.set(category.id, category);
@@ -142,11 +163,29 @@ export class InMemoryProductRepository implements ProductRepository {
     const totalItems = products.length;
     const totalPages = Math.ceil(totalItems / query.limit);
 
+    const page = products.slice(
+      (query.page - 1) * query.limit,
+      query.page * query.limit,
+    );
+
+    // Attach city-specific inventory fields when a city filter is active.
+    const pageWithInventory = query.city !== undefined
+      ? page.map((product) => {
+          const inv = this.inventoryEntries.get(
+            `${product.sellerId}:${product.id}:${query.city!.toLowerCase()}`,
+          );
+          if (!inv) return product;
+          return {
+            ...product,
+            inventoryPrice: inv.price,
+            inventoryQuantity: inv.quantity,
+            inventoryCity: query.city ?? null,
+          } satisfies ProductEntity;
+        })
+      : page;
+
     return {
-      products: products.slice(
-        (query.page - 1) * query.limit,
-        query.page * query.limit,
-      ),
+      products: pageWithInventory,
       totalItems,
       totalPages,
       currentPage: query.page,

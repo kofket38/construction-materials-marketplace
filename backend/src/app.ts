@@ -14,6 +14,8 @@ import { ProductController } from "./controllers/product.controller.js";
 import { ReviewController } from "./controllers/review.controller.js";
 import { RfqController } from "./controllers/rfq.controller.js";
 import { SellerDashboardController } from "./controllers/seller-dashboard.controller.js";
+import { SellerInventoryController } from "./controllers/seller-inventory.controller.js";
+import { SellerProfileController } from "./controllers/seller-profile.controller.js";
 import { WishlistController } from "./controllers/wishlist.controller.js";
 import { env } from "./config/env.js";
 import { logger as defaultLogger } from "./config/logger.js";
@@ -29,6 +31,8 @@ import { PrismaSellerPaymentRepository } from "./repositories/prisma-seller-paym
 import { PrismaReviewRepository } from "./repositories/prisma-review.repository.js";
 import { PrismaRfqRepository } from "./repositories/prisma-rfq.repository.js";
 import { PrismaSellerDashboardRepository } from "./repositories/prisma-seller-dashboard.repository.js";
+import { PrismaSellerInventoryRepository } from "./repositories/prisma-seller-inventory.repository.js";
+import { PrismaSellerProfileRepository } from "./repositories/prisma-seller-profile.repository.js";
 import { PrismaAdminDashboardRepository } from "./repositories/prisma-admin-dashboard.repository.js";
 import { PrismaWishlistRepository } from "./repositories/prisma-wishlist.repository.js";
 import type { AdminDashboardRepository } from "./repositories/admin-dashboard.repository.js";
@@ -40,6 +44,8 @@ import type { ProductRepository } from "./repositories/product.repository.js";
 import type { ReviewRepository } from "./repositories/review.repository.js";
 import type { RfqRepository } from "./repositories/rfq.repository.js";
 import type { SellerDashboardRepository } from "./repositories/seller-dashboard.repository.js";
+import type { SellerInventoryRepository } from "./repositories/seller-inventory.repository.js";
+import type { SellerProfileRepository } from "./repositories/seller-profile.repository.js";
 import type { UserRepository } from "./repositories/user.repository.js";
 import type { WishlistRepository } from "./repositories/wishlist.repository.js";
 import { createApiRouter } from "./routes/index.js";
@@ -51,11 +57,14 @@ import {
   LocalPaymentProofStorage,
   type PaymentProofStorage,
 } from "./services/payment-proof-storage.js";
+import { SupabasePaymentProofStorage } from "./services/supabase-payment-proof-storage.js";
 import { PaymentService } from "./services/payment.service.js";
 import { ProductService } from "./services/product.service.js";
 import { ReviewService } from "./services/review.service.js";
 import { RfqService } from "./services/rfq.service.js";
 import { SellerDashboardService } from "./services/seller-dashboard.service.js";
+import { SellerInventoryService } from "./services/seller-inventory.service.js";
+import { SellerProfileService } from "./services/seller-profile.service.js";
 import { WishlistService } from "./services/wishlist.service.js";
 import {
   JwtTokenService,
@@ -78,6 +87,8 @@ export interface AppDependencies {
   reviewRepository?: ReviewRepository;
   rfqRepository?: RfqRepository;
   sellerDashboardRepository?: SellerDashboardRepository;
+  sellerInventoryRepository?: SellerInventoryRepository;
+  sellerProfileRepository?: SellerProfileRepository;
   wishlistRepository?: WishlistRepository;
   paymentProofStorage?: PaymentProofStorage;
   tokenService?: TokenService;
@@ -106,6 +117,12 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const sellerDashboardRepository =
     dependencies.sellerDashboardRepository ??
     new PrismaSellerDashboardRepository(prisma);
+  const sellerInventoryRepository =
+    dependencies.sellerInventoryRepository ??
+    new PrismaSellerInventoryRepository(prisma);
+  const sellerProfileRepository =
+    dependencies.sellerProfileRepository ??
+    new PrismaSellerProfileRepository(prisma);
   const wishlistRepository =
     dependencies.wishlistRepository ??
     new PrismaWishlistRepository(prisma);
@@ -128,9 +145,15 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     sellerPaymentRepository,
   );
   const orderController = new OrderController(orderService);
-  const paymentProofStorage =
+  const paymentProofStorage: PaymentProofStorage =
     dependencies.paymentProofStorage ??
-    new LocalPaymentProofStorage(path.resolve(env.PAYMENT_PROOF_UPLOAD_DIR));
+    (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_STORAGE_BUCKET
+      ? new SupabasePaymentProofStorage(
+          env.SUPABASE_URL,
+          env.SUPABASE_SERVICE_ROLE_KEY,
+          env.SUPABASE_STORAGE_BUCKET,
+        )
+      : new LocalPaymentProofStorage(path.resolve(env.PAYMENT_PROOF_UPLOAD_DIR)));
   const paymentService = new PaymentService(
     paymentRepository,
     orderRepository,
@@ -149,6 +172,18 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   );
   const sellerDashboardController = new SellerDashboardController(
     sellerDashboardService,
+  );
+  const sellerInventoryService = new SellerInventoryService(
+    sellerInventoryRepository,
+  );
+  const sellerInventoryController = new SellerInventoryController(
+    sellerInventoryService,
+  );
+  const sellerProfileService = new SellerProfileService(
+    sellerProfileRepository,
+  );
+  const sellerProfileController = new SellerProfileController(
+    sellerProfileService,
   );
   const wishlistService = new WishlistService(wishlistRepository);
   const wishlistController = new WishlistController(wishlistService);
@@ -175,18 +210,6 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   }
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(cookieParser());
-  app.use(
-    "/uploads/payment-proofs",
-    express.static(path.resolve(env.PAYMENT_PROOF_UPLOAD_DIR), {
-      index: false,
-      setHeaders: (response) => {
-        response.setHeader(
-          "Cross-Origin-Resource-Policy",
-          "cross-origin",
-        );
-      },
-    }),
-  );
 
   app.get(
     "/health",
@@ -215,6 +238,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
       reviewController,
       rfqController,
       sellerDashboardController,
+      sellerInventoryController,
+      sellerProfileController,
       wishlistController,
       tokenService,
       userRepository,

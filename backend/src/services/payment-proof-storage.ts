@@ -1,10 +1,22 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export interface StoredPaymentProof {
+  /**
+   * Storage-backend reference — for local storage this is the absolute
+   * filesystem path; for Supabase Storage this is the object key.
+   * Never exposed to clients.
+   */
   path: string;
-  url: string;
+  /** Opaque filename stored in DB and used to build /api/payments/proof/:filename */
+  filename: string;
+}
+
+export interface ProofFileBuffer {
+  buffer: Buffer;
+  /** MIME content type, e.g. "image/png" */
+  contentType: string;
 }
 
 export interface SavePaymentProofInput {
@@ -21,9 +33,14 @@ export type SupportedPaymentProofMimeType =
 export interface PaymentProofStorage {
   save(input: SavePaymentProofInput): Promise<StoredPaymentProof>;
   remove(storedProof: StoredPaymentProof): Promise<void>;
+  /**
+   * Fetch the proof bytes for authenticated serving.
+   * Returns null when the object does not exist.
+   */
+  fetch(filename: string): Promise<ProofFileBuffer | null>;
 }
 
-const extensionByMimeType: Record<
+export const extensionByMimeType: Record<
   SupportedPaymentProofMimeType,
   string
 > = {
@@ -32,10 +49,17 @@ const extensionByMimeType: Record<
   "image/webp": "webp",
 };
 
+/** Maps common image extensions back to MIME types for Content-Type header */
+const mimeByExtension: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
 export class LocalPaymentProofStorage implements PaymentProofStorage {
   constructor(
     private readonly uploadDirectory: string,
-    private readonly publicPath = "/uploads/payment-proofs",
   ) {}
 
   async save(input: SavePaymentProofInput): Promise<StoredPaymentProof> {
@@ -49,7 +73,7 @@ export class LocalPaymentProofStorage implements PaymentProofStorage {
 
     return {
       path: filePath,
-      url: `${this.publicPath}/${fileName}`,
+      filename: fileName,
     };
   }
 
@@ -64,6 +88,25 @@ export class LocalPaymentProofStorage implements PaymentProofStorage {
       ) {
         throw error;
       }
+    }
+  }
+
+  async fetch(filename: string): Promise<ProofFileBuffer | null> {
+    const filePath = path.join(this.uploadDirectory, filename);
+    try {
+      const buffer = await readFile(filePath);
+      const ext = path.extname(filename).slice(1).toLowerCase();
+      const contentType = mimeByExtension[ext] ?? "application/octet-stream";
+      return { buffer, contentType };
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 }
