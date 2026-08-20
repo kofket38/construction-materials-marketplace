@@ -4,7 +4,7 @@ const frontendEnvironmentSchema = z.object({
   VITE_API_BASE_URL: z
     .string()
     .url()
-   .default("http://localhost:3055/api")
+   .default("https://cmm-backend-j0op.onrender.com/api")
     .transform((value) => value.replace(/\/+$/, "")),
   VITE_API_TIMEOUT_MS: z.coerce
     .number()
