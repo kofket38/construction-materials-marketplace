@@ -423,6 +423,62 @@ describe.sequential("Inventory synchronization PostgreSQL integration", () => {
     await expectInventoryChanges(prisma, order.id, [-4, 4]);
   });
 
+  it("admin rejectPayment: restores SellerInventory and sets payment status REJECTED", async () => {
+    resources = emptyResources();
+    const scenario = await seedInventoryScenario(prisma, resources, 10);
+    const order = await createManualPaymentOrder(prisma, orders, scenario, 3);
+
+    const rejected = await orders.rejectPayment(order.id);
+
+    expect(rejected?.status).toBe("PAYMENT_REJECTED");
+    // SellerInventory restored to original quantity.
+    await expectSellerInventoryQuantity(
+      prisma,
+      scenario.sellerId,
+      scenario.productId,
+      10,
+    );
+    await expectProductQuantity(prisma, scenario.productId, 99_999);
+    // SHIPMENT (−3) + CANCELLATION (+3).
+    await expectInventoryChanges(prisma, order.id, [-3, 3]);
+    // Payment record must be REJECTED in the database.
+    const payment = await prisma.payment.findUniqueOrThrow({
+      where: { orderId: order.id },
+      select: { status: true, verifiedAt: true },
+    });
+    expect(payment.status).toBe("REJECTED");
+    expect(payment.verifiedAt).toBeNull();
+  });
+
+  it("admin rejectPayment: second call on the same order throws (concurrent-modification guard)", async () => {
+    resources = emptyResources();
+    const scenario = await seedInventoryScenario(prisma, resources, 10);
+    const order = await createManualPaymentOrder(prisma, orders, scenario, 2);
+
+    // First rejection succeeds.
+    const rejected = await orders.rejectPayment(order.id);
+    expect(rejected?.status).toBe("PAYMENT_REJECTED");
+    await expectSellerInventoryQuantity(
+      prisma,
+      scenario.sellerId,
+      scenario.productId,
+      10,
+    );
+    await expectInventoryChanges(prisma, order.id, [-2, 2]);
+
+    // Second call must throw — order is no longer PENDING_PAYMENT_VERIFICATION.
+    await expect(orders.rejectPayment(order.id)).rejects.toThrow();
+
+    // Inventory and transaction count must be unchanged after the failed attempt.
+    await expectSellerInventoryQuantity(
+      prisma,
+      scenario.sellerId,
+      scenario.productId,
+      10,
+    );
+    await expectInventoryChanges(prisma, order.id, [-2, 2]);
+  });
+
   // ─── Fulfillment transitions ───────────────────────────────────────────────
 
   it("restores SellerInventory stock when an order is cancelled", async () => {

@@ -224,6 +224,57 @@ export class InMemoryOrderRepository implements OrderRepository {
     return order;
   }
 
+  async rejectPayment(id: string): Promise<OrderEntity | null> {
+    const order = this.orders.get(id);
+    if (!order) {
+      return null;
+    }
+
+    // Concurrent-modification guard: order must still be awaiting verification.
+    // The in-memory repo has no payment record, so we guard on order status only
+    // (matching the invariant enforced by the real transaction).
+    if (order.status !== "PENDING_PAYMENT_VERIFICATION") {
+      throw new OrderStateChangedError();
+    }
+
+    // Restore reserved SellerInventory (idempotent via CANCELLATION key).
+    for (const item of order.items) {
+      const sellerId = item.product.sellerId;
+      const invKey = sellerInventoryKey(sellerId, item.productId);
+      const inv = this.sellerInventory.get(invKey);
+      const shipmentKey = inventoryTransactionKey(
+        order.id,
+        sellerId,
+        item.productId,
+        "SHIPMENT",
+      );
+      const cancellationKey = inventoryTransactionKey(
+        order.id,
+        sellerId,
+        item.productId,
+        "CANCELLATION",
+      );
+      if (
+        this.inventoryTransactions.has(shipmentKey) &&
+        !this.inventoryTransactions.has(cancellationKey)
+      ) {
+        if (inv) {
+          inv.quantity += item.quantity;
+        } else {
+          const product = this.products.get(item.productId);
+          if (product) {
+            product.quantity += item.quantity;
+          }
+        }
+        this.inventoryTransactions.add(cancellationKey);
+      }
+    }
+
+    order.status = "PAYMENT_REJECTED";
+    order.updatedAt = new Date();
+    return order;
+  }
+
   async complete(
     id: string,
     customerId: string,

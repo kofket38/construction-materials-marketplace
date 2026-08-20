@@ -455,7 +455,7 @@ export class PrismaSellerDashboardRepository
       });
 
       return updated ? mapSellerOrder(updated) : null;
-    });
+    }, { timeout: 30_000, maxWait: 10_000 });
   }
 
   async updateOrderStatus(
@@ -500,7 +500,7 @@ export class PrismaSellerDashboardRepository
       });
 
       return updated ? mapSellerOrder(updated) : null;
-    });
+    }, { timeout: 30_000, maxWait: 10_000 });
   }
 
   async getAnalytics(

@@ -127,7 +127,9 @@ export class OrderService {
       const order =
         input.status === "CANCELLED"
           ? await this.orders.cancel(id, { onlyIfPending: false })
-          : await this.orders.updateStatus(id, input.status);
+          : input.status === "PAYMENT_REJECTED"
+            ? await this.orders.rejectPayment(id)
+            : await this.orders.updateStatus(id, input.status);
 
       if (!order) {
         throw new NotFoundError("Order not found.");

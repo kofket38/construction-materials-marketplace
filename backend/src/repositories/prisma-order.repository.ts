@@ -1,5 +1,6 @@
 import {
   OrderStatus as PrismaOrderStatus,
+  PaymentStatus as PrismaPaymentStatus,
   Prisma,
   type PrismaClient,
 } from "../prisma/generated/client.js";
@@ -248,6 +249,67 @@ export class PrismaOrderRepository implements OrderRepository {
       });
 
       return order ? mapOrder(order) : null;
+    }, { timeout: 30_000, maxWait: 10_000 });
+  }
+
+  async rejectPayment(id: string): Promise<OrderEntity | null> {
+    return this.client.$transaction(async (transaction) => {
+      const currentOrder = await transaction.order.findUnique({
+        where: { id },
+        select: {
+          status: true,
+          payment: { select: { status: true } },
+        },
+      });
+
+      if (!currentOrder) {
+        return null;
+      }
+
+      // Concurrent-modification guard: both order and payment must still be
+      // in the pending-verification state. This mirrors the seller's
+      // verifyPayment transaction and prevents double-rejection.
+      if (
+        currentOrder.status !==
+          PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION ||
+        currentOrder.payment?.status !==
+          PrismaPaymentStatus.PENDING_VERIFICATION
+      ) {
+        throw new OrderStateChangedError();
+      }
+
+      const paymentUpdate = await transaction.payment.updateMany({
+        where: {
+          orderId: id,
+          status: PrismaPaymentStatus.PENDING_VERIFICATION,
+        },
+        data: {
+          status: PrismaPaymentStatus.REJECTED,
+          verifiedAt: null,
+        },
+      });
+
+      const orderUpdate = await transaction.order.updateMany({
+        where: {
+          id,
+          status: PrismaOrderStatus.PENDING_PAYMENT_VERIFICATION,
+        },
+        data: { status: PrismaOrderStatus.PAYMENT_REJECTED },
+      });
+
+      if (paymentUpdate.count !== 1 || orderUpdate.count !== 1) {
+        throw new OrderStateChangedError();
+      }
+
+      // Return reserved stock to SellerInventory (idempotent).
+      await restoreOrderInventory(transaction, id);
+
+      const updated = await transaction.order.findUnique({
+        where: { id },
+        include: orderRelations,
+      });
+
+      return updated ? mapOrder(updated) : null;
     }, { timeout: 30_000, maxWait: 10_000 });
   }
 

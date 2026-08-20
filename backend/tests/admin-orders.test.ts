@@ -84,6 +84,20 @@ describe("Admin Orders API", () => {
     sellerPayments = new InMemorySellerPaymentRepository();
     sellerPayments.addProduct(productAId, sellerId);
     sellerPayments.addProduct(productBId, sellerId);
+    sellerPayments.addProfile({
+      sellerId,
+      sellerName: "Test Seller",
+      sellerPhone: "+251911000001",
+      destinations: [
+        {
+          method: "CBE_BANK",
+          providerName: "CBE Bank",
+          accountName: "Test Seller PLC",
+          accountNumber: "1000099999999",
+          accountNumberLabel: "Account number",
+        },
+      ],
+    });
 
     app = createApp({
       adminDashboardRepository: dashboard,
@@ -486,12 +500,156 @@ describe("Admin Orders API", () => {
       .expect(403);
   });
 
+  // ── Admin PAYMENT_REJECTED transition ──────────────────────────────────────
+
+  it("admin PAYMENT_REJECTED: order status becomes PAYMENT_REJECTED and inventory is restored", async () => {
+    const initialQty = orders.getSellerInventoryQuantity(sellerId, productAId)!;
+    const orderId = await createManualPaymentOrder();
+
+    // Inventory was deducted when the order was created.
+    expect(orders.getSellerInventoryQuantity(sellerId, productAId)).toBe(
+      initialQty - 2,
+    );
+    // Exactly one SHIPMENT transaction recorded.
+    expect(orders.getInventoryTransactionCount(orderId)).toBe(1);
+
+    const res = await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(200);
+
+    expect(res.body.data.order.status).toBe("PAYMENT_REJECTED");
+
+    // Inventory must be fully restored.
+    expect(orders.getSellerInventoryQuantity(sellerId, productAId)).toBe(
+      initialQty,
+    );
+    // SHIPMENT + CANCELLATION = 2 transactions recorded.
+    expect(orders.getInventoryTransactionCount(orderId)).toBe(2);
+  });
+
+  it("admin PAYMENT_REJECTED: a second rejection attempt returns 409 (idempotency guard)", async () => {
+    const orderId = await createManualPaymentOrder();
+
+    // First rejection succeeds.
+    await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(200);
+
+    // Second rejection on the same order must be blocked — order is no longer
+    // in PENDING_PAYMENT_VERIFICATION, so allowedAdminTransitions returns
+    // ["CANCELLED"], making PAYMENT_REJECTED a 409.
+    await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(409);
+  });
+
+  it("admin PAYMENT_REJECTED: inventory is not double-restored on a second attempt", async () => {
+    const initialQty = orders.getSellerInventoryQuantity(sellerId, productAId)!;
+    const orderId = await createManualPaymentOrder();
+    const qtyAfterOrder = orders.getSellerInventoryQuantity(
+      sellerId,
+      productAId,
+    )!;
+
+    // First rejection restores stock.
+    await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(200);
+
+    const qtyAfterRejection = orders.getSellerInventoryQuantity(
+      sellerId,
+      productAId,
+    )!;
+    expect(qtyAfterRejection).toBe(initialQty);
+
+    // Second attempt is blocked at the service layer (409); inventory stays put.
+    await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(409);
+
+    expect(orders.getSellerInventoryQuantity(sellerId, productAId)).toBe(
+      qtyAfterRejection,
+    );
+    // Still only 2 transactions (SHIPMENT + one CANCELLATION), never 3.
+    expect(orders.getInventoryTransactionCount(orderId)).toBe(2);
+
+    // Sanity: the order was deducted exactly once and restored exactly once.
+    expect(qtyAfterOrder).toBe(initialQty - 2);
+    expect(qtyAfterRejection).toBe(initialQty);
+  });
+
+  it("admin cannot apply PAYMENT_REJECTED to an order that has no payment proof (wrong starting status)", async () => {
+    // A COD order starts at PENDING_CONFIRMATION, not PENDING_PAYMENT_VERIFICATION.
+    const orderId = await createOrderAtStatus("PENDING_CONFIRMATION");
+
+    const res = await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "PAYMENT_REJECTED" })
+      .expect(409);
+
+    expect(res.body.success).toBe(false);
+
+    // Status must remain PENDING_CONFIRMATION.
+    const check = await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set("Authorization", `Bearer ${customerToken}`)
+      .expect(200);
+    expect(check.body.data.order.status).toBe("PENDING_CONFIRMATION");
+  });
+
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   function adminGet(path: string) {
     return request(app)
       .get(path)
       .set("Authorization", `Bearer ${adminToken}`);
+  }
+
+  /**
+   * Creates a manual-payment order via the checkout endpoint (CBE_BANK),
+   * then directly advances the in-memory order to PENDING_PAYMENT_VERIFICATION
+   * with inventory already reserved (quantity 2 of productAId).
+   * Returns the orderId.
+   */
+  async function createManualPaymentOrder(): Promise<string> {
+    const created = await request(app)
+      .post("/api/orders")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({
+        items: [{ productId: productAId, sellerId, quantity: 2 }],
+        shipping: {
+          fullName: "Test Customer",
+          phone: "+251911000000",
+          city: "Addis Ababa",
+          address: "Bole Road",
+        },
+        paymentMethod: "CBE_BANK",
+      })
+      .expect(201);
+
+    const orderId = created.body.data.order.id as string;
+
+    // The checkout endpoint leaves the order at PENDING_PAYMENT (no proof yet).
+    // Advance it to PENDING_PAYMENT_VERIFICATION directly in the in-memory repo
+    // to simulate the customer having uploaded proof. The service layer's
+    // rejectPayment() guard checks for this exact status.
+    const order = await orders.findById(orderId);
+    if (order) {
+      await orders.updateStatus(orderId, "PENDING_PAYMENT_VERIFICATION");
+    }
+
+    return orderId;
   }
 
   /**

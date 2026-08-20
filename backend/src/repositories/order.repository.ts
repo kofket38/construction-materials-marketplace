@@ -103,6 +103,17 @@ export interface OrderRepository {
     id: string,
     status: OrderStatus,
   ): Promise<OrderEntity | null>;
+  /**
+   * Atomically transitions an order from PENDING_PAYMENT_VERIFICATION to
+   * PAYMENT_REJECTED, marks the associated payment record as REJECTED, and
+   * restores reserved SellerInventory. This is the admin-path equivalent of
+   * the seller's verifyPayment("REJECT") transaction.
+   *
+   * Returns null when the order does not exist.
+   * Throws OrderStateChangedError when the order is no longer in the
+   * expected state (concurrent modification guard).
+   */
+  rejectPayment(id: string): Promise<OrderEntity | null>;
   complete(
     id: string,
     customerId: string,
