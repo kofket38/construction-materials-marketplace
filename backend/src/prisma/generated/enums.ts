@@ -126,3 +126,22 @@ export const InventoryTransactionType = {
 } as const
 
 export type InventoryTransactionType = (typeof InventoryTransactionType)[keyof typeof InventoryTransactionType]
+
+
+export const ProfileVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE'
+} as const
+
+export type ProfileVisibility = (typeof ProfileVisibility)[keyof typeof ProfileVisibility]
+
+
+export const CredentialType = {
+  EDUCATION: 'EDUCATION',
+  CERTIFICATION: 'CERTIFICATION',
+  TRAINING: 'TRAINING',
+  AWARD: 'AWARD',
+  OTHER: 'OTHER'
+} as const
+
+export type CredentialType = (typeof CredentialType)[keyof typeof CredentialType]

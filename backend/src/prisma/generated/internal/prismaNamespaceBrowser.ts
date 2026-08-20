@@ -51,6 +51,9 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  ProfessionalProfile: 'ProfessionalProfile',
+  ProfessionalSpecialty: 'ProfessionalSpecialty',
+  ProfessionalCredential: 'ProfessionalCredential',
   User: 'User',
   SellerProfile: 'SellerProfile',
   Brand: 'Brand',
@@ -84,6 +87,57 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const ProfessionalProfileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  displayName: 'displayName',
+  headline: 'headline',
+  bio: 'bio',
+  avatarUrl: 'avatarUrl',
+  profession: 'profession',
+  yearsExperience: 'yearsExperience',
+  company: 'company',
+  city: 'city',
+  region: 'region',
+  country: 'country',
+  phone: 'phone',
+  email: 'email',
+  website: 'website',
+  linkedinUrl: 'linkedinUrl',
+  visibility: 'visibility',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfessionalProfileScalarFieldEnum = (typeof ProfessionalProfileScalarFieldEnum)[keyof typeof ProfessionalProfileScalarFieldEnum]
+
+
+export const ProfessionalSpecialtyScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  name: 'name',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfessionalSpecialtyScalarFieldEnum = (typeof ProfessionalSpecialtyScalarFieldEnum)[keyof typeof ProfessionalSpecialtyScalarFieldEnum]
+
+
+export const ProfessionalCredentialScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  type: 'type',
+  title: 'title',
+  institution: 'institution',
+  yearObtained: 'yearObtained',
+  description: 'description',
+  credentialUrl: 'credentialUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfessionalCredentialScalarFieldEnum = (typeof ProfessionalCredentialScalarFieldEnum)[keyof typeof ProfessionalCredentialScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {

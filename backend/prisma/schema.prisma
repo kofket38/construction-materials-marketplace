@@ -96,6 +96,95 @@ enum InventoryTransactionType {
   ORDER_CANCELLATION
 }
 
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum CredentialType {
+  EDUCATION
+  CERTIFICATION
+  TRAINING
+  AWARD
+  OTHER
+}
+
+model ProfessionalProfile {
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @unique @db.Uuid
+
+  // ── Identity ───────────────────────────────────────────────────────────────
+  displayName      String            @db.VarChar(200)
+  headline         String?           @db.VarChar(300)
+  bio              String?           @db.VarChar(2000)
+  avatarUrl        String?           @db.VarChar(500)
+
+  // ── Professional information ──────────────────────────────────────────────
+  profession       String?           @db.VarChar(200)
+  yearsExperience  Int?
+  company          String?           @db.VarChar(200)
+
+  // ── Location ──────────────────────────────────────────────────────────────
+  city             String?           @db.VarChar(100)
+  region           String?           @db.VarChar(100)
+  country          String?           @db.VarChar(100)
+
+  // ── Contact / professional links ──────────────────────────────────────────
+  phone            String?           @db.VarChar(30)
+  email            String?           @db.VarChar(254)
+  website          String?           @db.VarChar(500)
+  linkedinUrl      String?           @db.VarChar(500)
+
+  // ── Profile state ─────────────────────────────────────────────────────────
+  visibility       ProfileVisibility @default(PUBLIC)
+
+  // ── Timestamps ────────────────────────────────────────────────────────────
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // ── Relations ─────────────────────────────────────────────────────────────
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialties      ProfessionalSpecialty[]
+  credentials      ProfessionalCredential[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@index([city])
+  @@index([profession])
+  @@map("professional_profiles")
+}
+
+model ProfessionalSpecialty {
+  id          String              @id @default(uuid()) @db.Uuid
+  profileId   String              @db.Uuid
+  name        String              @db.VarChar(150)
+  createdAt   DateTime            @default(now())
+
+  profile     ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, name])
+  @@index([profileId])
+  @@map("professional_specialties")
+}
+
+model ProfessionalCredential {
+  id             String              @id @default(uuid()) @db.Uuid
+  profileId      String              @db.Uuid
+  type           CredentialType      @default(EDUCATION)
+  title          String              @db.VarChar(300)
+  institution    String?             @db.VarChar(300)
+  yearObtained   Int?
+  description    String?             @db.VarChar(1000)
+  credentialUrl  String?             @db.VarChar(500)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  profile        ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("professional_credentials")
+}
+
 model User {
   id                String            @id @default(uuid()) @db.Uuid
   name              String
@@ -110,6 +199,7 @@ model User {
   emailVerified     Boolean           @default(false)
   refreshToken      String?
   sellerProfile     SellerProfile?
+  professionalProfile ProfessionalProfile?
   listedProducts    Product[]         @relation("SellerProducts")
   createdProducts   Product[]         @relation("SellerCreatedProducts")
   orders            Order[]           @relation("CustomerOrders")

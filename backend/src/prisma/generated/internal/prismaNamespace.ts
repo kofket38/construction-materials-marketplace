@@ -384,6 +384,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  ProfessionalProfile: 'ProfessionalProfile',
+  ProfessionalSpecialty: 'ProfessionalSpecialty',
+  ProfessionalCredential: 'ProfessionalCredential',
   User: 'User',
   SellerProfile: 'SellerProfile',
   Brand: 'Brand',
@@ -416,10 +419,232 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "sellerProfile" | "brand" | "category" | "product" | "productImage" | "sellerInventory" | "order" | "payment" | "orderItem" | "inventoryTransaction" | "review" | "wishlistItem" | "requestForQuote" | "rfqItem" | "supplierQuote" | "supplierQuoteItem"
+    modelProps: "professionalProfile" | "professionalSpecialty" | "professionalCredential" | "user" | "sellerProfile" | "brand" | "category" | "product" | "productImage" | "sellerInventory" | "order" | "payment" | "orderItem" | "inventoryTransaction" | "review" | "wishlistItem" | "requestForQuote" | "rfqItem" | "supplierQuote" | "supplierQuoteItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    ProfessionalProfile: {
+      payload: Prisma.$ProfessionalProfilePayload<ExtArgs>
+      fields: Prisma.ProfessionalProfileFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfessionalProfileFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfessionalProfileFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        findFirst: {
+          args: Prisma.ProfessionalProfileFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfessionalProfileFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        findMany: {
+          args: Prisma.ProfessionalProfileFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>[]
+        }
+        create: {
+          args: Prisma.ProfessionalProfileCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        createMany: {
+          args: Prisma.ProfessionalProfileCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfessionalProfileCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>[]
+        }
+        delete: {
+          args: Prisma.ProfessionalProfileDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        update: {
+          args: Prisma.ProfessionalProfileUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfessionalProfileDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfessionalProfileUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfessionalProfileUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfessionalProfileUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalProfilePayload>
+        }
+        aggregate: {
+          args: Prisma.ProfessionalProfileAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfessionalProfile>
+        }
+        groupBy: {
+          args: Prisma.ProfessionalProfileGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalProfileGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfessionalProfileCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalProfileCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfessionalSpecialty: {
+      payload: Prisma.$ProfessionalSpecialtyPayload<ExtArgs>
+      fields: Prisma.ProfessionalSpecialtyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfessionalSpecialtyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfessionalSpecialtyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        findFirst: {
+          args: Prisma.ProfessionalSpecialtyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfessionalSpecialtyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        findMany: {
+          args: Prisma.ProfessionalSpecialtyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>[]
+        }
+        create: {
+          args: Prisma.ProfessionalSpecialtyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        createMany: {
+          args: Prisma.ProfessionalSpecialtyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfessionalSpecialtyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>[]
+        }
+        delete: {
+          args: Prisma.ProfessionalSpecialtyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        update: {
+          args: Prisma.ProfessionalSpecialtyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfessionalSpecialtyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfessionalSpecialtyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfessionalSpecialtyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfessionalSpecialtyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalSpecialtyPayload>
+        }
+        aggregate: {
+          args: Prisma.ProfessionalSpecialtyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfessionalSpecialty>
+        }
+        groupBy: {
+          args: Prisma.ProfessionalSpecialtyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalSpecialtyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfessionalSpecialtyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalSpecialtyCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfessionalCredential: {
+      payload: Prisma.$ProfessionalCredentialPayload<ExtArgs>
+      fields: Prisma.ProfessionalCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfessionalCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfessionalCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.ProfessionalCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfessionalCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.ProfessionalCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.ProfessionalCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.ProfessionalCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfessionalCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.ProfessionalCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        update: {
+          args: Prisma.ProfessionalCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfessionalCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfessionalCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfessionalCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfessionalCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfessionalCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.ProfessionalCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfessionalCredential>
+        }
+        groupBy: {
+          args: Prisma.ProfessionalCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfessionalCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfessionalCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
     User: {
       payload: Prisma.$UserPayload<ExtArgs>
       fields: Prisma.UserFieldRefs
@@ -1717,6 +1942,57 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const ProfessionalProfileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  displayName: 'displayName',
+  headline: 'headline',
+  bio: 'bio',
+  avatarUrl: 'avatarUrl',
+  profession: 'profession',
+  yearsExperience: 'yearsExperience',
+  company: 'company',
+  city: 'city',
+  region: 'region',
+  country: 'country',
+  phone: 'phone',
+  email: 'email',
+  website: 'website',
+  linkedinUrl: 'linkedinUrl',
+  visibility: 'visibility',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfessionalProfileScalarFieldEnum = (typeof ProfessionalProfileScalarFieldEnum)[keyof typeof ProfessionalProfileScalarFieldEnum]
+
+
+export const ProfessionalSpecialtyScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  name: 'name',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfessionalSpecialtyScalarFieldEnum = (typeof ProfessionalSpecialtyScalarFieldEnum)[keyof typeof ProfessionalSpecialtyScalarFieldEnum]
+
+
+export const ProfessionalCredentialScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  type: 'type',
+  title: 'title',
+  institution: 'institution',
+  yearObtained: 'yearObtained',
+  description: 'description',
+  credentialUrl: 'credentialUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfessionalCredentialScalarFieldEnum = (typeof ProfessionalCredentialScalarFieldEnum)[keyof typeof ProfessionalCredentialScalarFieldEnum]
+
+
 export const UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -2017,6 +2293,62 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ProfileVisibility'
+ */
+export type EnumProfileVisibilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProfileVisibility'>
+    
+
+
+/**
+ * Reference to a field of type 'ProfileVisibility[]'
+ */
+export type ListEnumProfileVisibilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProfileVisibility[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'CredentialType'
+ */
+export type EnumCredentialTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialType'>
+    
+
+
+/**
+ * Reference to a field of type 'CredentialType[]'
+ */
+export type ListEnumCredentialTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialType[]'>
+    
+
+
+/**
  * Reference to a field of type 'Role'
  */
 export type EnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Role'>
@@ -2034,20 +2366,6 @@ export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -2076,20 +2394,6 @@ export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'Decimal[]'
  */
 export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-/**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -2328,6 +2632,9 @@ export type PrismaClientOptions = ({
   queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
+  professionalProfile?: Prisma.ProfessionalProfileOmit
+  professionalSpecialty?: Prisma.ProfessionalSpecialtyOmit
+  professionalCredential?: Prisma.ProfessionalCredentialOmit
   user?: Prisma.UserOmit
   sellerProfile?: Prisma.SellerProfileOmit
   brand?: Prisma.BrandOmit

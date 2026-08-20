@@ -255,6 +255,7 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileNullableScalarRelationFilter, Prisma.SellerProfileWhereInput> | null
+  professionalProfile?: Prisma.XOR<Prisma.ProfessionalProfileNullableScalarRelationFilter, Prisma.ProfessionalProfileWhereInput> | null
   listedProducts?: Prisma.ProductListRelationFilter
   createdProducts?: Prisma.ProductListRelationFilter
   orders?: Prisma.OrderListRelationFilter
@@ -282,6 +283,7 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sellerProfile?: Prisma.SellerProfileOrderByWithRelationInput
+  professionalProfile?: Prisma.ProfessionalProfileOrderByWithRelationInput
   listedProducts?: Prisma.ProductOrderByRelationAggregateInput
   createdProducts?: Prisma.ProductOrderByRelationAggregateInput
   orders?: Prisma.OrderOrderByRelationAggregateInput
@@ -312,6 +314,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileNullableScalarRelationFilter, Prisma.SellerProfileWhereInput> | null
+  professionalProfile?: Prisma.XOR<Prisma.ProfessionalProfileNullableScalarRelationFilter, Prisma.ProfessionalProfileWhereInput> | null
   listedProducts?: Prisma.ProductListRelationFilter
   createdProducts?: Prisma.ProductListRelationFilter
   orders?: Prisma.OrderListRelationFilter
@@ -379,6 +382,7 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -406,6 +410,7 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -433,6 +438,7 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -460,6 +466,7 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -522,6 +529,11 @@ export type UserUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type UserScalarRelationFilter = {
+  is?: Prisma.UserWhereInput
+  isNot?: Prisma.UserWhereInput
+}
+
 export type UserCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -573,22 +585,23 @@ export type UserMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type UserScalarRelationFilter = {
-  is?: Prisma.UserWhereInput
-  isNot?: Prisma.UserWhereInput
-}
-
 export type UserNullableScalarRelationFilter = {
   is?: Prisma.UserWhereInput | null
   isNot?: Prisma.UserWhereInput | null
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
+export type UserCreateNestedOneWithoutProfessionalProfileInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProfessionalProfileInput, Prisma.UserUncheckedCreateWithoutProfessionalProfileInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProfessionalProfileInput
+  connect?: Prisma.UserWhereUniqueInput
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
+export type UserUpdateOneRequiredWithoutProfessionalProfileNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProfessionalProfileInput, Prisma.UserUncheckedCreateWithoutProfessionalProfileInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProfessionalProfileInput
+  upsert?: Prisma.UserUpsertWithoutProfessionalProfileInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProfessionalProfileInput, Prisma.UserUpdateWithoutProfessionalProfileInput>, Prisma.UserUncheckedUpdateWithoutProfessionalProfileInput>
 }
 
 export type EnumRoleFieldUpdateOperationsInput = {
@@ -597,10 +610,6 @@ export type EnumRoleFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
 }
 
 export type UserCreateNestedOneWithoutSellerProfileInput = {
@@ -745,6 +754,130 @@ export type UserUpdateOneRequiredWithoutSupplierQuotesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSupplierQuotesInput, Prisma.UserUpdateWithoutSupplierQuotesInput>, Prisma.UserUncheckedUpdateWithoutSupplierQuotesInput>
 }
 
+export type UserCreateWithoutProfessionalProfileInput = {
+  id?: string
+  name: string
+  firstName?: string | null
+  lastName?: string | null
+  email: string
+  passwordHash: string
+  phone?: string | null
+  company?: string | null
+  role?: $Enums.Role
+  isActive?: boolean
+  emailVerified?: boolean
+  refreshToken?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
+  createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
+  orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutCustomerInput
+  wishlistItems?: Prisma.WishlistItemCreateNestedManyWithoutCustomerInput
+  rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutCustomerInput
+  supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
+  sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
+  inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+}
+
+export type UserUncheckedCreateWithoutProfessionalProfileInput = {
+  id?: string
+  name: string
+  firstName?: string | null
+  lastName?: string | null
+  email: string
+  passwordHash: string
+  phone?: string | null
+  company?: string | null
+  role?: $Enums.Role
+  isActive?: boolean
+  emailVerified?: boolean
+  refreshToken?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
+  createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutCustomerInput
+  wishlistItems?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutCustomerInput
+  rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutCustomerInput
+  supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
+  sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
+  inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+}
+
+export type UserCreateOrConnectWithoutProfessionalProfileInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutProfessionalProfileInput, Prisma.UserUncheckedCreateWithoutProfessionalProfileInput>
+}
+
+export type UserUpsertWithoutProfessionalProfileInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutProfessionalProfileInput, Prisma.UserUncheckedUpdateWithoutProfessionalProfileInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutProfessionalProfileInput, Prisma.UserUncheckedCreateWithoutProfessionalProfileInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutProfessionalProfileInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutProfessionalProfileInput, Prisma.UserUncheckedUpdateWithoutProfessionalProfileInput>
+}
+
+export type UserUpdateWithoutProfessionalProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
+  createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutCustomerNestedInput
+  wishlistItems?: Prisma.WishlistItemUpdateManyWithoutCustomerNestedInput
+  rfqs?: Prisma.RequestForQuoteUpdateManyWithoutCustomerNestedInput
+  supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
+  sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
+  inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutProfessionalProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
+  createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutCustomerNestedInput
+  wishlistItems?: Prisma.WishlistItemUncheckedUpdateManyWithoutCustomerNestedInput
+  rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutCustomerNestedInput
+  supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
+  sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
+  inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+}
+
 export type UserCreateWithoutSellerProfileInput = {
   id?: string
   name: string
@@ -760,6 +893,7 @@ export type UserCreateWithoutSellerProfileInput = {
   refreshToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -786,6 +920,7 @@ export type UserUncheckedCreateWithoutSellerProfileInput = {
   refreshToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -828,6 +963,7 @@ export type UserUpdateWithoutSellerProfileInput = {
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -854,6 +990,7 @@ export type UserUncheckedUpdateWithoutSellerProfileInput = {
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -881,6 +1018,7 @@ export type UserCreateWithoutListedProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutCustomerInput
@@ -907,6 +1045,7 @@ export type UserUncheckedCreateWithoutListedProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutCustomerInput
@@ -938,6 +1077,7 @@ export type UserCreateWithoutCreatedProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutCustomerInput
@@ -964,6 +1104,7 @@ export type UserUncheckedCreateWithoutCreatedProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutCustomerInput
@@ -1006,6 +1147,7 @@ export type UserUpdateWithoutListedProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutCustomerNestedInput
@@ -1032,6 +1174,7 @@ export type UserUncheckedUpdateWithoutListedProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1069,6 +1212,7 @@ export type UserUpdateWithoutCreatedProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutCustomerNestedInput
@@ -1095,6 +1239,7 @@ export type UserUncheckedUpdateWithoutCreatedProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1121,6 +1266,7 @@ export type UserCreateWithoutSellerInventoriesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1147,6 +1293,7 @@ export type UserUncheckedCreateWithoutSellerInventoriesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1189,6 +1336,7 @@ export type UserUpdateWithoutSellerInventoriesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1215,6 +1363,7 @@ export type UserUncheckedUpdateWithoutSellerInventoriesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1241,6 +1390,7 @@ export type UserCreateWithoutOrdersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutCustomerInput
@@ -1267,6 +1417,7 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutCustomerInput
@@ -1309,6 +1460,7 @@ export type UserUpdateWithoutOrdersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutCustomerNestedInput
@@ -1335,6 +1487,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1361,6 +1514,7 @@ export type UserCreateWithoutInventoryTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1387,6 +1541,7 @@ export type UserUncheckedCreateWithoutInventoryTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1429,6 +1584,7 @@ export type UserUpdateWithoutInventoryTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1455,6 +1611,7 @@ export type UserUncheckedUpdateWithoutInventoryTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1481,6 +1638,7 @@ export type UserCreateWithoutReviewsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1507,6 +1665,7 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1549,6 +1708,7 @@ export type UserUpdateWithoutReviewsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1575,6 +1735,7 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1601,6 +1762,7 @@ export type UserCreateWithoutWishlistItemsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1627,6 +1789,7 @@ export type UserUncheckedCreateWithoutWishlistItemsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1669,6 +1832,7 @@ export type UserUpdateWithoutWishlistItemsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1695,6 +1859,7 @@ export type UserUncheckedUpdateWithoutWishlistItemsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1721,6 +1886,7 @@ export type UserCreateWithoutRfqsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1747,6 +1913,7 @@ export type UserUncheckedCreateWithoutRfqsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1789,6 +1956,7 @@ export type UserUpdateWithoutRfqsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1815,6 +1983,7 @@ export type UserUncheckedUpdateWithoutRfqsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1841,6 +2010,7 @@ export type UserCreateWithoutSupplierQuotesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
@@ -1867,6 +2037,7 @@ export type UserUncheckedCreateWithoutSupplierQuotesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
   listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
   createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -1909,6 +2080,7 @@ export type UserUpdateWithoutSupplierQuotesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
@@ -1935,6 +2107,7 @@ export type UserUncheckedUpdateWithoutSupplierQuotesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -2064,6 +2237,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   sellerProfile?: boolean | Prisma.User$sellerProfileArgs<ExtArgs>
+  professionalProfile?: boolean | Prisma.User$professionalProfileArgs<ExtArgs>
   listedProducts?: boolean | Prisma.User$listedProductsArgs<ExtArgs>
   createdProducts?: boolean | Prisma.User$createdProductsArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
@@ -2130,6 +2304,7 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "firstName" | "lastName" | "email" | "passwordHash" | "phone" | "company" | "role" | "isActive" | "emailVerified" | "refreshToken" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sellerProfile?: boolean | Prisma.User$sellerProfileArgs<ExtArgs>
+  professionalProfile?: boolean | Prisma.User$professionalProfileArgs<ExtArgs>
   listedProducts?: boolean | Prisma.User$listedProductsArgs<ExtArgs>
   createdProducts?: boolean | Prisma.User$createdProductsArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
@@ -2148,6 +2323,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     sellerProfile: Prisma.$SellerProfilePayload<ExtArgs> | null
+    professionalProfile: Prisma.$ProfessionalProfilePayload<ExtArgs> | null
     listedProducts: Prisma.$ProductPayload<ExtArgs>[]
     createdProducts: Prisma.$ProductPayload<ExtArgs>[]
     orders: Prisma.$OrderPayload<ExtArgs>[]
@@ -2568,6 +2744,7 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sellerProfile<T extends Prisma.User$sellerProfileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sellerProfileArgs<ExtArgs>>): Prisma.Prisma__SellerProfileClient<runtime.Types.Result.GetResult<Prisma.$SellerProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  professionalProfile<T extends Prisma.User$professionalProfileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$professionalProfileArgs<ExtArgs>>): Prisma.Prisma__ProfessionalProfileClient<runtime.Types.Result.GetResult<Prisma.$ProfessionalProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   listedProducts<T extends Prisma.User$listedProductsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$listedProductsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   createdProducts<T extends Prisma.User$createdProductsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdProductsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orders<T extends Prisma.User$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3029,6 +3206,25 @@ export type User$sellerProfileArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.SellerProfileInclude<ExtArgs> | null
   where?: Prisma.SellerProfileWhereInput
+}
+
+/**
+ * User.professionalProfile
+ */
+export type User$professionalProfileArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProfessionalProfile
+   */
+  select?: Prisma.ProfessionalProfileSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProfessionalProfile
+   */
+  omit?: Prisma.ProfessionalProfileOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProfessionalProfileInclude<ExtArgs> | null
+  where?: Prisma.ProfessionalProfileWhereInput
 }
 
 /**
