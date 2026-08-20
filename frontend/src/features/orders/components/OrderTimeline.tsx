@@ -129,7 +129,7 @@ function getCurrentStep(
     case "PENDING_PAYMENT":
       return 1;
     case "PENDING_PAYMENT_VERIFICATION":
-      return 2;
+      return 1;
     case "PAYMENT_VERIFIED":
     case "PENDING_CONFIRMATION":
     case "PENDING":
