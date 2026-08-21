@@ -5,6 +5,7 @@ import type { CategoryController } from "../controllers/category.controller.js";
 import type { OrderController } from "../controllers/order.controller.js";
 import type { PaymentController } from "../controllers/payment.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
+import type { ProfessionalProfileController } from "../controllers/professional-profile.controller.js";
 import type { ReviewController } from "../controllers/review.controller.js";
 import type { RfqController } from "../controllers/rfq.controller.js";
 import type { SellerDashboardController } from "../controllers/seller-dashboard.controller.js";
@@ -21,6 +22,7 @@ import { createCategoryRouter } from "./category.routes.js";
 import { createOrderRouter } from "./order.routes.js";
 import { createPaymentRouter } from "./payment.routes.js";
 import { createProductRouter } from "./product.routes.js";
+import { createProfessionalProfileRouter } from "./professional-profile.routes.js";
 import { createReviewRouter } from "./review.routes.js";
 import { createRfqRouter } from "./rfq.routes.js";
 import { createSellerDashboardRouter } from "./seller-dashboard.routes.js";
@@ -35,6 +37,7 @@ export function createApiRouter(
   orderController: OrderController,
   paymentController: PaymentController,
   productController: ProductController,
+  professionalProfileController: ProfessionalProfileController,
   reviewController: ReviewController,
   rfqController: RfqController,
   sellerDashboardController: SellerDashboardController,
@@ -74,6 +77,13 @@ export function createApiRouter(
   router.use(
     "/products",
     createProductRouter(productController, requireAuthentication),
+  );
+  router.use(
+    "/professional-profiles",
+    createProfessionalProfileRouter(
+      professionalProfileController,
+      requireAuthentication,
+    ),
   );
   router.use(createReviewRouter(reviewController, requireAuthentication));
   router.use(createRfqRouter(rfqController, requireAuthentication));
