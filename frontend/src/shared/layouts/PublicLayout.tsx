@@ -126,6 +126,15 @@ export function PublicLayout() {
                 My Profile
               </NavLink>
             ) : null}
+            {status === "authenticated" &&
+            user?.role === "CUSTOMER" ? (
+              <NavLink
+                className={navLinkClassName}
+                to="/professional/dashboard"
+              >
+                Pro Dashboard
+              </NavLink>
+            ) : null}
             {status === "authenticated" && user?.role === "ADMIN" ? (
               <NavLink className={navLinkClassName} to="/admin/dashboard">
                 Admin
@@ -171,6 +180,12 @@ export function PublicLayout() {
                   to="/profile/professional"
                 >
                   My Profile
+                </NavLink>
+                <NavLink
+                  className={navLinkClassName}
+                  to="/professional/dashboard"
+                >
+                  Pro Dashboard
                 </NavLink>
               </>
             ) : null}
@@ -266,6 +281,12 @@ export function PublicLayout() {
                       label="My Profile"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/profile/professional"
+                    />
+                    <SellerMenuLink
+                      icon={LayoutDashboard}
+                      label="Pro Dashboard"
+                      onClick={() => setIsSellerMenuOpen(false)}
+                      to="/professional/dashboard"
                     />
                   </nav>
                 ) : null}
