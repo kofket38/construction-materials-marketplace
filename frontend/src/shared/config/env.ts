@@ -11,7 +11,7 @@ const frontendEnvironmentSchema = z.object({
     .int()
     .positive()
     .max(120_000)
-    .default(15_000),
+    .default(60_000),
 });
 
 const parsedEnvironment = frontendEnvironmentSchema.safeParse(import.meta.env);
