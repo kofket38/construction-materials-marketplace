@@ -39,6 +39,20 @@ export function ProfessionalDashboardPage() {
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
 
+  // Wait for authentication bootstrap to complete before rendering content.
+  // Without this guard, DashboardContent mounts while authStatus is "loading"
+  // and fires getOwnProfessionalProfile() before the access token is available,
+  // causing a 401 that is treated as an error instead of unauthenticated.
+  if (authStatus === "loading" || authStatus === "idle") {
+    return (
+      <FullPageStatus
+        description="Please wait while we verify your session."
+        icon={LoaderCircle}
+        title="Loading"
+      />
+    );
+  }
+
   if (authStatus !== "authenticated" || !user) {
     return (
       <Navigate

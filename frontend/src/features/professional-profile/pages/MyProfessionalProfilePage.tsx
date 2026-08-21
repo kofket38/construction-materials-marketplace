@@ -112,16 +112,19 @@ export function MyProfessionalProfilePage() {
     );
   }
 
-  return <ProfileContent />;
+  return <ProfileContent isAuthenticated />;
 }
 
-function ProfileContent() {
+function ProfileContent({ isAuthenticated }: { isAuthenticated: boolean }) {
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({
     queryKey: OWN_PROFILE_KEY,
     queryFn: ({ signal }) => getOwnProfessionalProfile(signal),
     staleTime: 30_000,
+    // Only fire when authentication is confirmed — prevents a premature 401
+    // if this component is ever rendered while auth bootstrap is still in progress.
+    enabled: isAuthenticated,
   });
 
   if (profileQuery.isPending) {
