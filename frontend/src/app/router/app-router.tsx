@@ -22,6 +22,8 @@ import { SellerOrderDetailsPage } from "@/features/seller/pages/SellerOrderDetai
 import { SellerOrdersPage } from "@/features/seller/pages/SellerOrdersPage";
 import { SellerProfilePage } from "@/features/seller/pages/SellerProfilePage";
 import { SellerWorkspacePage } from "@/features/seller/pages/SellerWorkspacePage";
+import { MyProfessionalProfilePage } from "@/features/professional-profile/pages/MyProfessionalProfilePage";
+import { ProfessionalProfilePage } from "@/features/professional-profile/pages/ProfessionalProfilePage";
 import { CreateRfqPage } from "@/features/rfq/pages/CreateRfqPage";
 import { MyRfqsPage } from "@/features/rfq/pages/MyRfqsPage";
 import { RfqDetailPage } from "@/features/rfq/pages/RfqDetailPage";
@@ -153,6 +155,16 @@ export const appRouter = createBrowserRouter([
           {
             path: "seller/profile",
             element: <SellerProfilePage />,
+          },
+
+          // ── Professional profile routes ──────────────────────────────────
+          {
+            path: "profile/professional",
+            element: <MyProfessionalProfilePage />,
+          },
+          {
+            path: "professionals/:profileId",
+            element: <ProfessionalProfilePage />,
           },
 
           {

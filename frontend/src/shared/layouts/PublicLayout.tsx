@@ -11,6 +11,7 @@ import {
   Menu,
   Settings,
   ShoppingCart,
+  UserCircle,
   UserPlus,
   Warehouse,
 } from "lucide-react";
@@ -116,6 +117,15 @@ export function PublicLayout() {
                 Wishlist
               </NavLink>
             ) : null}
+            {status === "authenticated" &&
+            user?.role === "CUSTOMER" ? (
+              <NavLink
+                className={navLinkClassName}
+                to="/profile/professional"
+              >
+                My Profile
+              </NavLink>
+            ) : null}
             {status === "authenticated" && user?.role === "ADMIN" ? (
               <NavLink className={navLinkClassName} to="/admin/dashboard">
                 Admin
@@ -155,6 +165,12 @@ export function PublicLayout() {
                   to="/seller/profile"
                 >
                   Settings
+                </NavLink>
+                <NavLink
+                  className={navLinkClassName}
+                  to="/profile/professional"
+                >
+                  My Profile
                 </NavLink>
               </>
             ) : null}
@@ -244,6 +260,12 @@ export function PublicLayout() {
                       label="Settings"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/profile"
+                    />
+                    <SellerMenuLink
+                      icon={UserCircle}
+                      label="My Profile"
+                      onClick={() => setIsSellerMenuOpen(false)}
+                      to="/profile/professional"
                     />
                   </nav>
                 ) : null}
