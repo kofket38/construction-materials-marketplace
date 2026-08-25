@@ -3,12 +3,14 @@ import {
   Building2,
   ClipboardList,
   CreditCard,
+  FileText,
   Heart,
   LayoutDashboard,
   LoaderCircle,
   LogIn,
   LogOut,
   Menu,
+  Package,
   Settings,
   ShoppingCart,
   UserCircle,
@@ -39,6 +41,7 @@ const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
 export function PublicLayout() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSellerMenuOpen, setIsSellerMenuOpen] = useState(false);
+  const [isPrimaryMenuOpen, setIsPrimaryMenuOpen] = useState(false);
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const setUnauthenticated = useAuthStore(
@@ -85,7 +88,7 @@ export function PublicLayout() {
           <nav
             aria-label="Primary navigation"
             className={
-              user?.role === "SELLER"
+              user?.role === "SELLER" || user?.role === "CUSTOMER"
                 ? "hidden self-stretch xl:flex"
                 : "hidden self-stretch sm:flex"
             }
@@ -238,61 +241,61 @@ export function PublicLayout() {
                     aria-label="Seller navigation"
                     className="absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg xl:hidden"
                   >
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={LayoutDashboard}
                       label="Dashboard"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/dashboard"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={Warehouse}
                       label="Inventory"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/inventory"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={ClipboardList}
                       label="Orders"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/orders"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={ClipboardList}
                       label="RFQs"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/rfqs"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={CreditCard}
                       label="Payments"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/payments"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={BarChart3}
                       label="Sales"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/sales"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={Settings}
                       label="Settings"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/seller/profile"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={UserCircle}
                       label="My Profile"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/profile/professional"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={Users}
                       label="Professionals"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/professionals"
                     />
-                    <SellerMenuLink
+                    <MobileMenuLink
                       icon={LayoutDashboard}
                       label="Pro Dashboard"
                       onClick={() => setIsSellerMenuOpen(false)}
@@ -302,21 +305,107 @@ export function PublicLayout() {
                 ) : null}
               </>
             ) : (
-              <Link
-                aria-label={`Cart with ${cartItemCount.toLocaleString()} ${
-                  cartItemCount === 1 ? "item" : "items"
-                }`}
-                className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
-                title="Shopping cart"
-                to="/cart"
-              >
-                <ShoppingCart aria-hidden="true" className="size-5" />
-                {cartItemCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold leading-none text-white">
-                    {cartItemCount > 99 ? "99+" : cartItemCount}
-                  </span>
+              <>
+                <button
+                  aria-expanded={isPrimaryMenuOpen}
+                  aria-label="Open navigation"
+                  className={`inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 ${
+                    user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
+                  }`}
+                  onClick={() =>
+                    setIsPrimaryMenuOpen((isOpen) => !isOpen)
+                  }
+                  title="Navigation"
+                  type="button"
+                >
+                  <Menu aria-hidden="true" className="size-5" />
+                </button>
+                {isPrimaryMenuOpen ? (
+                  <nav
+                    aria-label="Site navigation"
+                    className={`absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg ${
+                      user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
+                    }`}
+                  >
+                    <MobileMenuLink
+                      icon={Package}
+                      label="Catalog"
+                      onClick={() => setIsPrimaryMenuOpen(false)}
+                      to="/products"
+                    />
+                    <MobileMenuLink
+                      icon={Warehouse}
+                      label="Suppliers"
+                      onClick={() => setIsPrimaryMenuOpen(false)}
+                      to="/stores"
+                    />
+                    <MobileMenuLink
+                      icon={Users}
+                      label="Professionals"
+                      onClick={() => setIsPrimaryMenuOpen(false)}
+                      to="/professionals"
+                    />
+                    {status === "authenticated" &&
+                    user?.role === "CUSTOMER" ? (
+                      <>
+                        <MobileMenuLink
+                          icon={ClipboardList}
+                          label="My Orders"
+                          onClick={() => setIsPrimaryMenuOpen(false)}
+                          to="/orders"
+                        />
+                        <MobileMenuLink
+                          icon={FileText}
+                          label="My RFQs"
+                          onClick={() => setIsPrimaryMenuOpen(false)}
+                          to="/rfqs"
+                        />
+                        <MobileMenuLink
+                          icon={Heart}
+                          label="Wishlist"
+                          onClick={() => setIsPrimaryMenuOpen(false)}
+                          to="/wishlist"
+                        />
+                        <MobileMenuLink
+                          icon={UserCircle}
+                          label="My Profile"
+                          onClick={() => setIsPrimaryMenuOpen(false)}
+                          to="/profile/professional"
+                        />
+                        <MobileMenuLink
+                          icon={LayoutDashboard}
+                          label="Pro Dashboard"
+                          onClick={() => setIsPrimaryMenuOpen(false)}
+                          to="/professional/dashboard"
+                        />
+                      </>
+                    ) : null}
+                    {status === "authenticated" && user?.role === "ADMIN" ? (
+                      <MobileMenuLink
+                        icon={Settings}
+                        label="Admin"
+                        onClick={() => setIsPrimaryMenuOpen(false)}
+                        to="/admin/dashboard"
+                      />
+                    ) : null}
+                  </nav>
                 ) : null}
-              </Link>
+                <Link
+                  aria-label={`Cart with ${cartItemCount.toLocaleString()} ${
+                    cartItemCount === 1 ? "item" : "items"
+                  }`}
+                  className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+                  title="Shopping cart"
+                  to="/cart"
+                >
+                  <ShoppingCart aria-hidden="true" className="size-5" />
+                  {cartItemCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold leading-none text-white">
+                      {cartItemCount > 99 ? "99+" : cartItemCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </>
             )}
             {status === "authenticated" && user ? (
               <>
@@ -369,7 +458,7 @@ export function PublicLayout() {
   );
 }
 
-function SellerMenuLink({
+function MobileMenuLink({
   icon: Icon,
   label,
   onClick,
