@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Pencil } from "lucide-react";
+import { LayoutDashboard, Package, Pencil, Users } from "lucide-react";
 
 import { WorkspaceAccountFooter } from "@/features/auth/components/WorkspaceAccountFooter";
 import {
@@ -27,6 +27,7 @@ const PROFESSIONAL_NAV_GROUPS: DashboardNavGroup[] = [
 ];
 
 const PROFESSIONAL_SECONDARY_LINKS: DashboardNavItem[] = [
+  { label: "Browse Professionals", href: "/professionals", icon: Users },
   { label: "View marketplace", href: "/products", icon: Package },
 ];
 

@@ -3,18 +3,22 @@ import {
   ArrowLeft,
   ArrowRight,
   LoaderCircle,
+  LogIn,
+  Plus,
   Search,
   Users,
+  UserPlus,
   X,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
-import { listProfessionalProfiles } from "@/features/professional-profile/api/professional-profile.api";
+import { getOwnProfessionalProfile, listProfessionalProfiles } from "@/features/professional-profile/api/professional-profile.api";
 import type {
   ProfessionalDirectorySortBy,
   ProfessionalDirectorySortOrder,
 } from "@/features/professional-profile/api/professional-profile.api";
+import { useAuthStore } from "@/features/auth/model/auth.store";
 import { ProfessionalCard } from "@/features/professional-profile/components/ProfessionalCard";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 
@@ -316,6 +320,7 @@ export function ProfessionalDirectoryPage() {
             >
               Clear filters
             </button>
+            <DirectoryJoinCta />
           </DirectoryStatus>
         ) : (
           <DirectoryStatus>
@@ -329,6 +334,7 @@ export function ProfessionalDirectoryPage() {
                 professionals complete their profiles.
               </p>
             </div>
+            <DirectoryJoinCta />
           </DirectoryStatus>
         )
       ) : (
@@ -394,6 +400,52 @@ function DirectoryStatus({ children }: { children: React.ReactNode }) {
     >
       {children}
     </section>
+  );
+}
+
+const ctaPrimaryClassName =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950";
+
+const ctaSecondaryClassName =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950";
+
+function DirectoryJoinCta() {
+  const isAuthenticated = useAuthStore(
+    (state) => state.status === "authenticated",
+  );
+
+  const meQuery = useQuery({
+    queryKey: ["professional-profile", "me"] as const,
+    queryFn: ({ signal }) => getOwnProfessionalProfile(signal),
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link className={ctaPrimaryClassName} to="/register">
+          <UserPlus aria-hidden="true" className="size-4" />
+          Register to create your profile
+        </Link>
+        <Link className={ctaSecondaryClassName} to="/login">
+          <LogIn aria-hidden="true" className="size-4" />
+          Sign in
+        </Link>
+      </div>
+    );
+  }
+
+  if (!meQuery.isSuccess || meQuery.data !== null) {
+    return null;
+  }
+
+  return (
+    <Link className={ctaPrimaryClassName} to="/profile/professional">
+      <Plus aria-hidden="true" className="size-4" />
+      Create your professional profile
+    </Link>
   );
 }
 

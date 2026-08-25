@@ -105,9 +105,9 @@ export function ProfessionalProfilePage() {
             </p>
             <Link
               className="mt-6 inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              to="/products"
+              to="/professionals"
             >
-              Back to marketplace
+              Back to all professionals
             </Link>
           </section>
         </main>
