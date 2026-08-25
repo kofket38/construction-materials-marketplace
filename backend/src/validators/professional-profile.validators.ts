@@ -238,6 +238,58 @@ export const updateCredentialBodySchema = z
     "At least one field must be provided.",
   );
 
+// ── Directory (public list) query schema ──────────────────────────────────────
+
+const positiveIntegerQuerySchema = z
+  .string()
+  .regex(/^[1-9]\d*$/, "Must be a positive integer.");
+
+const professionalSearchSchema = z
+  .string()
+  .max(200, "Search must be 200 characters or fewer.")
+  .refine(
+    (value) => value.trim().length > 0,
+    "Search cannot contain only whitespace.",
+  );
+
+const professionFilterSchema = z
+  .string()
+  .trim()
+  .min(1, "Profession filter cannot be empty.")
+  .max(200, "Profession filter must be 200 characters or fewer.");
+
+const specialtyFilterSchema = z
+  .string()
+  .trim()
+  .min(1, "Specialty filter cannot be empty.")
+  .max(150, "Specialty filter must be 150 characters or fewer.");
+
+const cityFilterSchema = z
+  .string()
+  .trim()
+  .min(1, "City filter cannot be empty.")
+  .max(120, "City filter must be 120 characters or fewer.");
+
+export const listProfessionalProfilesQuerySchema = z
+  .object({
+    page: positiveIntegerQuerySchema
+      .refine((value) => Number(value) <= 1_000_000, "Page is too large.")
+      .optional(),
+    limit: positiveIntegerQuerySchema
+      .refine(
+        (value) => Number(value) <= 50,
+        "Limit cannot exceed 50.",
+      )
+      .optional(),
+    search: professionalSearchSchema.optional(),
+    profession: professionFilterSchema.optional(),
+    specialty: specialtyFilterSchema.optional(),
+    city: cityFilterSchema.optional(),
+    sortBy: z.enum(["newest", "oldest", "experience", "name"]).optional(),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
+  })
+  .strict();
+
 // ── Params schemas ────────────────────────────────────────────────────────────
 
 export const profileIdParamsSchema = z
@@ -263,5 +315,8 @@ export type ReplaceSpecialtiesBody = z.infer<
 >;
 export type CreateCredentialBody = z.infer<typeof createCredentialBodySchema>;
 export type UpdateCredentialBody = z.infer<typeof updateCredentialBodySchema>;
+export type ListProfessionalProfilesQueryParams = z.infer<
+  typeof listProfessionalProfilesQuerySchema
+>;
 export type ProfileIdParams = z.infer<typeof profileIdParamsSchema>;
 export type CredentialIdParams = z.infer<typeof credentialIdParamsSchema>;

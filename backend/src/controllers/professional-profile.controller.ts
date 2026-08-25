@@ -5,6 +5,7 @@ import type {
   CreateProfessionalProfileBody,
   CredentialIdParams,
   CreateCredentialBody,
+  ListProfessionalProfilesQueryParams,
   ProfileIdParams,
   ReplaceSpecialtiesBody,
   UpdateCredentialBody,
@@ -15,6 +16,20 @@ export class ProfessionalProfileController {
   constructor(
     private readonly service: ProfessionalProfileService,
   ) {}
+
+  // ── Public directory ────────────────────────────────────────────────────────
+
+  /** GET /api/professional-profiles */
+  list = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.service.listPublished(
+      req.query as ListProfessionalProfilesQueryParams,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  };
 
   // ── Own profile ────────────────────────────────────────────────────────────
 

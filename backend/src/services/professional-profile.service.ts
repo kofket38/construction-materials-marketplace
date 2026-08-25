@@ -7,21 +7,52 @@ import {
 import { DuplicateProfessionalProfileError } from "../repositories/professional-profile.errors.js";
 import type {
   ProfessionalCredentialEntity,
+  ProfessionalDirectoryResult,
   ProfessionalProfileEntity,
   ProfessionalProfileRepository,
 } from "../repositories/professional-profile.repository.js";
 import type {
   CreateCredentialBody,
   CreateProfessionalProfileBody,
+  ListProfessionalProfilesQueryParams,
   ReplaceSpecialtiesBody,
   UpdateCredentialBody,
   UpdateProfessionalProfileBody,
 } from "../validators/professional-profile.validators.js";
 
+function defaultDirectorySortOrder(
+  sortBy: "newest" | "oldest" | "experience" | "name",
+): "asc" | "desc" {
+  return sortBy === "newest" ? "desc" : "asc";
+}
+
 export class ProfessionalProfileService {
   constructor(
     private readonly profiles: ProfessionalProfileRepository,
   ) {}
+
+  // ── Public directory ─────────────────────────────────────────────────────
+
+  listPublished(
+    input: ListProfessionalProfilesQueryParams,
+  ): Promise<ProfessionalDirectoryResult> {
+    const sortBy = input.sortBy ?? "newest";
+
+    return this.profiles.searchPublished({
+      page: Number(input.page ?? "1"),
+      limit: Number(input.limit ?? "20"),
+      sortBy,
+      sortOrder: input.sortOrder ?? defaultDirectorySortOrder(sortBy),
+      ...(input.search !== undefined ? { search: input.search.trim() } : {}),
+      ...(input.profession !== undefined
+        ? { profession: input.profession }
+        : {}),
+      ...(input.specialty !== undefined
+        ? { specialty: input.specialty }
+        : {}),
+      ...(input.city !== undefined ? { city: input.city } : {}),
+    });
+  }
 
   // ── Profile CRUD ──────────────────────────────────────────────────────────
 

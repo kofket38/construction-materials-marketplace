@@ -7,6 +7,7 @@ import {
   createProfessionalProfileBodySchema,
   credentialIdParamsSchema,
   emptyProfessionalProfileObjectSchema,
+  listProfessionalProfilesQuerySchema,
   profileIdParamsSchema,
   replaceSpecialtiesBodySchema,
   updateCredentialBodySchema,
@@ -18,6 +19,21 @@ export function createProfessionalProfileRouter(
   requireAuthentication: RequestHandler,
 ): Router {
   const router = Router();
+
+  // ── GET /api/professional-profiles ──────────────────────────────────────────
+  // Public directory of PUBLISHED (visibility = PUBLIC) professional profiles.
+  // Anonymous access is intentional; the PUBLIC filter is enforced inside the
+  // repository query so PRIVATE profiles can never leak.
+  // Must be registered BEFORE /me and /:profileId (Express matches in order).
+  router.get(
+    "/",
+    validateRequest({
+      body: emptyProfessionalProfileObjectSchema,
+      params: emptyProfessionalProfileObjectSchema,
+      query: listProfessionalProfilesQuerySchema,
+    }),
+    asyncHandler(controller.list),
+  );
 
   // ── POST /api/professional-profiles ─────────────────────────────────────────
   // Authenticated users only (any role may create a professional profile).

@@ -10,6 +10,9 @@ import type {
   CreateProfessionalProfileInput,
   CredentialType,
   ProfessionalCredentialEntity,
+  ProfessionalDirectoryItem,
+  ProfessionalDirectoryQuery,
+  ProfessionalDirectoryResult,
   ProfessionalProfileEntity,
   ProfessionalProfileRepository,
   ProfessionalSpecialtyEntity,
@@ -17,6 +20,97 @@ import type {
   UpdateCredentialInput,
   UpdateProfessionalProfileInput,
 } from "./professional-profile.repository.js";
+
+// ── Directory query helpers ───────────────────────────────────────────────────
+
+const DIRECTORY_SPECIALTY_LIMIT = 5;
+
+function professionalDirectoryWhere(
+  query: ProfessionalDirectoryQuery,
+): Prisma.ProfessionalProfileWhereInput {
+  return {
+    // Security-critical: only published profiles are discoverable. This
+    // filter lives at the database-query level so PRIVATE profiles can
+    // never leak through search, filters, sorting, or pagination.
+    visibility: PrismaProfileVisibility.PUBLIC,
+    user: {
+      is: { isActive: true },
+    },
+    ...(query.profession !== undefined
+      ? {
+          profession: {
+            contains: query.profession,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+    ...(query.city !== undefined
+      ? { city: { contains: query.city, mode: "insensitive" as const } }
+      : {}),
+    ...(query.specialty !== undefined
+      ? {
+          specialties: {
+            some: {
+              name: { contains: query.specialty, mode: "insensitive" as const },
+            },
+          },
+        }
+      : {}),
+    ...(query.search !== undefined
+      ? {
+          OR: [
+            {
+              displayName: {
+                contains: query.search,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              headline: {
+                contains: query.search,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              profession: {
+                contains: query.search,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              specialties: {
+                some: {
+                  name: {
+                    contains: query.search,
+                    mode: "insensitive" as const,
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
+function professionalDirectoryOrderBy(
+  query: ProfessionalDirectoryQuery,
+): Prisma.ProfessionalProfileOrderByWithRelationInput[] {
+  switch (query.sortBy) {
+    case "newest":
+      return [{ createdAt: "desc" }, { id: "asc" }];
+    case "oldest":
+      return [{ createdAt: "asc" }, { id: "asc" }];
+    case "experience":
+      return [
+        { yearsExperience: query.sortOrder },
+        { createdAt: "desc" },
+        { id: "asc" },
+      ];
+    case "name":
+      return [{ displayName: query.sortOrder }, { id: "asc" }];
+  }
+}
 
 // ── Prisma select shapes ──────────────────────────────────────────────────────
 
@@ -127,6 +221,67 @@ export class PrismaProfessionalProfileRepository
   implements ProfessionalProfileRepository
 {
   constructor(private readonly client: PrismaClient) {}
+
+  async searchPublished(
+    query: ProfessionalDirectoryQuery,
+  ): Promise<ProfessionalDirectoryResult> {
+    const where = professionalDirectoryWhere(query);
+    const orderBy = professionalDirectoryOrderBy(query);
+
+    const [totalItems, rows] = await this.client.$transaction(
+      [
+        this.client.professionalProfile.count({ where }),
+        this.client.professionalProfile.findMany({
+          where,
+          select: {
+            id: true,
+            displayName: true,
+            headline: true,
+            profession: true,
+            yearsExperience: true,
+            city: true,
+            region: true,
+            country: true,
+            avatarUrl: true,
+            specialties: {
+              select: { name: true },
+              orderBy: { name: "asc" as const },
+              take: DIRECTORY_SPECIALTY_LIMIT,
+            },
+          },
+          orderBy,
+          skip: (query.page - 1) * query.limit,
+          take: query.limit,
+        }),
+      ],
+      { timeout: 30_000 },
+    );
+
+    const professionals: ProfessionalDirectoryItem[] = rows.map((row) => ({
+      id: row.id,
+      displayName: row.displayName,
+      headline: row.headline,
+      profession: row.profession,
+      yearsExperience: row.yearsExperience,
+      city: row.city,
+      region: row.region,
+      country: row.country,
+      avatarUrl: row.avatarUrl,
+      specialties: row.specialties.map((s) => s.name),
+    }));
+
+    const totalPages = Math.ceil(totalItems / query.limit);
+
+    return {
+      professionals,
+      totalItems,
+      totalPages,
+      currentPage: query.page,
+      pageSize: query.limit,
+      hasNextPage: query.page < totalPages,
+      hasPreviousPage: query.page > 1,
+    };
+  }
 
   async findByUserId(
     userId: string,

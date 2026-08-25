@@ -95,6 +95,7 @@ function makeProfile(
 
 function createMockRepo(): ProfessionalProfileRepository {
   return {
+    searchPublished: vi.fn(),
     findByUserId: vi.fn(),
     findById: vi.fn(),
     create: vi.fn(),

@@ -5,6 +5,9 @@ import type {
   CreateProfessionalProfileInput,
   CredentialType,
   ProfessionalCredentialEntity,
+  ProfessionalDirectoryItem,
+  ProfessionalDirectoryQuery,
+  ProfessionalDirectoryResult,
   ProfessionalProfileEntity,
   ProfessionalProfileRepository,
   ProfessionalSpecialtyEntity,
@@ -12,6 +15,12 @@ import type {
   UpdateCredentialInput,
   UpdateProfessionalProfileInput,
 } from "../../src/repositories/professional-profile.repository.js";
+
+const DIRECTORY_SPECIALTY_LIMIT = 5;
+
+function containsInsensitive(haystack: string | null, needle: string): boolean {
+  return haystack !== null && haystack.toLowerCase().includes(needle.toLowerCase());
+}
 
 export class InMemoryProfessionalProfileRepository
   implements ProfessionalProfileRepository
@@ -22,6 +31,11 @@ export class InMemoryProfessionalProfileRepository
   private readonly byUser = new Map<string, string>();
 
   // ── Seed helpers ────────────────────────────────────────────────────────────
+
+  /** Read-only snapshot of all stored profiles (for test assertions). */
+  values(): ProfessionalProfileEntity[] {
+    return [...this.profiles.values()];
+  }
 
   /**
    * Directly insert a complete profile, bypassing business rules.
@@ -61,6 +75,120 @@ export class InMemoryProfessionalProfileRepository
   }
 
   // ── Interface implementation ────────────────────────────────────────────────
+
+  async searchPublished(
+    query: ProfessionalDirectoryQuery,
+  ): Promise<ProfessionalDirectoryResult> {
+    // Security-critical: mirror the Prisma implementation by filtering on
+    // visibility = PUBLIC before any other logic runs.
+    let matches = [...this.profiles.values()].filter(
+      (profile) => profile.visibility === "PUBLIC",
+    );
+
+    if (query.profession !== undefined) {
+      matches = matches.filter((p) =>
+        containsInsensitive(p.profession, query.profession!),
+      );
+    }
+    if (query.city !== undefined) {
+      matches = matches.filter((p) => containsInsensitive(p.city, query.city!));
+    }
+    if (query.specialty !== undefined) {
+      matches = matches.filter((p) =>
+        p.specialties.some((s) =>
+          containsInsensitive(s.name, query.specialty!),
+        ),
+      );
+    }
+    if (query.search !== undefined) {
+      const search = query.search;
+      matches = matches.filter(
+        (p) =>
+          containsInsensitive(p.displayName, search) ||
+          containsInsensitive(p.headline, search) ||
+          containsInsensitive(p.profession, search) ||
+          p.specialties.some((s) => containsInsensitive(s.name, search)),
+      );
+    }
+
+    const byId = (a: ProfessionalProfileEntity, b: ProfessionalProfileEntity): number =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
+    // Mirror professionalDirectoryOrderBy() in the Prisma repository exactly:
+    // newest/oldest use fixed directions; experience/name honour sortOrder.
+    switch (query.sortBy) {
+      case "newest":
+        matches.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || byId(a, b),
+        );
+        break;
+      case "oldest":
+        matches.sort(
+          (a, b) => a.createdAt.getTime() - b.createdAt.getTime() || byId(a, b),
+        );
+        break;
+      case "experience": {
+        // Mirror Postgres ASC NULLS FIRST / DESC NULLS LAST semantics.
+        const nullPenalty = (p: ProfessionalProfileEntity): number =>
+          p.yearsExperience === null ? (query.sortOrder === "asc" ? -1 : 1) : 0;
+        matches.sort((a, b) => {
+          const penalty = nullPenalty(a) - nullPenalty(b);
+          if (penalty !== 0) return penalty;
+          const av = a.yearsExperience ?? 0;
+          const bv = b.yearsExperience ?? 0;
+          if (av !== bv) {
+            return query.sortOrder === "desc" ? bv - av : av - bv;
+          }
+          return b.createdAt.getTime() - a.createdAt.getTime() || byId(a, b);
+        });
+        break;
+      }
+      case "name": {
+        const byName = (x: string, y: string): number =>
+          x.toLowerCase().localeCompare(y.toLowerCase());
+        matches.sort(
+          (a, b) =>
+            (query.sortOrder === "desc"
+              ? byName(b.displayName, a.displayName)
+              : byName(a.displayName, b.displayName)) || byId(a, b),
+        );
+        break;
+      }
+    }
+
+    const totalItems = matches.length;
+    const totalPages = Math.ceil(totalItems / query.limit);
+    const page = matches.slice(
+      (query.page - 1) * query.limit,
+      query.page * query.limit,
+    );
+
+    const professionals: ProfessionalDirectoryItem[] = page.map((profile) => ({
+      id: profile.id,
+      displayName: profile.displayName,
+      headline: profile.headline,
+      profession: profile.profession,
+      yearsExperience: profile.yearsExperience,
+      city: profile.city,
+      region: profile.region,
+      country: profile.country,
+      avatarUrl: profile.avatarUrl,
+      specialties: profile.specialties
+        .map((s) => s.name)
+        .sort((a, b) => a.localeCompare(b))
+        .slice(0, DIRECTORY_SPECIALTY_LIMIT),
+    }));
+
+    return {
+      professionals,
+      totalItems,
+      totalPages,
+      currentPage: query.page,
+      pageSize: query.limit,
+      hasNextPage: query.page < totalPages,
+      hasPreviousPage: query.page > 1,
+    };
+  }
 
   async findByUserId(
     userId: string,

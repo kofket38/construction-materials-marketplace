@@ -56,6 +56,51 @@ export interface ProfessionalProfile {
   updatedAt: string;
 }
 
+// ── Directory (public discovery) ──────────────────────────────────────────────
+
+export type ProfessionalDirectorySortBy =
+  | "newest"
+  | "oldest"
+  | "experience"
+  | "name";
+
+export type ProfessionalDirectorySortOrder = "asc" | "desc";
+
+/** Lightweight card shape returned by the public directory endpoint. */
+export interface ProfessionalDirectoryItem {
+  id: string;
+  displayName: string;
+  headline: string | null;
+  profession: string | null;
+  yearsExperience: number | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  avatarUrl: string | null;
+  specialties: string[];
+}
+
+export interface ProfessionalDirectoryResult {
+  professionals: ProfessionalDirectoryItem[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ListProfessionalProfilesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  profession?: string;
+  specialty?: string;
+  city?: string;
+  sortBy?: ProfessionalDirectorySortBy;
+  sortOrder?: ProfessionalDirectorySortOrder;
+}
+
 // ── Input types ───────────────────────────────────────────────────────────────
 
 export interface CreateProfileInput {
@@ -102,6 +147,17 @@ export async function getOwnProfessionalProfile(
     { signal },
   );
   return res.data.data.profile;
+}
+
+export async function listProfessionalProfiles(
+  input: ListProfessionalProfilesInput,
+  signal?: AbortSignal,
+): Promise<ProfessionalDirectoryResult> {
+  const res = await apiClient.get<ApiSuccessResponse<ProfessionalDirectoryResult>>(
+    "/professional-profiles",
+    { params: input, signal },
+  );
+  return res.data.data;
 }
 
 export async function getProfessionalProfileById(

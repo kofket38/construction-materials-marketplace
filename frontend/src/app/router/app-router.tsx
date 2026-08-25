@@ -24,6 +24,7 @@ import { SellerWorkspacePage } from "@/features/seller/pages/SellerWorkspacePage
 import { SellerLayout } from "@/features/seller/layouts/SellerLayout";
 import { MyProfessionalProfilePage } from "@/features/professional-profile/pages/MyProfessionalProfilePage";
 import { ProfessionalProfilePage } from "@/features/professional-profile/pages/ProfessionalProfilePage";
+import { ProfessionalDirectoryPage } from "@/features/professional-profile/pages/ProfessionalDirectoryPage";
 import { ProfessionalDashboardPage } from "@/features/professional-profile/pages/ProfessionalDashboardPage";
 import { ProfessionalLayout } from "@/features/professional-profile/layouts/ProfessionalLayout";
 import { CreateRfqPage } from "@/features/rfq/pages/CreateRfqPage";
@@ -88,6 +89,12 @@ export const appRouter = createBrowserRouter([
           {
             path: "stores/:sellerId",
             element: <SellerStorePage />,
+          },
+
+          // ── Public professional directory ─────────────────────────────────
+          {
+            path: "professionals",
+            element: <ProfessionalDirectoryPage />,
           },
 
           {

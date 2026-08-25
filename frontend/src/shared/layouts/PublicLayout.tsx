@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   UserCircle,
   UserPlus,
+  Users,
   Warehouse,
 } from "lucide-react";
 import { useState } from "react";
@@ -99,6 +100,9 @@ export function PublicLayout() {
                 </NavLink>
               </>
             ) : null}
+            <NavLink className={navLinkClassName} to="/professionals">
+              Professionals
+            </NavLink>
             {status === "authenticated" &&
             user?.role === "CUSTOMER" ? (
               <NavLink className={navLinkClassName} to="/orders">
@@ -281,6 +285,12 @@ export function PublicLayout() {
                       label="My Profile"
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/profile/professional"
+                    />
+                    <SellerMenuLink
+                      icon={Users}
+                      label="Professionals"
+                      onClick={() => setIsSellerMenuOpen(false)}
+                      to="/professionals"
                     />
                     <SellerMenuLink
                       icon={LayoutDashboard}

@@ -582,6 +582,319 @@ describe("Professional Profiles API", () => {
     });
   });
 
+  // ── GET /api/professional-profiles (public directory) ────────────────────────
+
+  describe("GET /api/professional-profiles", () => {
+    const privateUserId = randomUUID();
+    const day = (offset: number): Date =>
+      new Date(Date.UTC(2026, 0, 1 + offset));
+
+    beforeEach(() => {
+      users.addUser({ id: privateUserId, role: "CUSTOMER" });
+
+      const abebe = profiles.addProfile(userAId, {
+        displayName: "Abebe Bekele",
+        headline: "Structural engineer",
+        profession: "Structural Engineer",
+        yearsExperience: 10,
+        city: "Addis Ababa",
+        createdAt: day(3),
+      });
+      void profiles.replaceSpecialties(abebe.id, [
+        "Foundation Design",
+        "Concrete",
+      ]);
+
+      const sara = profiles.addProfile(userBId, {
+        displayName: "Sara Tesfaye",
+        headline: "Site supervisor",
+        profession: "Civil Engineer",
+        yearsExperience: 6,
+        city: "Dire Dawa",
+        country: "Ethiopia",
+        createdAt: day(1),
+      });
+      void profiles.replaceSpecialties(sara.id, ["Road Works"]);
+      // PRIVATE profile that matches nearly every query — must never appear.
+      profiles.addProfile(privateUserId, {
+        displayName: "Hidden Professional",
+        headline: "secret structural consultant",
+        profession: "Structural Engineer",
+        yearsExperience: 30,
+        city: "Addis Ababa",
+        visibility: "PRIVATE",
+        bio: "confidential",
+        email: "hidden@cmm.test",
+        phone: "+251900000000",
+        credentials: [
+          {
+            id: randomUUID(),
+            profileId: "",
+            type: "EDUCATION",
+            title: "PhD",
+            institution: null,
+            yearObtained: null,
+            description: null,
+            credentialUrl: null,
+            createdAt: day(0),
+            updatedAt: day(0),
+          },
+        ],
+        createdAt: day(10),
+      });
+    });
+
+    it("allows an anonymous directory request and returns the standard envelope", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles")
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.professionals).toHaveLength(2);
+      expect(res.body.data.totalItems).toBe(2);
+      expect(res.body.data.currentPage).toBe(1);
+      expect(res.body.data.pageSize).toBe(20);
+      expect(res.body.data.totalPages).toBe(1);
+      expect(res.body.data.hasNextPage).toBe(false);
+      expect(res.body.data.hasPreviousPage).toBe(false);
+    });
+
+    it("returns only PUBLIC profiles and never leaks PRIVATE ones", async () => {
+      const res = await request(app).get("/api/professional-profiles").expect(200);
+
+      const names = res.body.data.professionals.map(
+        (p: { displayName: string }) => p.displayName,
+      );
+      expect(names).toContain("Abebe Bekele");
+      expect(names).toContain("Sara Tesfaye");
+      expect(names).not.toContain("Hidden Professional");
+    });
+
+    it("never returns PRIVATE profiles even when they match the search term", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles?search=structural")
+        .expect(200);
+
+      const names = res.body.data.professionals.map(
+        (p: { displayName: string }) => p.displayName,
+      );
+      expect(names).toEqual(["Abebe Bekele"]);
+    });
+
+    it("searches across display name, headline, profession, and specialty names", async () => {
+      const byName = await request(app)
+        .get("/api/professional-profiles?search=Sara")
+        .expect(200);
+      expect(byName.body.data.totalItems).toBe(1);
+
+      const byHeadline = await request(app)
+        .get("/api/professional-profiles?search=supervisor")
+        .expect(200);
+      expect(byHeadline.body.data.totalItems).toBe(1);
+
+      const byProfession = await request(app)
+        .get("/api/professional-profiles?search=civil%20engineer")
+        .expect(200);
+      expect(byProfession.body.data.totalItems).toBe(1);
+
+      const bySpecialty = await request(app)
+        .get("/api/professional-profiles?search=foundation")
+        .expect(200);
+      expect(bySpecialty.body.data.totalItems).toBe(1);
+    });
+
+    it("filters by profession", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles?profession=civil")
+        .expect(200);
+
+      expect(res.body.data.totalItems).toBe(1);
+      expect(res.body.data.professionals[0].displayName).toBe("Sara Tesfaye");
+    });
+
+    it("filters by specialty", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles?specialty=concrete")
+        .expect(200);
+
+      expect(res.body.data.totalItems).toBe(1);
+      expect(res.body.data.professionals[0].displayName).toBe("Abebe Bekele");
+    });
+
+    it("filters by city", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles?city=dire%20dawa")
+        .expect(200);
+
+      expect(res.body.data.totalItems).toBe(1);
+      expect(res.body.data.professionals[0].displayName).toBe("Sara Tesfaye");
+    });
+
+    it("combines multiple filters correctly", async () => {
+      // All three filters match only Abebe.
+      const both = await request(app)
+        .get(
+          "/api/professional-profiles?profession=structural&city=addis&specialty=foundation",
+        )
+        .expect(200);
+      expect(both.body.data.totalItems).toBe(1);
+      expect(both.body.data.professionals[0].displayName).toBe("Abebe Bekele");
+
+      // A conflicting combination returns nothing — not a broader match.
+      const conflicting = await request(app)
+        .get(
+          "/api/professional-profiles?profession=structural&city=dire%20dawa",
+        )
+        .expect(200);
+      expect(conflicting.body.data.totalItems).toBe(0);
+      expect(conflicting.body.data.professionals).toEqual([]);
+    });
+
+    it("paginates results and reports pagination metadata", async () => {
+      profiles.addProfile(randomUUID(), { displayName: "Extra One" });
+      profiles.addProfile(randomUUID(), { displayName: "Extra Two" });
+      users.addUser({ id: randomUUID(), role: "CUSTOMER" });
+
+      const page1 = await request(app)
+        .get("/api/professional-profiles?page=1&limit=2")
+        .expect(200);
+      expect(page1.body.data.professionals).toHaveLength(2);
+      expect(page1.body.data.totalItems).toBe(4);
+      expect(page1.body.data.totalPages).toBe(2);
+      expect(page1.body.data.hasNextPage).toBe(true);
+      expect(page1.body.data.hasPreviousPage).toBe(false);
+
+      const page2 = await request(app)
+        .get("/api/professional-profiles?page=2&limit=2")
+        .expect(200);
+      expect(page2.body.data.professionals).toHaveLength(2);
+      expect(page2.body.data.hasNextPage).toBe(false);
+      expect(page2.body.data.hasPreviousPage).toBe(true);
+
+      // No overlap between pages.
+      const p1Ids = page1.body.data.professionals.map((p: { id: string }) => p.id);
+      const p2Ids = page2.body.data.professionals.map((p: { id: string }) => p.id);
+      expect(p1Ids.filter((id: string) => p2Ids.includes(id))).toEqual([]);
+    });
+
+    it("sorts deterministically by name and experience", async () => {
+      const byNameAsc = await request(app)
+        .get("/api/professional-profiles?sortBy=name&sortOrder=asc")
+        .expect(200);
+      expect(byNameAsc.body.data.professionals.map((p: { displayName: string }) => p.displayName)).toEqual([
+        "Abebe Bekele",
+        "Sara Tesfaye",
+      ]);
+
+      const byNameDesc = await request(app)
+        .get("/api/professional-profiles?sortBy=name&sortOrder=desc")
+        .expect(200);
+      expect(byNameDesc.body.data.professionals.map((p: { displayName: string }) => p.displayName)).toEqual([
+        "Sara Tesfaye",
+        "Abebe Bekele",
+      ]);
+
+      const byExperience = await request(app)
+        .get("/api/professional-profiles?sortBy=experience&sortOrder=desc")
+        .expect(200);
+      expect(byExperience.body.data.professionals[0].yearsExperience).toBe(10);
+
+      // Default sort is newest first.
+      const byNewest = await request(app)
+        .get("/api/professional-profiles")
+        .expect(200);
+      expect(byNewest.body.data.professionals[0].displayName).toBe(
+        "Abebe Bekele",
+      );
+    });
+
+    it("rejects invalid query parameters with 400", async () => {
+      await request(app).get("/api/professional-profiles?page=0").expect(400);
+      await request(app).get("/api/professional-profiles?page=-1").expect(400);
+      await request(app).get("/api/professional-profiles?limit=0").expect(400);
+      await request(app).get("/api/professional-profiles?limit=51").expect(400);
+      await request(app)
+        .get("/api/professional-profiles?sortBy=bogus")
+        .expect(400);
+      await request(app)
+        .get("/api/professional-profiles?sortOrder=sideways")
+        .expect(400);
+      await request(app)
+        .get("/api/professional-profiles?rogue=value")
+        .expect(400);
+      await request(app)
+        .get("/api/professional-profiles?search=%20%20")
+        .expect(400);
+    });
+
+    it("does not leak PRIVATE profiles through pagination windows", async () => {
+      profiles.addProfile(randomUUID(), { displayName: "Pub Three" });
+      profiles.addProfile(randomUUID(), { displayName: "Pub Four" });
+
+      const allIds: string[] = [];
+      let page = 1;
+      for (; page <= 5; page += 1) {
+        const res = await request(app)
+          .get(`/api/professional-profiles?page=${page}&limit=2`)
+          .expect(200);
+        allIds.push(
+          ...res.body.data.professionals.map((p: { id: string }) => p.id),
+        );
+        if (!res.body.data.hasNextPage) break;
+      }
+
+      // Every returned profile must be one of the seeded PUBLIC profiles.
+      const publicProfiles = [...profiles.values()].filter(
+        (p) => p.visibility === "PUBLIC",
+      );
+      expect(allIds.length).toBe(publicProfiles.length);
+      for (const profile of publicProfiles) {
+        expect(allIds).toContain(profile.id);
+      }
+    });
+
+    it("returns card data without sensitive or heavy fields", async () => {
+      const res = await request(app).get("/api/professional-profiles").expect(200);
+
+      const card = res.body.data.professionals.find(
+        (p: { displayName: string }) => p.displayName === "Abebe Bekele",
+      );
+      expect(card).toBeDefined();
+      expect(card).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          displayName: "Abebe Bekele",
+          headline: "Structural engineer",
+          profession: "Structural Engineer",
+          yearsExperience: 10,
+          city: "Addis Ababa",
+          region: null,
+          country: null,
+          avatarUrl: null,
+          specialties: ["Concrete", "Foundation Design"],
+        }),
+      );
+      expect(card).not.toHaveProperty("bio");
+      expect(card).not.toHaveProperty("credentials");
+      expect(card).not.toHaveProperty("email");
+      expect(card).not.toHaveProperty("phone");
+      expect(card.specialties.length).toBeLessThanOrEqual(5);
+    });
+
+    it("returns an empty directory in the standard shape when nothing matches", async () => {
+      const res = await request(app)
+        .get("/api/professional-profiles?search=nobody-matches-this")
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.professionals).toEqual([]);
+      expect(res.body.data.totalItems).toBe(0);
+      expect(res.body.data.totalPages).toBe(0);
+      expect(res.body.data.hasNextPage).toBe(false);
+      expect(res.body.data.hasPreviousPage).toBe(false);
+    });
+  });
+
   // ── Helper request functions ───────────────────────────────────────────────────
 
   function get(path: string, token: string) {

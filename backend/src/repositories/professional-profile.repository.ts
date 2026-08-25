@@ -114,9 +114,65 @@ export interface UpdateCredentialInput {
   credentialUrl?: string | null;
 }
 
+// ── Directory (public discovery) ──────────────────────────────────────────────
+
+export type ProfessionalDirectorySortBy =
+  | "newest"
+  | "oldest"
+  | "experience"
+  | "name";
+
+export type ProfessionalDirectorySortOrder = "asc" | "desc";
+
+export interface ProfessionalDirectoryQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  profession?: string;
+  specialty?: string;
+  city?: string;
+  sortBy: ProfessionalDirectorySortBy;
+  sortOrder: ProfessionalDirectorySortOrder;
+}
+
+/** Lightweight card shape — deliberately excludes bio, credentials, and
+ * contact details, which remain the responsibility of the detail endpoint. */
+export interface ProfessionalDirectoryItem {
+  id: string;
+  displayName: string;
+  headline: string | null;
+  profession: string | null;
+  yearsExperience: number | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  avatarUrl: string | null;
+  specialties: string[];
+}
+
+export interface ProfessionalDirectoryResult {
+  professionals: ProfessionalDirectoryItem[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 // ── Repository interface ──────────────────────────────────────────────────────
 
 export interface ProfessionalProfileRepository {
+  /**
+   * Search PUBLISHED (visibility = PUBLIC) profiles for the public directory.
+   * The PUBLIC filter is applied at the database query level so PRIVATE
+   * profiles can never leak through any filter combination. Returns a
+   * lightweight card representation plus standard pagination metadata.
+   */
+  searchPublished(
+    query: ProfessionalDirectoryQuery,
+  ): Promise<ProfessionalDirectoryResult>;
+
   /**
    * Find a profile by the owning user's ID, including all specialties and
    * credentials. Returns null when no profile exists for the user.
