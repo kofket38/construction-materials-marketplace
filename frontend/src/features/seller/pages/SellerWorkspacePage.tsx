@@ -10,7 +10,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getSellerDashboard } from "@/features/seller/api/seller-orders.api";
@@ -25,30 +25,14 @@ export function SellerWorkspacePage({
 }: {
   section: SellerWorkspaceSection;
 }) {
-  const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const dashboardQuery = useQuery({
     queryKey: ["seller", "dashboard"],
-    enabled:
-      section !== "settings" &&
-      authStatus === "authenticated" &&
-      user?.role === "SELLER",
+    enabled: section !== "settings",
     queryFn: ({ signal }) => getSellerDashboard(signal),
     refetchInterval: 30_000,
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: `/seller/${section}` }}
-        to="/login"
-      />
-    );
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (section !== "settings" && dashboardQuery.isPending) {
     return (
       <FullPageStatus
@@ -148,10 +132,10 @@ export function SellerWorkspacePage({
             </h2>
           </div>
           <dl className="mt-4 grid gap-5 border-y border-zinc-200 py-5 sm:grid-cols-2">
-            <AccountDetail label="Name" value={user.name} />
-            <AccountDetail label="Email" value={user.email} />
-            <AccountDetail label="Phone" value={user.phone} />
-            <AccountDetail label="Company" value={user.company} />
+            <AccountDetail label="Name" value={user?.name ?? null} />
+            <AccountDetail label="Email" value={user?.email ?? null} />
+            <AccountDetail label="Phone" value={user?.phone ?? null} />
+            <AccountDetail label="Company" value={user?.company ?? null} />
           </dl>
         </section>
       ) : null}

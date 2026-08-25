@@ -12,7 +12,6 @@ import {
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import {
   createQuote,
   getRfq,
@@ -34,14 +33,12 @@ function futureIso(days: number): string {
 
 export function SubmitQuotePage() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const rfqQuery = useQuery({
     queryKey: ["seller", "rfq-detail", rfqId],
-    enabled: Boolean(rfqId) && authStatus === "authenticated" && user?.role === "SELLER",
+    enabled: Boolean(rfqId),
     queryFn: ({ signal }) => {
       if (!rfqId) throw new Error("RFQ ID required");
       return getRfq(rfqId, signal);
@@ -50,7 +47,6 @@ export function SubmitQuotePage() {
 
   const productsQuery = useQuery({
     queryKey: ["seller", "products-for-quote"],
-    enabled: authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) => getSellerProducts({ page: 1, limit: 100 }, signal),
     staleTime: 60_000,
   });
@@ -130,11 +126,8 @@ export function SubmitQuotePage() {
     },
   });
 
-  if (!rfqId || authStatus !== "authenticated" || !user) {
-    return <Navigate replace state={{ returnTo: `/seller/rfqs/${rfqId}/quote` }} to="/login" />;
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
+  if (!rfqId) {
+    return <Navigate replace to="/seller/rfqs" />;
   }
   if (rfqQuery.isPending) {
     return <FullPageStatus description="Loading RFQ." icon={LoaderCircle} title="Loading" />;

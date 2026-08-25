@@ -5,7 +5,6 @@ import { RouteErrorPage } from "@/pages/system/RouteErrorPage";
 
 import { PublicLayout } from "@/shared/layouts/PublicLayout";
 import { RootLayout } from "@/shared/layouts/RootLayout";
-import { BuyerRouteGuard } from "@/features/auth/components/BuyerRouteGuard";
 
 import { LoginPage } from "@/pages/LoginPage";
 import { CartPage } from "@/pages/CartPage";
@@ -22,15 +21,18 @@ import { SellerOrderDetailsPage } from "@/features/seller/pages/SellerOrderDetai
 import { SellerOrdersPage } from "@/features/seller/pages/SellerOrdersPage";
 import { SellerProfilePage } from "@/features/seller/pages/SellerProfilePage";
 import { SellerWorkspacePage } from "@/features/seller/pages/SellerWorkspacePage";
+import { SellerLayout } from "@/features/seller/layouts/SellerLayout";
 import { MyProfessionalProfilePage } from "@/features/professional-profile/pages/MyProfessionalProfilePage";
 import { ProfessionalProfilePage } from "@/features/professional-profile/pages/ProfessionalProfilePage";
 import { ProfessionalDashboardPage } from "@/features/professional-profile/pages/ProfessionalDashboardPage";
+import { ProfessionalLayout } from "@/features/professional-profile/layouts/ProfessionalLayout";
 import { CreateRfqPage } from "@/features/rfq/pages/CreateRfqPage";
 import { MyRfqsPage } from "@/features/rfq/pages/MyRfqsPage";
 import { RfqDetailPage } from "@/features/rfq/pages/RfqDetailPage";
 import { SellerRfqsPage } from "@/features/rfq/pages/SellerRfqsPage";
 import { SubmitQuotePage } from "@/features/rfq/pages/SubmitQuotePage";
-import { AdminRouteGuard } from "@/features/auth/components/AdminRouteGuard";
+import { RequireAuth } from "@/features/auth/components/RequireAuth";
+import { RequireRole } from "@/features/auth/components/RequireRole";
 import { AdminLayout } from "@/features/admin/layouts/AdminLayout";
 import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
@@ -100,7 +102,7 @@ export const appRouter = createBrowserRouter([
 
           // ── Authenticated buyer routes ───────────────────────────────────
           {
-            element: <BuyerRouteGuard />,
+            element: <RequireRole role="CUSTOMER" />,
             children: [
               {
                 path: "orders",
@@ -142,75 +144,87 @@ export const appRouter = createBrowserRouter([
             ],
           },
 
-          // ── Seller workspace routes ──────────────────────────────────────
+          // ── Seller workspace routes (role-guarded, persistent shell) ─────
           {
-            path: "seller/dashboard",
-            element: <SellerDashboardPage />,
+            path: "seller",
+            element: <RequireRole role="SELLER" />,
+            children: [
+              {
+                element: <SellerLayout />,
+                children: [
+                  {
+                    path: "dashboard",
+                    element: <SellerDashboardPage />,
+                  },
+                  {
+                    path: "inventory",
+                    element: <SellerInventoryPage />,
+                  },
+                  {
+                    path: "profile",
+                    element: <SellerProfilePage />,
+                  },
+                  {
+                    path: "orders",
+                    element: <SellerOrdersPage />,
+                  },
+                  {
+                    path: "orders/:orderId",
+                    element: <SellerOrderDetailsPage />,
+                  },
+                  {
+                    path: "payments",
+                    element: <SellerWorkspacePage section="payments" />,
+                  },
+                  {
+                    path: "sales",
+                    element: <SellerWorkspacePage section="sales" />,
+                  },
+                  {
+                    path: "settings",
+                    element: <SellerWorkspacePage section="settings" />,
+                  },
+                  {
+                    path: "rfqs",
+                    element: <SellerRfqsPage />,
+                  },
+                  {
+                    path: "rfqs/:rfqId",
+                    element: <RfqDetailPage />,
+                  },
+                  {
+                    path: "rfqs/:rfqId/quote",
+                    element: <SubmitQuotePage />,
+                  },
+                ],
+              },
+            ],
           },
 
+          // ── Professional workspace routes (auth-guarded, persistent shell) ─
           {
-            path: "seller/inventory",
-            element: <SellerInventoryPage />,
+            element: <RequireAuth />,
+            children: [
+              {
+                element: <ProfessionalLayout />,
+                children: [
+                  {
+                    path: "professional/dashboard",
+                    element: <ProfessionalDashboardPage />,
+                  },
+                  {
+                    path: "profile/professional",
+                    element: <MyProfessionalProfilePage />,
+                  },
+                ],
+              },
+            ],
           },
 
-          {
-            path: "seller/profile",
-            element: <SellerProfilePage />,
-          },
-
-          // ── Professional profile routes ──────────────────────────────────
-          {
-            path: "professional/dashboard",
-            element: <ProfessionalDashboardPage />,
-          },
-          {
-            path: "profile/professional",
-            element: <MyProfessionalProfilePage />,
-          },
+          // ── Public professional profile view ──────────────────────────────
           {
             path: "professionals/:profileId",
             element: <ProfessionalProfilePage />,
-          },
-
-          {
-            path: "seller/orders",
-            element: <SellerOrdersPage />,
-          },
-
-          {
-            path: "seller/orders/:orderId",
-            element: <SellerOrderDetailsPage />,
-          },
-
-          {
-            path: "seller/payments",
-            element: <SellerWorkspacePage section="payments" />,
-          },
-
-          {
-            path: "seller/sales",
-            element: <SellerWorkspacePage section="sales" />,
-          },
-
-          {
-            path: "seller/settings",
-            element: <SellerWorkspacePage section="settings" />,
-          },
-
-          // ── Seller RFQ routes ────────────────────────────────────────────
-          {
-            path: "seller/rfqs",
-            element: <SellerRfqsPage />,
-          },
-
-          {
-            path: "seller/rfqs/:rfqId",
-            element: <RfqDetailPage />,
-          },
-
-          {
-            path: "seller/rfqs/:rfqId/quote",
-            element: <SubmitQuotePage />,
           },
 
           {
@@ -219,38 +233,39 @@ export const appRouter = createBrowserRouter([
           },
         ],
       },
-    ],
-  },
-  // ── Admin routes (own layout, no PublicLayout) ──────────────────────────
-  {
-    element: <AdminRouteGuard />,
-    children: [
+
+      // ── Admin workspace routes (own layout, sibling of PublicLayout) ──────
       {
-        element: <AdminLayout />,
+        element: <RequireRole role="ADMIN" />,
         children: [
           {
-            path: "/admin",
-            element: <AdminDashboardPage />,
-          },
-          {
-            path: "/admin/dashboard",
-            element: <AdminDashboardPage />,
-          },
-          {
-            path: "/admin/users",
-            element: <AdminUsersPage />,
-          },
-          {
-            path: "/admin/sellers",
-            element: <AdminSellersPage />,
-          },
-          {
-            path: "/admin/products",
-            element: <AdminProductsPage />,
-          },
-          {
-            path: "/admin/orders",
-            element: <AdminOrdersPage />,
+            element: <AdminLayout />,
+            children: [
+              {
+                path: "/admin",
+                element: <AdminDashboardPage />,
+              },
+              {
+                path: "/admin/dashboard",
+                element: <AdminDashboardPage />,
+              },
+              {
+                path: "/admin/users",
+                element: <AdminUsersPage />,
+              },
+              {
+                path: "/admin/sellers",
+                element: <AdminSellersPage />,
+              },
+              {
+                path: "/admin/products",
+                element: <AdminProductsPage />,
+              },
+              {
+                path: "/admin/orders",
+                element: <AdminOrdersPage />,
+              },
+            ],
           },
         ],
       },

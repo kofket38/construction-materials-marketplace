@@ -1,7 +1,13 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuthStore } from "@/features/auth/model/auth.store";
 
-export function AdminRouteGuard() {
+import { useAuthStore } from "@/features/auth/model/auth.store";
+import type { UserRole } from "@/features/auth/model/auth.types";
+
+export interface RequireRoleProps {
+  role: UserRole;
+}
+
+export function RequireRole({ role }: RequireRoleProps) {
   const location = useLocation();
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -22,7 +28,7 @@ export function AdminRouteGuard() {
     );
   }
 
-  if (user.role !== "ADMIN") {
+  if (user.role !== role) {
     return <Navigate replace to="/products" />;
   }
 

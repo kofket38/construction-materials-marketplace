@@ -23,10 +23,9 @@ import {
   type UseFormRegister,
   type FieldErrors,
 } from "react-hook-form";
-import { Navigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import {
   addProfessionalCredential,
   createProfessionalProfile,
@@ -99,19 +98,7 @@ const OWN_PROFILE_KEY = ["professional-profile", "me"] as const;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function MyProfessionalProfilePage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
-
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: "/profile/professional" }}
-        to="/login"
-      />
-    );
-  }
-
+  // Route protection (authentication) is handled by RequireAuth in the router.
   return <ProfileContent isAuthenticated />;
 }
 

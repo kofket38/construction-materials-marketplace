@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getOwnProfessionalProfile } from "@/features/professional-profile/api/professional-profile.api";
@@ -36,20 +36,10 @@ const OWN_PROFILE_KEY = ["professional-profile", "me"] as const;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function ProfessionalDashboardPage() {
-  const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: "/professional/dashboard" }}
-        to="/login"
-      />
-    );
-  }
-
-  return <DashboardContent userName={user.name} />;
+  // Route protection (authentication) is handled by RequireAuth in the router.
+  return <DashboardContent userName={user?.name ?? ""} />;
 }
 
 function DashboardContent({ userName }: { userName: string }) {

@@ -10,11 +10,9 @@ import {
   PackageCheck,
   Truck,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import {
   formatOrderDate,
@@ -25,33 +23,21 @@ import { SellerOnboardingBanner } from "@/features/seller/components/SellerOnboa
 import type { SellerDashboardSummary } from "@/features/seller/model/seller-order";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
+import {
+  StatCard,
+  type StatCardProps,
+} from "@/shared/layouts/dashboard";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
 
 const REFRESH_INTERVAL = 30_000;
 
 export function SellerDashboardPage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const dashboardQuery = useQuery({
     queryKey: ["seller", "dashboard"],
-    enabled:
-      authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) => getSellerDashboard(signal),
     refetchInterval: REFRESH_INTERVAL,
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: "/seller/dashboard" }}
-        to="/login"
-      />
-    );
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (dashboardQuery.isPending) {
     return (
       <FullPageStatus
@@ -114,7 +100,7 @@ export function SellerDashboardPage() {
         className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
         {cards.map((card) => (
-          <MetricCard key={card.label} {...card} />
+          <StatCard key={card.label} {...card} />
         ))}
       </section>
 
@@ -184,89 +170,57 @@ export function SellerDashboardPage() {
   );
 }
 
-interface MetricCardProps {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  tone: string;
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: MetricCardProps) {
-  return (
-    <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm leading-5 text-zinc-600">{label}</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-950">
-            {value}
-          </p>
-        </div>
-        <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-md ${tone}`}
-        >
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function createDashboardCards(
   dashboard: SellerDashboardSummary,
-): MetricCardProps[] {
+): StatCardProps[] {
   return [
     {
       icon: Clock3,
+      iconTone: "bg-amber-50 text-amber-700",
       label: "Pending Payment Verification",
-      value: dashboard.pendingPaymentVerification.toLocaleString(),
-      tone: "bg-amber-50 text-amber-700",
+      value: dashboard.pendingPaymentVerification,
     },
     {
       icon: BadgeCheck,
+      iconTone: "bg-sky-50 text-sky-700",
       label: "Payment Verified",
-      value: dashboard.paymentVerified.toLocaleString(),
-      tone: "bg-sky-50 text-sky-700",
+      value: dashboard.paymentVerified,
     },
     {
       icon: Boxes,
+      iconTone: "bg-blue-50 text-blue-700",
       label: "Processing",
-      value: dashboard.processing.toLocaleString(),
-      tone: "bg-blue-50 text-blue-700",
+      value: dashboard.processing,
     },
     {
       icon: PackageCheck,
+      iconTone: "bg-indigo-50 text-indigo-700",
       label: "Ready for Delivery",
-      value: dashboard.readyForDelivery.toLocaleString(),
-      tone: "bg-indigo-50 text-indigo-700",
+      value: dashboard.readyForDelivery,
     },
     {
       icon: Truck,
+      iconTone: "bg-violet-50 text-violet-700",
       label: "Out for Delivery",
-      value: dashboard.outForDelivery.toLocaleString(),
-      tone: "bg-violet-50 text-violet-700",
+      value: dashboard.outForDelivery,
     },
     {
       icon: ClipboardCheck,
+      iconTone: "bg-emerald-50 text-emerald-700",
       label: "Delivered",
-      value: dashboard.delivered.toLocaleString(),
-      tone: "bg-emerald-50 text-emerald-700",
+      value: dashboard.delivered,
     },
     {
       icon: Banknote,
+      iconTone: "bg-zinc-100 text-zinc-700",
       label: "Total Orders",
-      value: dashboard.totalOrders.toLocaleString(),
-      tone: "bg-zinc-100 text-zinc-700",
+      value: dashboard.totalOrders,
     },
     {
       icon: CircleDollarSign,
+      iconTone: "bg-emerald-50 text-emerald-700",
       label: "Revenue",
       value: formatProductPrice(dashboard.totalRevenue),
-      tone: "bg-emerald-50 text-emerald-700",
     },
   ];
 }

@@ -19,6 +19,10 @@ import type { AdminDashboardSummary, AdminRecentActivity } from "@/features/admi
 import { formatAdminDateTime } from "@/features/admin/lib/admin-display";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
+import {
+  StatCard,
+  type StatCardProps,
+} from "@/shared/layouts/dashboard";
 
 const REFRESH_INTERVAL = 60_000;
 
@@ -72,32 +76,22 @@ export function AdminDashboardPage() {
 }
 
 function DashboardContent({ dashboard }: { dashboard: AdminDashboardSummary }) {
-  const metrics: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: Users, label: "Total Users", value: dashboard.totalUsers.toLocaleString(), tone: "bg-zinc-100 text-zinc-700" },
-    { icon: Users, label: "Customers", value: dashboard.totalCustomers.toLocaleString(), tone: "bg-sky-50 text-sky-700" },
-    { icon: Store, label: "Sellers", value: dashboard.totalSellers.toLocaleString(), tone: "bg-blue-50 text-blue-700" },
-    { icon: Boxes, label: "Products", value: dashboard.totalProducts.toLocaleString(), tone: "bg-indigo-50 text-indigo-700" },
-    { icon: Tag, label: "Categories", value: dashboard.totalCategories.toLocaleString(), tone: "bg-violet-50 text-violet-700" },
-    { icon: ShoppingBag, label: "Total Orders", value: dashboard.totalOrders.toLocaleString(), tone: "bg-amber-50 text-amber-700" },
-    { icon: CircleDollarSign, label: "This Month Revenue", value: formatProductPrice(dashboard.monthlyRevenue), tone: "bg-emerald-50 text-emerald-700" },
-    { icon: BarChart3, label: "Total Revenue", value: formatProductPrice(dashboard.totalRevenue), tone: "bg-emerald-50 text-emerald-700" },
+  const metrics: StatCardProps[] = [
+    { icon: Users, iconTone: "bg-zinc-100 text-zinc-700", label: "Total Users", value: dashboard.totalUsers },
+    { icon: Users, iconTone: "bg-sky-50 text-sky-700", label: "Customers", value: dashboard.totalCustomers },
+    { icon: Store, iconTone: "bg-blue-50 text-blue-700", label: "Sellers", value: dashboard.totalSellers },
+    { icon: Boxes, iconTone: "bg-indigo-50 text-indigo-700", label: "Products", value: dashboard.totalProducts },
+    { icon: Tag, iconTone: "bg-violet-50 text-violet-700", label: "Categories", value: dashboard.totalCategories },
+    { icon: ShoppingBag, iconTone: "bg-amber-50 text-amber-700", label: "Total Orders", value: dashboard.totalOrders },
+    { icon: CircleDollarSign, iconTone: "bg-emerald-50 text-emerald-700", label: "This Month Revenue", value: formatProductPrice(dashboard.monthlyRevenue) },
+    { icon: BarChart3, iconTone: "bg-emerald-50 text-emerald-700", label: "Total Revenue", value: formatProductPrice(dashboard.totalRevenue) },
   ];
 
   return (
     <>
       <section aria-label="Marketplace metrics" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m) => (
-          <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm" key={m.label}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm leading-5 text-zinc-600">{m.label}</p>
-                <p className="mt-1.5 text-2xl font-semibold text-zinc-950">{m.value}</p>
-              </div>
-              <span className={`flex size-9 shrink-0 items-center justify-center rounded-md ${m.tone}`}>
-                <m.icon aria-hidden="true" className="size-4" />
-              </span>
-            </div>
-          </div>
+          <StatCard key={m.label} {...m} />
         ))}
       </section>
 

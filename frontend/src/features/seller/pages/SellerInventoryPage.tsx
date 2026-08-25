@@ -21,9 +21,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import { ConfirmCartActionDialog } from "@/features/cart/components/ConfirmCartActionDialog";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import {
@@ -57,8 +55,6 @@ const updatedAtFormatter = new Intl.DateTimeFormat("en", {
 });
 
 export function SellerInventoryPage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
@@ -75,7 +71,6 @@ export function SellerInventoryPage() {
 
   const inventoryQuery = useQuery({
     queryKey: ["seller", "inventory", { page, search, cityFilter }],
-    enabled: authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) =>
       getSellerInventory(
         {
@@ -136,14 +131,6 @@ export function SellerInventoryPage() {
     },
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate replace state={{ returnTo: "/seller/inventory" }} to="/login" />
-    );
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (inventoryQuery.isPending) {
     return (
       <FullPageStatus

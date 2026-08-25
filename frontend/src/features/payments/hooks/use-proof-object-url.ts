@@ -60,7 +60,7 @@ export function useProofObjectUrl(
     dispatch({ type: "FETCH_START", fetchId });
 
     apiClient
-      .get<Blob>(`/api/payments/proof/${encodeURIComponent(filename)}`, {
+      .get<Blob>(`/payments/proof/${encodeURIComponent(filename)}`, {
         responseType: "blob",
       })
       .then((response) => {

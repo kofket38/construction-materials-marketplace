@@ -8,9 +8,8 @@ import {
 } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getSellerRfqs } from "@/features/rfq/api/rfq.api";
 import {
   daysUntilExpiry,
@@ -25,26 +24,17 @@ import { FullPageStatus } from "@/shared/ui/FullPageStatus";
 const PAGE_SIZE = 20;
 
 export function SellerRfqsPage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const [page, setPage] = useState(1);
   const [view, setView] = useState<"available" | "participating">("available");
 
   const rfqsQuery = useQuery({
     queryKey: ["seller", "rfqs", { page, view }],
-    enabled: authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) =>
       getSellerRfqs({ page, limit: PAGE_SIZE, view }, signal),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return <Navigate replace state={{ returnTo: "/seller/rfqs" }} to="/login" />;
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (rfqsQuery.isPending) {
     return (
       <FullPageStatus

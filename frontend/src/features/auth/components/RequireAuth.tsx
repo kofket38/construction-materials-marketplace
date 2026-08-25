@@ -2,12 +2,15 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 
-export function BuyerRouteGuard() {
+export function RequireAuth() {
   const location = useLocation();
   const status = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
 
-  if (status !== "authenticated" || !user) {
+  if (status === "idle" || status === "loading") {
+    return null; // wait for bootstrap
+  }
+
+  if (status !== "authenticated") {
     return (
       <Navigate
         replace
@@ -17,10 +20,6 @@ export function BuyerRouteGuard() {
         to="/login"
       />
     );
-  }
-
-  if (user.role !== "CUSTOMER") {
-    return <Navigate replace to="/products" />;
   }
 
   return <Outlet />;

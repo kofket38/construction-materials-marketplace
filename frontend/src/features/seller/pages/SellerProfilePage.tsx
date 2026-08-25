@@ -9,10 +9,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Navigate } from "react-router-dom";
 import { z } from "zod";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import {
   getSellerProfile,
   upsertSellerProfile,
@@ -63,13 +61,10 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function SellerProfilePage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({
     queryKey: ["seller", "profile"],
-    enabled: authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) => getSellerProfile(signal),
     staleTime: 30_000,
   });
@@ -141,18 +136,6 @@ export function SellerProfilePage() {
     },
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: "/seller/profile" }}
-        to="/login"
-      />
-    );
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (profileQuery.isPending) {
     return (
       <FullPageStatus

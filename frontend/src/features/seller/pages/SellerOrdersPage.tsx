@@ -9,9 +9,8 @@ import {
 } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
-import { useAuthStore } from "@/features/auth/model/auth.store";
 import {
   getSellerOrders,
   type SellerOrdersQuery,
@@ -50,8 +49,6 @@ const statusOptions: Array<{
 ];
 
 export function SellerOrdersPage() {
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -66,8 +63,6 @@ export function SellerOrdersPage() {
       "orders",
       { customerSearch, page, status },
     ],
-    enabled:
-      authStatus === "authenticated" && user?.role === "SELLER",
     queryFn: ({ signal }) => {
       const input: SellerOrdersQuery = {
         page,
@@ -81,18 +76,6 @@ export function SellerOrdersPage() {
     refetchInterval: REFRESH_INTERVAL,
   });
 
-  if (authStatus !== "authenticated" || !user) {
-    return (
-      <Navigate
-        replace
-        state={{ returnTo: "/seller/orders" }}
-        to="/login"
-      />
-    );
-  }
-  if (user.role !== "SELLER") {
-    return <Navigate replace to="/products" />;
-  }
   if (ordersQuery.isPending) {
     return (
       <FullPageStatus
