@@ -7,8 +7,10 @@ import {
 import { DuplicateProfessionalProfileError } from "./professional-profile.errors.js";
 import type {
   CreateCredentialInput,
+  CreatePortfolioItemInput,
   CreateProfessionalProfileInput,
   CredentialType,
+  PortfolioItemEntity,
   ProfessionalCredentialEntity,
   ProfessionalDirectoryItem,
   ProfessionalDirectoryQuery,
@@ -18,6 +20,7 @@ import type {
   ProfessionalSpecialtyEntity,
   ProfileVisibility,
   UpdateCredentialInput,
+  UpdatePortfolioItemInput,
   UpdateProfessionalProfileInput,
 } from "./professional-profile.repository.js";
 
@@ -134,6 +137,32 @@ const credentialSelect = {
   updatedAt: true,
 } as const;
 
+const portfolioItemSelect = {
+  id: true,
+  profileId: true,
+  title: true,
+  description: true,
+  projectType: true,
+  location: true,
+  completionDate: true,
+  images: true,
+  displayOrder: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+/**
+ * Deterministic display ordering: explicit position first, newest items
+ * next within the same position, item ID as the stable tie-breaker.
+ */
+function portfolioItemOrderBy(): Prisma.PortfolioItemOrderByWithRelationInput[] {
+  return [
+    { displayOrder: "asc" },
+    { createdAt: "desc" },
+    { id: "asc" },
+  ];
+}
+
 const profileInclude = {
   specialties: {
     select: specialtySelect,
@@ -178,6 +207,26 @@ function mapCredential(
     yearObtained: row.yearObtained,
     description: row.description,
     credentialUrl: row.credentialUrl,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapPortfolioItem(
+  row: Prisma.PortfolioItemGetPayload<{
+    select: typeof portfolioItemSelect;
+  }>,
+): PortfolioItemEntity {
+  return {
+    id: row.id,
+    profileId: row.profileId,
+    title: row.title,
+    description: row.description,
+    projectType: row.projectType,
+    location: row.location,
+    completionDate: row.completionDate,
+    images: [...row.images],
+    displayOrder: row.displayOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -540,6 +589,107 @@ export class PrismaProfessionalProfileRepository
     try {
       await this.client.professionalCredential.delete({
         where: { id: credentialId },
+      });
+
+      return true;
+    } catch (error) {
+      if (hasPrismaCode(error, "P2025")) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  // ── Portfolio items ─────────────────────────────────────────────────────────
+
+  async countPortfolioItems(profileId: string): Promise<number> {
+    return this.client.portfolioItem.count({
+      where: { profileId },
+    });
+  }
+
+  async findPortfolioItems(profileId: string): Promise<PortfolioItemEntity[]> {
+    const rows = await this.client.portfolioItem.findMany({
+      where: { profileId },
+      select: portfolioItemSelect,
+      orderBy: portfolioItemOrderBy(),
+    });
+
+    return rows.map(mapPortfolioItem);
+  }
+
+  async createPortfolioItem(
+    profileId: string,
+    input: CreatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity> {
+    const row = await this.client.portfolioItem.create({
+      data: {
+        profileId,
+        title: input.title.trim(),
+        description: input.description ?? null,
+        projectType: input.projectType ?? null,
+        location: input.location ?? null,
+        completionDate: input.completionDate ?? null,
+        images: input.images ?? [],
+        displayOrder: input.displayOrder ?? 0,
+      },
+      select: portfolioItemSelect,
+    });
+
+    return mapPortfolioItem(row);
+  }
+
+  async updatePortfolioItem(
+    profileId: string,
+    itemId: string,
+    input: UpdatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity | null> {
+    try {
+      // Scoped by profileId so items belonging to other profiles can never
+      // be read or modified through this method.
+      const row = await this.client.portfolioItem.update({
+        where: { id: itemId, profileId },
+        data: {
+          ...(input.title !== undefined ? { title: input.title.trim() } : {}),
+          ...(input.description !== undefined
+            ? { description: input.description }
+            : {}),
+          ...(input.projectType !== undefined
+            ? { projectType: input.projectType }
+            : {}),
+          ...(input.location !== undefined
+            ? { location: input.location }
+            : {}),
+          ...(input.completionDate !== undefined
+            ? { completionDate: input.completionDate }
+            : {}),
+          ...(input.images !== undefined ? { images: input.images } : {}),
+          ...(input.displayOrder !== undefined
+            ? { displayOrder: input.displayOrder }
+            : {}),
+        },
+        select: portfolioItemSelect,
+      });
+
+      return mapPortfolioItem(row);
+    } catch (error) {
+      if (hasPrismaCode(error, "P2025")) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deletePortfolioItem(
+    profileId: string,
+    itemId: string,
+  ): Promise<boolean> {
+    try {
+      // Scoped by profileId for the same ownership reason as update.
+      await this.client.portfolioItem.delete({
+        where: { id: itemId, profileId },
       });
 
       return true;

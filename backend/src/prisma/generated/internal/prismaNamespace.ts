@@ -387,6 +387,7 @@ export const ModelName = {
   ProfessionalProfile: 'ProfessionalProfile',
   ProfessionalSpecialty: 'ProfessionalSpecialty',
   ProfessionalCredential: 'ProfessionalCredential',
+  PortfolioItem: 'PortfolioItem',
   User: 'User',
   SellerProfile: 'SellerProfile',
   Brand: 'Brand',
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "professionalProfile" | "professionalSpecialty" | "professionalCredential" | "user" | "sellerProfile" | "brand" | "category" | "product" | "productImage" | "sellerInventory" | "order" | "payment" | "orderItem" | "inventoryTransaction" | "review" | "wishlistItem" | "requestForQuote" | "rfqItem" | "supplierQuote" | "supplierQuoteItem"
+    modelProps: "professionalProfile" | "professionalSpecialty" | "professionalCredential" | "portfolioItem" | "user" | "sellerProfile" | "brand" | "category" | "product" | "productImage" | "sellerInventory" | "order" | "payment" | "orderItem" | "inventoryTransaction" | "review" | "wishlistItem" | "requestForQuote" | "rfqItem" | "supplierQuote" | "supplierQuoteItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -642,6 +643,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ProfessionalCredentialCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ProfessionalCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
+    PortfolioItem: {
+      payload: Prisma.$PortfolioItemPayload<ExtArgs>
+      fields: Prisma.PortfolioItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PortfolioItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PortfolioItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        findFirst: {
+          args: Prisma.PortfolioItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PortfolioItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        findMany: {
+          args: Prisma.PortfolioItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>[]
+        }
+        create: {
+          args: Prisma.PortfolioItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        createMany: {
+          args: Prisma.PortfolioItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PortfolioItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>[]
+        }
+        delete: {
+          args: Prisma.PortfolioItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        update: {
+          args: Prisma.PortfolioItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.PortfolioItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PortfolioItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PortfolioItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.PortfolioItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PortfolioItemPayload>
+        }
+        aggregate: {
+          args: Prisma.PortfolioItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePortfolioItem>
+        }
+        groupBy: {
+          args: Prisma.PortfolioItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PortfolioItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PortfolioItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PortfolioItemCountAggregateOutputType> | number
         }
       }
     }
@@ -1993,6 +2068,23 @@ export const ProfessionalCredentialScalarFieldEnum = {
 export type ProfessionalCredentialScalarFieldEnum = (typeof ProfessionalCredentialScalarFieldEnum)[keyof typeof ProfessionalCredentialScalarFieldEnum]
 
 
+export const PortfolioItemScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  title: 'title',
+  description: 'description',
+  projectType: 'projectType',
+  location: 'location',
+  completionDate: 'completionDate',
+  images: 'images',
+  displayOrder: 'displayOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PortfolioItemScalarFieldEnum = (typeof PortfolioItemScalarFieldEnum)[keyof typeof PortfolioItemScalarFieldEnum]
+
+
 export const UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -2635,6 +2727,7 @@ export type GlobalOmitConfig = {
   professionalProfile?: Prisma.ProfessionalProfileOmit
   professionalSpecialty?: Prisma.ProfessionalSpecialtyOmit
   professionalCredential?: Prisma.ProfessionalCredentialOmit
+  portfolioItem?: Prisma.PortfolioItemOmit
   user?: Prisma.UserOmit
   sellerProfile?: Prisma.SellerProfileOmit
   brand?: Prisma.BrandOmit

@@ -895,6 +895,410 @@ describe("Professional Profiles API", () => {
     });
   });
 
+  // ── POST /api/professional-profiles/:profileId/portfolio ─────────────────────
+
+  describe("POST /api/professional-profiles/:profileId/portfolio", () => {
+    const validPortfolioBody = {
+      title: "G+2 Residential Villa",
+      description: "Full structural design and supervision.",
+      projectType: "Residential",
+      location: "Addis Ababa",
+      completionDate: "2025-06-15T00:00:00.000Z",
+      images: ["https://example.com/work-1.jpg"],
+    };
+
+    it("creates a portfolio item for the owner and returns 201", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      const res = await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        validPortfolioBody,
+      ).expect(201);
+
+      expect(res.body.success).toBe(true);
+      const item = res.body.data.item;
+      expect(item.title).toBe("G+2 Residential Villa");
+      expect(item.projectType).toBe("Residential");
+      expect(item.images).toEqual(["https://example.com/work-1.jpg"]);
+      // Defaults for omitted fields.
+      expect(item.displayOrder).toBe(0);
+      expect(item.completionDate).toBeDefined();
+      expect(item.profileId).toBe(profile.id);
+    });
+
+    it("returns 401 when unauthenticated", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await request(app)
+        .post(`/api/professional-profiles/${profile.id}/portfolio`)
+        .send(validPortfolioBody)
+        .expect(401);
+    });
+
+    it("returns 403 when a different user tries to add an item", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenB,
+        validPortfolioBody,
+      ).expect(403);
+    });
+
+    it("returns 404 when the profile does not exist", async () => {
+      await post(
+        `/api/professional-profiles/${randomUUID()}/portfolio`,
+        tokenA,
+        validPortfolioBody,
+      ).expect(404);
+    });
+
+    it("returns 400 when title is missing", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      const res = await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        { description: "No title here." },
+      ).expect(400);
+
+      expect(res.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: "body.title" }),
+        ]),
+      );
+    });
+
+    it("returns 400 for more than 8 images", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        {
+          title: "X",
+          images: Array.from(
+            { length: 9 },
+            (_, i) => `https://example.com/${i}.jpg`,
+          ),
+        },
+      ).expect(400);
+    });
+
+    it("returns 400 for an invalid image URL", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        { title: "X", images: ["not-a-url"] },
+      ).expect(400);
+    });
+
+    it("returns 400 for an invalid completion date", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        { title: "X", completionDate: "not-a-date" },
+      ).expect(400);
+    });
+
+    it("returns 400 for unknown fields", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+        { ...validPortfolioBody, rogue: "field" },
+      ).expect(400);
+    });
+  });
+
+  // ── GET /api/professional-profiles/:profileId/portfolio ──────────────────────
+
+  describe("GET /api/professional-profiles/:profileId/portfolio", () => {
+    it("returns an empty item list in the standard shape", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      const res = await request(app)
+        .get(`/api/professional-profiles/${profile.id}/portfolio`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.items).toEqual([]);
+    });
+
+    it("returns portfolio items to an unauthenticated caller for a PUBLIC profile", async () => {
+      const profile = profiles.addProfile(userAId, { visibility: "PUBLIC" });
+      profiles.addItem(profile.id, {
+        title: "Warehouse Build",
+        displayOrder: 1,
+      });
+      profiles.addItem(profile.id, {
+        title: "Villa Extension",
+        displayOrder: 0,
+      });
+
+      const res = await request(app)
+        .get(`/api/professional-profiles/${profile.id}/portfolio`)
+        .expect(200);
+
+      const items = res.body.data.items;
+      expect(items).toHaveLength(2);
+      // Ordered by displayOrder ascending regardless of insertion order.
+      expect(items[0].title).toBe("Villa Extension");
+      expect(items[1].title).toBe("Warehouse Build");
+    });
+
+    it("breaks displayOrder ties newest-first", async () => {
+      const profile = profiles.addProfile(userAId);
+      profiles.addItem(profile.id, {
+        title: "Older project",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+      profiles.addItem(profile.id, {
+        title: "Newer project",
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+      });
+
+      const res = await request(app)
+        .get(`/api/professional-profiles/${profile.id}/portfolio`)
+        .expect(200);
+
+      const titles = res.body.data.items.map(
+        (i: { title: string }) => i.title,
+      );
+      expect(titles).toEqual(["Newer project", "Older project"]);
+    });
+
+    it("returns portfolio items to the owner of a PRIVATE profile", async () => {
+      const profile = profiles.addProfile(userAId, { visibility: "PRIVATE" });
+      profiles.addItem(profile.id, { title: "Private project" });
+
+      const res = await get(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+      ).expect(200);
+
+      expect(res.body.data.items).toHaveLength(1);
+    });
+
+    it("returns 403 for a PRIVATE profile portfolio when unauthenticated", async () => {
+      const profile = profiles.addProfile(userAId, { visibility: "PRIVATE" });
+      profiles.addItem(profile.id, { title: "Secret project" });
+
+      await request(app)
+        .get(`/api/professional-profiles/${profile.id}/portfolio`)
+        .expect(403);
+    });
+
+    it("returns 403 for a PRIVATE profile portfolio when requested by another user", async () => {
+      const profile = profiles.addProfile(userAId, { visibility: "PRIVATE" });
+      profiles.addItem(profile.id, { title: "Secret project" });
+
+      await get(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenB,
+      ).expect(403);
+    });
+
+    it("never exposes private data through a public portfolio listing", async () => {
+      const profile = profiles.addProfile(userAId, { visibility: "PUBLIC" });
+      profiles.addItem(profile.id, {
+        title: "Public project",
+        images: ["https://example.com/pub.jpg"],
+      });
+
+      const res = await request(app)
+        .get(`/api/professional-profiles/${profile.id}/portfolio`)
+        .expect(200);
+
+      const item = res.body.data.items[0];
+      expect(item).toMatchObject({
+        title: "Public project",
+        images: ["https://example.com/pub.jpg"],
+      });
+    });
+
+    it("returns 404 when the profile does not exist", async () => {
+      await request(app)
+        .get(`/api/professional-profiles/${randomUUID()}/portfolio`)
+        .expect(404);
+    });
+
+    it("returns 400 for a non-UUID profile ID", async () => {
+      await request(app)
+        .get("/api/professional-profiles/not-a-uuid/portfolio")
+        .expect(400);
+    });
+  });
+
+  // ── PATCH /api/professional-profiles/:profileId/portfolio/:itemId ────────────
+
+  describe("PATCH /api/professional-profiles/:profileId/portfolio/:itemId", () => {
+    it("updates the owner's portfolio item and returns 200", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id, { title: "Original" });
+
+      const res = await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        tokenA,
+        { title: "Renovated Villa", displayOrder: 3 },
+      ).expect(200);
+
+      expect(res.body.data.item.title).toBe("Renovated Villa");
+      expect(res.body.data.item.displayOrder).toBe(3);
+    });
+
+    it("replaces the full images array on update", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id, {
+        images: ["https://example.com/old.jpg"],
+      });
+
+      const res = await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        tokenA,
+        { images: ["https://example.com/new-1.jpg", "https://example.com/new-2.jpg"] },
+      ).expect(200);
+
+      expect(res.body.data.item.images).toEqual([
+        "https://example.com/new-1.jpg",
+        "https://example.com/new-2.jpg",
+      ]);
+    });
+
+    it("returns 401 when unauthenticated", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id);
+
+      await request(app)
+        .patch(`/api/professional-profiles/${profile.id}/portfolio/${item.id}`)
+        .send({ title: "X" })
+        .expect(401);
+    });
+
+    it("returns 403 when a different user tries to update the item", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id);
+
+      await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        tokenB,
+        { title: "Hijacked" },
+      ).expect(403);
+    });
+
+    it("returns 404 when the item belongs to another profile", async () => {
+      const profileB = profiles.addProfile(userBId);
+      const foreignItem = profiles.addItem(profileB.id, { title: "Not yours" });
+
+      const profileA = profiles.addProfile(userAId);
+      await patch(
+        `/api/professional-profiles/${profileA.id}/portfolio/${foreignItem.id}`,
+        tokenA,
+        { title: "Cross-profile write" },
+      ).expect(404);
+    });
+
+    it("returns 404 when the item does not exist", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/${randomUUID()}`,
+        tokenA,
+        { title: "Ghost" },
+      ).expect(404);
+    });
+
+    it("returns 400 for an empty update body", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id);
+
+      await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        tokenA,
+        {},
+      ).expect(400);
+    });
+
+    it("returns 400 for a non-UUID item ID in params", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await patch(
+        `/api/professional-profiles/${profile.id}/portfolio/not-a-uuid`,
+        tokenA,
+        { title: "X" },
+      ).expect(400);
+    });
+  });
+
+  // ── DELETE /api/professional-profiles/:profileId/portfolio/:itemId ───────────
+
+  describe("DELETE /api/professional-profiles/:profileId/portfolio/:itemId", () => {
+    it("deletes the owner's portfolio item and returns 200", async () => {
+      const profile = profiles.addProfile(userAId);
+      const kept = profiles.addItem(profile.id, { title: "Keep me" });
+      const dropped = profiles.addItem(profile.id, { title: "Drop me" });
+
+      await del(
+        `/api/professional-profiles/${profile.id}/portfolio/${dropped.id}`,
+        tokenA,
+      ).expect(200);
+
+      const res = await get(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        tokenA,
+      ).expect(200);
+      expect(res.body.data.items).toHaveLength(1);
+      expect(res.body.data.items[0].id).toBe(kept.id);
+    });
+
+    it("returns 401 when unauthenticated", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id);
+
+      await request(app)
+        .delete(
+          `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        )
+        .expect(401);
+    });
+
+    it("returns 403 when a different user tries to delete the item", async () => {
+      const profile = profiles.addProfile(userAId);
+      const item = profiles.addItem(profile.id);
+
+      await del(
+        `/api/professional-profiles/${profile.id}/portfolio/${item.id}`,
+        tokenB,
+      ).expect(403);
+    });
+
+    it("returns 404 when the item belongs to another profile", async () => {
+      const profileB = profiles.addProfile(userBId);
+      const foreignItem = profiles.addItem(profileB.id, { title: "Not yours" });
+
+      const profileA = profiles.addProfile(userAId);
+      await del(
+        `/api/professional-profiles/${profileA.id}/portfolio/${foreignItem.id}`,
+        tokenA,
+      ).expect(404);
+    });
+
+    it("returns 404 when the item does not exist", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await del(
+        `/api/professional-profiles/${profile.id}/portfolio/${randomUUID()}`,
+        tokenA,
+      ).expect(404);
+    });
+  });
+
   // ── Helper request functions ───────────────────────────────────────────────────
 
   function get(path: string, token: string) {

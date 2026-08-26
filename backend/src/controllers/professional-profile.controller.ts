@@ -2,13 +2,16 @@ import type { Request, Response } from "express";
 import type { ProfessionalProfileService } from "../services/professional-profile.service.js";
 import { ForbiddenError, UnauthorizedError } from "../utils/api-error.js";
 import type {
+  CreatePortfolioItemBody,
   CreateProfessionalProfileBody,
   CredentialIdParams,
   CreateCredentialBody,
   ListProfessionalProfilesQueryParams,
+  PortfolioItemIdParams,
   ProfileIdParams,
   ReplaceSpecialtiesBody,
   UpdateCredentialBody,
+  UpdatePortfolioItemBody,
   UpdateProfessionalProfileBody,
 } from "../validators/professional-profile.validators.js";
 
@@ -159,4 +162,62 @@ export class ProfessionalProfileController {
     }
     return req.auth;
   }
+
+  // ── Portfolio items ───────────────────────────────────────────────────────
+
+  /**
+   * GET /api/professional-profiles/:profileId/portfolio
+   *
+   * PUBLIC profiles: readable by anyone (authentication optional).
+   * PRIVATE profiles: readable only by the owner (403 for everyone else).
+   * Visibility gating lives in the service so it is enforced consistently.
+   */
+  listPortfolio = async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params as ProfileIdParams;
+    const items = await this.service.listPortfolio(
+      req.auth ?? null,
+      profileId,
+    );
+
+    res.status(200).json({ success: true, data: { items } });
+  };
+
+  /** POST /api/professional-profiles/:profileId/portfolio */
+  addPortfolioItem = async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params as ProfileIdParams;
+    const item = await this.service.addPortfolioItem(
+      this.requireActor(req),
+      profileId,
+      req.body as CreatePortfolioItemBody,
+    );
+
+    res.status(201).json({ success: true, data: { item } });
+  };
+
+  /** PATCH /api/professional-profiles/:profileId/portfolio/:itemId */
+  updatePortfolioItem = async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params as ProfileIdParams;
+    const { itemId } = req.params as PortfolioItemIdParams;
+    const item = await this.service.updatePortfolioItem(
+      this.requireActor(req),
+      profileId,
+      itemId,
+      req.body as UpdatePortfolioItemBody,
+    );
+
+    res.status(200).json({ success: true, data: { item } });
+  };
+
+  /** DELETE /api/professional-profiles/:profileId/portfolio/:itemId */
+  deletePortfolioItem = async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params as ProfileIdParams;
+    const { itemId } = req.params as PortfolioItemIdParams;
+    await this.service.deletePortfolioItem(
+      this.requireActor(req),
+      profileId,
+      itemId,
+    );
+
+    res.status(200).json({ success: true, data: null });
+  };
 }

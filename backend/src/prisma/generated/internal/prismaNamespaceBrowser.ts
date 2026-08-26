@@ -54,6 +54,7 @@ export const ModelName = {
   ProfessionalProfile: 'ProfessionalProfile',
   ProfessionalSpecialty: 'ProfessionalSpecialty',
   ProfessionalCredential: 'ProfessionalCredential',
+  PortfolioItem: 'PortfolioItem',
   User: 'User',
   SellerProfile: 'SellerProfile',
   Brand: 'Brand',
@@ -138,6 +139,23 @@ export const ProfessionalCredentialScalarFieldEnum = {
 } as const
 
 export type ProfessionalCredentialScalarFieldEnum = (typeof ProfessionalCredentialScalarFieldEnum)[keyof typeof ProfessionalCredentialScalarFieldEnum]
+
+
+export const PortfolioItemScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  title: 'title',
+  description: 'description',
+  projectType: 'projectType',
+  location: 'location',
+  completionDate: 'completionDate',
+  images: 'images',
+  displayOrder: 'displayOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PortfolioItemScalarFieldEnum = (typeof PortfolioItemScalarFieldEnum)[keyof typeof PortfolioItemScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {

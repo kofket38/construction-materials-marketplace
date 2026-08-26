@@ -331,6 +331,7 @@ export type ProfessionalProfileWhereInput = {
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   specialties?: Prisma.ProfessionalSpecialtyListRelationFilter
   credentials?: Prisma.ProfessionalCredentialListRelationFilter
+  portfolioItems?: Prisma.PortfolioItemListRelationFilter
 }
 
 export type ProfessionalProfileOrderByWithRelationInput = {
@@ -356,6 +357,7 @@ export type ProfessionalProfileOrderByWithRelationInput = {
   user?: Prisma.UserOrderByWithRelationInput
   specialties?: Prisma.ProfessionalSpecialtyOrderByRelationAggregateInput
   credentials?: Prisma.ProfessionalCredentialOrderByRelationAggregateInput
+  portfolioItems?: Prisma.PortfolioItemOrderByRelationAggregateInput
 }
 
 export type ProfessionalProfileWhereUniqueInput = Prisma.AtLeast<{
@@ -384,6 +386,7 @@ export type ProfessionalProfileWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   specialties?: Prisma.ProfessionalSpecialtyListRelationFilter
   credentials?: Prisma.ProfessionalCredentialListRelationFilter
+  portfolioItems?: Prisma.PortfolioItemListRelationFilter
 }, "id" | "userId">
 
 export type ProfessionalProfileOrderByWithAggregationInput = {
@@ -460,6 +463,7 @@ export type ProfessionalProfileCreateInput = {
   user: Prisma.UserCreateNestedOneWithoutProfessionalProfileInput
   specialties?: Prisma.ProfessionalSpecialtyCreateNestedManyWithoutProfileInput
   credentials?: Prisma.ProfessionalCredentialCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileUncheckedCreateInput = {
@@ -484,6 +488,7 @@ export type ProfessionalProfileUncheckedCreateInput = {
   updatedAt?: Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedCreateNestedManyWithoutProfileInput
   credentials?: Prisma.ProfessionalCredentialUncheckedCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileUpdateInput = {
@@ -508,6 +513,7 @@ export type ProfessionalProfileUpdateInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutProfessionalProfileNestedInput
   specialties?: Prisma.ProfessionalSpecialtyUpdateManyWithoutProfileNestedInput
   credentials?: Prisma.ProfessionalCredentialUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileUncheckedUpdateInput = {
@@ -532,6 +538,7 @@ export type ProfessionalProfileUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedUpdateManyWithoutProfileNestedInput
   credentials?: Prisma.ProfessionalCredentialUncheckedUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileCreateManyInput = {
@@ -735,6 +742,20 @@ export type ProfessionalProfileUpdateOneRequiredWithoutCredentialsNestedInput = 
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProfessionalProfileUpdateToOneWithWhereWithoutCredentialsInput, Prisma.ProfessionalProfileUpdateWithoutCredentialsInput>, Prisma.ProfessionalProfileUncheckedUpdateWithoutCredentialsInput>
 }
 
+export type ProfessionalProfileCreateNestedOneWithoutPortfolioItemsInput = {
+  create?: Prisma.XOR<Prisma.ProfessionalProfileCreateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedCreateWithoutPortfolioItemsInput>
+  connectOrCreate?: Prisma.ProfessionalProfileCreateOrConnectWithoutPortfolioItemsInput
+  connect?: Prisma.ProfessionalProfileWhereUniqueInput
+}
+
+export type ProfessionalProfileUpdateOneRequiredWithoutPortfolioItemsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfessionalProfileCreateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedCreateWithoutPortfolioItemsInput>
+  connectOrCreate?: Prisma.ProfessionalProfileCreateOrConnectWithoutPortfolioItemsInput
+  upsert?: Prisma.ProfessionalProfileUpsertWithoutPortfolioItemsInput
+  connect?: Prisma.ProfessionalProfileWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProfessionalProfileUpdateToOneWithWhereWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUpdateWithoutPortfolioItemsInput>, Prisma.ProfessionalProfileUncheckedUpdateWithoutPortfolioItemsInput>
+}
+
 export type ProfessionalProfileCreateNestedOneWithoutUserInput = {
   create?: Prisma.XOR<Prisma.ProfessionalProfileCreateWithoutUserInput, Prisma.ProfessionalProfileUncheckedCreateWithoutUserInput>
   connectOrCreate?: Prisma.ProfessionalProfileCreateOrConnectWithoutUserInput
@@ -788,6 +809,7 @@ export type ProfessionalProfileCreateWithoutSpecialtiesInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProfessionalProfileInput
   credentials?: Prisma.ProfessionalCredentialCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileUncheckedCreateWithoutSpecialtiesInput = {
@@ -811,6 +833,7 @@ export type ProfessionalProfileUncheckedCreateWithoutSpecialtiesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   credentials?: Prisma.ProfessionalCredentialUncheckedCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileCreateOrConnectWithoutSpecialtiesInput = {
@@ -850,6 +873,7 @@ export type ProfessionalProfileUpdateWithoutSpecialtiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProfessionalProfileNestedInput
   credentials?: Prisma.ProfessionalCredentialUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileUncheckedUpdateWithoutSpecialtiesInput = {
@@ -873,6 +897,7 @@ export type ProfessionalProfileUncheckedUpdateWithoutSpecialtiesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   credentials?: Prisma.ProfessionalCredentialUncheckedUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileCreateWithoutCredentialsInput = {
@@ -896,6 +921,7 @@ export type ProfessionalProfileCreateWithoutCredentialsInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProfessionalProfileInput
   specialties?: Prisma.ProfessionalSpecialtyCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileUncheckedCreateWithoutCredentialsInput = {
@@ -919,6 +945,7 @@ export type ProfessionalProfileUncheckedCreateWithoutCredentialsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileCreateOrConnectWithoutCredentialsInput = {
@@ -958,6 +985,7 @@ export type ProfessionalProfileUpdateWithoutCredentialsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProfessionalProfileNestedInput
   specialties?: Prisma.ProfessionalSpecialtyUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileUncheckedUpdateWithoutCredentialsInput = {
@@ -981,6 +1009,119 @@ export type ProfessionalProfileUncheckedUpdateWithoutCredentialsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfessionalProfileCreateWithoutPortfolioItemsInput = {
+  id?: string
+  displayName: string
+  headline?: string | null
+  bio?: string | null
+  avatarUrl?: string | null
+  profession?: string | null
+  yearsExperience?: number | null
+  company?: string | null
+  city?: string | null
+  region?: string | null
+  country?: string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  linkedinUrl?: string | null
+  visibility?: $Enums.ProfileVisibility
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutProfessionalProfileInput
+  specialties?: Prisma.ProfessionalSpecialtyCreateNestedManyWithoutProfileInput
+  credentials?: Prisma.ProfessionalCredentialCreateNestedManyWithoutProfileInput
+}
+
+export type ProfessionalProfileUncheckedCreateWithoutPortfolioItemsInput = {
+  id?: string
+  userId: string
+  displayName: string
+  headline?: string | null
+  bio?: string | null
+  avatarUrl?: string | null
+  profession?: string | null
+  yearsExperience?: number | null
+  company?: string | null
+  city?: string | null
+  region?: string | null
+  country?: string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  linkedinUrl?: string | null
+  visibility?: $Enums.ProfileVisibility
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  specialties?: Prisma.ProfessionalSpecialtyUncheckedCreateNestedManyWithoutProfileInput
+  credentials?: Prisma.ProfessionalCredentialUncheckedCreateNestedManyWithoutProfileInput
+}
+
+export type ProfessionalProfileCreateOrConnectWithoutPortfolioItemsInput = {
+  where: Prisma.ProfessionalProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfessionalProfileCreateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedCreateWithoutPortfolioItemsInput>
+}
+
+export type ProfessionalProfileUpsertWithoutPortfolioItemsInput = {
+  update: Prisma.XOR<Prisma.ProfessionalProfileUpdateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedUpdateWithoutPortfolioItemsInput>
+  create: Prisma.XOR<Prisma.ProfessionalProfileCreateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedCreateWithoutPortfolioItemsInput>
+  where?: Prisma.ProfessionalProfileWhereInput
+}
+
+export type ProfessionalProfileUpdateToOneWithWhereWithoutPortfolioItemsInput = {
+  where?: Prisma.ProfessionalProfileWhereInput
+  data: Prisma.XOR<Prisma.ProfessionalProfileUpdateWithoutPortfolioItemsInput, Prisma.ProfessionalProfileUncheckedUpdateWithoutPortfolioItemsInput>
+}
+
+export type ProfessionalProfileUpdateWithoutPortfolioItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.StringFieldUpdateOperationsInput | string
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profession?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  yearsExperience?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  linkedinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  visibility?: Prisma.EnumProfileVisibilityFieldUpdateOperationsInput | $Enums.ProfileVisibility
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutProfessionalProfileNestedInput
+  specialties?: Prisma.ProfessionalSpecialtyUpdateManyWithoutProfileNestedInput
+  credentials?: Prisma.ProfessionalCredentialUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfessionalProfileUncheckedUpdateWithoutPortfolioItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.StringFieldUpdateOperationsInput | string
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profession?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  yearsExperience?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  linkedinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  visibility?: Prisma.EnumProfileVisibilityFieldUpdateOperationsInput | $Enums.ProfileVisibility
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  specialties?: Prisma.ProfessionalSpecialtyUncheckedUpdateManyWithoutProfileNestedInput
+  credentials?: Prisma.ProfessionalCredentialUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileCreateWithoutUserInput = {
@@ -1004,6 +1145,7 @@ export type ProfessionalProfileCreateWithoutUserInput = {
   updatedAt?: Date | string
   specialties?: Prisma.ProfessionalSpecialtyCreateNestedManyWithoutProfileInput
   credentials?: Prisma.ProfessionalCredentialCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileUncheckedCreateWithoutUserInput = {
@@ -1027,6 +1169,7 @@ export type ProfessionalProfileUncheckedCreateWithoutUserInput = {
   updatedAt?: Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedCreateNestedManyWithoutProfileInput
   credentials?: Prisma.ProfessionalCredentialUncheckedCreateNestedManyWithoutProfileInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfessionalProfileCreateOrConnectWithoutUserInput = {
@@ -1066,6 +1209,7 @@ export type ProfessionalProfileUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   specialties?: Prisma.ProfessionalSpecialtyUpdateManyWithoutProfileNestedInput
   credentials?: Prisma.ProfessionalCredentialUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfessionalProfileUncheckedUpdateWithoutUserInput = {
@@ -1089,6 +1233,7 @@ export type ProfessionalProfileUncheckedUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   specialties?: Prisma.ProfessionalSpecialtyUncheckedUpdateManyWithoutProfileNestedInput
   credentials?: Prisma.ProfessionalCredentialUncheckedUpdateManyWithoutProfileNestedInput
+  portfolioItems?: Prisma.PortfolioItemUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 
@@ -1099,11 +1244,13 @@ export type ProfessionalProfileUncheckedUpdateWithoutUserInput = {
 export type ProfessionalProfileCountOutputType = {
   specialties: number
   credentials: number
+  portfolioItems: number
 }
 
 export type ProfessionalProfileCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   specialties?: boolean | ProfessionalProfileCountOutputTypeCountSpecialtiesArgs
   credentials?: boolean | ProfessionalProfileCountOutputTypeCountCredentialsArgs
+  portfolioItems?: boolean | ProfessionalProfileCountOutputTypeCountPortfolioItemsArgs
 }
 
 /**
@@ -1130,6 +1277,13 @@ export type ProfessionalProfileCountOutputTypeCountCredentialsArgs<ExtArgs exten
   where?: Prisma.ProfessionalCredentialWhereInput
 }
 
+/**
+ * ProfessionalProfileCountOutputType without action
+ */
+export type ProfessionalProfileCountOutputTypeCountPortfolioItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PortfolioItemWhereInput
+}
+
 
 export type ProfessionalProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1154,6 +1308,7 @@ export type ProfessionalProfileSelect<ExtArgs extends runtime.Types.Extensions.I
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   specialties?: boolean | Prisma.ProfessionalProfile$specialtiesArgs<ExtArgs>
   credentials?: boolean | Prisma.ProfessionalProfile$credentialsArgs<ExtArgs>
+  portfolioItems?: boolean | Prisma.ProfessionalProfile$portfolioItemsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfessionalProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["professionalProfile"]>
 
@@ -1230,6 +1385,7 @@ export type ProfessionalProfileInclude<ExtArgs extends runtime.Types.Extensions.
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   specialties?: boolean | Prisma.ProfessionalProfile$specialtiesArgs<ExtArgs>
   credentials?: boolean | Prisma.ProfessionalProfile$credentialsArgs<ExtArgs>
+  portfolioItems?: boolean | Prisma.ProfessionalProfile$portfolioItemsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfessionalProfileCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProfessionalProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1245,6 +1401,7 @@ export type $ProfessionalProfilePayload<ExtArgs extends runtime.Types.Extensions
     user: Prisma.$UserPayload<ExtArgs>
     specialties: Prisma.$ProfessionalSpecialtyPayload<ExtArgs>[]
     credentials: Prisma.$ProfessionalCredentialPayload<ExtArgs>[]
+    portfolioItems: Prisma.$PortfolioItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1663,6 +1820,7 @@ export interface Prisma__ProfessionalProfileClient<T, Null = never, ExtArgs exte
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   specialties<T extends Prisma.ProfessionalProfile$specialtiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfessionalProfile$specialtiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProfessionalSpecialtyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   credentials<T extends Prisma.ProfessionalProfile$credentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfessionalProfile$credentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProfessionalCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  portfolioItems<T extends Prisma.ProfessionalProfile$portfolioItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfessionalProfile$portfolioItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PortfolioItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2157,6 +2315,30 @@ export type ProfessionalProfile$credentialsArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.ProfessionalCredentialScalarFieldEnum | Prisma.ProfessionalCredentialScalarFieldEnum[]
+}
+
+/**
+ * ProfessionalProfile.portfolioItems
+ */
+export type ProfessionalProfile$portfolioItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PortfolioItem
+   */
+  select?: Prisma.PortfolioItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PortfolioItem
+   */
+  omit?: Prisma.PortfolioItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PortfolioItemInclude<ExtArgs> | null
+  where?: Prisma.PortfolioItemWhereInput
+  orderBy?: Prisma.PortfolioItemOrderByWithRelationInput | Prisma.PortfolioItemOrderByWithRelationInput[]
+  cursor?: Prisma.PortfolioItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PortfolioItemScalarFieldEnum | Prisma.PortfolioItemScalarFieldEnum[]
 }
 
 /**

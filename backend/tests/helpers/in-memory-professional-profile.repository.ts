@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto";
 import { DuplicateProfessionalProfileError } from "../../src/repositories/professional-profile.errors.js";
 import type {
   CreateCredentialInput,
+  CreatePortfolioItemInput,
   CreateProfessionalProfileInput,
   CredentialType,
+  PortfolioItemEntity,
   ProfessionalCredentialEntity,
   ProfessionalDirectoryItem,
   ProfessionalDirectoryQuery,
@@ -13,6 +15,7 @@ import type {
   ProfessionalSpecialtyEntity,
   ProfileVisibility,
   UpdateCredentialInput,
+  UpdatePortfolioItemInput,
   UpdateProfessionalProfileInput,
 } from "../../src/repositories/professional-profile.repository.js";
 
@@ -29,6 +32,8 @@ export class InMemoryProfessionalProfileRepository
   private readonly profiles = new Map<string, ProfessionalProfileEntity>();
   // Secondary index: userId → profileId
   private readonly byUser = new Map<string, string>();
+  // Portfolio items keyed by profileId
+  private readonly portfolioItems = new Map<string, PortfolioItemEntity[]>();
 
   // ── Seed helpers ────────────────────────────────────────────────────────────
 
@@ -72,6 +77,39 @@ export class InMemoryProfessionalProfileRepository
     this.profiles.set(profile.id, profile);
     this.byUser.set(userId, profile.id);
     return profile;
+  }
+
+  /**
+   * Directly insert a portfolio item on a profile, bypassing business rules.
+   * Useful in beforeEach to set up preconditions.
+   */
+  addItem(
+    profileId: string,
+    overrides: Partial<Omit<PortfolioItemEntity, "id" | "profileId">> = {},
+  ): PortfolioItemEntity {
+    if (!this.profiles.has(profileId)) {
+      throw new Error(`Cannot add item: profile ${profileId} does not exist.`);
+    }
+
+    const now = new Date();
+    const item: PortfolioItemEntity = {
+      id: randomUUID(),
+      profileId,
+      title: overrides.title ?? "Test Portfolio Item",
+      description: overrides.description ?? null,
+      projectType: overrides.projectType ?? null,
+      location: overrides.location ?? null,
+      completionDate: overrides.completionDate ?? null,
+      images: overrides.images ?? [],
+      displayOrder: overrides.displayOrder ?? 0,
+      createdAt: overrides.createdAt ?? now,
+      updatedAt: overrides.updatedAt ?? now,
+    };
+
+    const items = this.portfolioItems.get(profileId) ?? [];
+    items.push(item);
+    this.portfolioItems.set(profileId, items);
+    return item;
   }
 
   // ── Interface implementation ────────────────────────────────────────────────
@@ -368,5 +406,99 @@ export class InMemoryProfessionalProfileRepository
       return true;
     }
     return false;
+  }
+
+  // ── Portfolio items ────────────────────────────────────────────────────────
+
+  async countPortfolioItems(profileId: string): Promise<number> {
+    return (this.portfolioItems.get(profileId) ?? []).length;
+  }
+
+  async findPortfolioItems(profileId: string): Promise<PortfolioItemEntity[]> {
+    const items = [...(this.portfolioItems.get(profileId) ?? [])];
+
+    // Mirror portfolioItemOrderBy() in the Prisma repository exactly:
+    // displayOrder ascending, then newest first, then item ID.
+    const byId = (a: PortfolioItemEntity, b: PortfolioItemEntity): number =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
+    items.sort(
+      (a, b) =>
+        a.displayOrder - b.displayOrder ||
+        b.createdAt.getTime() - a.createdAt.getTime() ||
+        byId(a, b),
+    );
+
+    return items;
+  }
+
+  async createPortfolioItem(
+    profileId: string,
+    input: CreatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity> {
+    if (!this.profiles.has(profileId)) {
+      // Mirror the FK violation the database would raise.
+      throw new Error(`Profile ${profileId} does not exist.`);
+    }
+
+    const now = new Date();
+    const item: PortfolioItemEntity = {
+      id: randomUUID(),
+      profileId,
+      title: input.title.trim(),
+      description: input.description ?? null,
+      projectType: input.projectType ?? null,
+      location: input.location ?? null,
+      completionDate: input.completionDate ?? null,
+      images: input.images ? [...input.images] : [],
+      displayOrder: input.displayOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const items = this.portfolioItems.get(profileId) ?? [];
+    items.push(item);
+    this.portfolioItems.set(profileId, items);
+    return item;
+  }
+
+  async updatePortfolioItem(
+    profileId: string,
+    itemId: string,
+    input: UpdatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity | null> {
+    const item = (this.portfolioItems.get(profileId) ?? []).find(
+      (i) => i.id === itemId,
+    );
+    if (!item) return null;
+
+    if (input.title !== undefined) item.title = input.title.trim();
+    if (input.description !== undefined)
+      item.description = input.description;
+    if (input.projectType !== undefined)
+      item.projectType = input.projectType;
+    if (input.location !== undefined) item.location = input.location;
+    if (input.completionDate !== undefined)
+      item.completionDate = input.completionDate;
+    if (input.images !== undefined) item.images = [...input.images];
+    if (input.displayOrder !== undefined)
+      item.displayOrder = input.displayOrder;
+
+    item.updatedAt = new Date();
+    return item;
+  }
+
+  async deletePortfolioItem(
+    profileId: string,
+    itemId: string,
+  ): Promise<boolean> {
+    const items = this.portfolioItems.get(profileId);
+    if (!items) return false;
+
+    const index = items.findIndex((i) => i.id === itemId);
+    if (index === -1) return false;
+
+    items.splice(index, 1);
+    return true;
   }
 }

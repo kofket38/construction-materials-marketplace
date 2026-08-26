@@ -3,6 +3,7 @@ import {
   DuplicateProfessionalProfileError,
 } from "../src/repositories/professional-profile.errors.js";
 import type {
+  PortfolioItemEntity,
   ProfessionalCredentialEntity,
   ProfessionalProfileEntity,
   ProfessionalProfileRepository,
@@ -11,13 +12,16 @@ import type {
 import { ProfessionalProfileService } from "../src/services/professional-profile.service.js";
 import {
   createCredentialBodySchema,
+  createPortfolioItemBodySchema,
   createProfessionalProfileBodySchema,
   replaceSpecialtiesBodySchema,
   updateCredentialBodySchema,
+  updatePortfolioItemBodySchema,
   updateProfessionalProfileBodySchema,
 } from "../src/validators/professional-profile.validators.js";
 import type { AuthenticatedUser } from "../src/types/auth.js";
 import {
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -29,6 +33,7 @@ const userAId    = "00000000-0000-4000-8000-000000000001";
 const userBId    = "00000000-0000-4000-8000-000000000002";
 const profileId  = "00000000-0000-4000-8000-000000000010";
 const credId     = "00000000-0000-4000-8000-000000000020";
+const itemId     = "00000000-0000-4000-8000-000000000030";
 
 const actorA: AuthenticatedUser = { userId: userAId, role: "CUSTOMER" };
 const actorB: AuthenticatedUser = { userId: userBId, role: "CUSTOMER" };
@@ -56,6 +61,25 @@ function makeCredential(
     yearObtained: 2015,
     description: null,
     credentialUrl: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+function makePortfolioItem(
+  overrides: Partial<PortfolioItemEntity> = {},
+): PortfolioItemEntity {
+  return {
+    id: itemId,
+    profileId,
+    title: "G+2 Residential Villa",
+    description: "Full structural design and supervision.",
+    projectType: "Residential",
+    location: "Addis Ababa",
+    completionDate: new Date("2025-06-15T00:00:00.000Z"),
+    images: ["https://example.com/work-1.jpg"],
+    displayOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -105,6 +129,11 @@ function createMockRepo(): ProfessionalProfileRepository {
     addCredential: vi.fn(),
     updateCredential: vi.fn(),
     deleteCredential: vi.fn(),
+    countPortfolioItems: vi.fn(),
+    findPortfolioItems: vi.fn(),
+    createPortfolioItem: vi.fn(),
+    updatePortfolioItem: vi.fn(),
+    deletePortfolioItem: vi.fn(),
   };
 }
 
@@ -443,6 +472,247 @@ describe("ProfessionalProfileService", () => {
       expect(repo.deleteCredential).not.toHaveBeenCalled();
     });
   });
+
+  // ── listPortfolio ────────────────────────────────────────────────────────────
+
+  describe("listPortfolio", () => {
+    const items = [makePortfolioItem()];
+
+    it("returns portfolio items for a PUBLIC profile without authentication", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.findPortfolioItems).mockResolvedValue(items);
+
+      const result = await service.listPortfolio(null, profileId);
+
+      expect(result).toBe(items);
+      expect(repo.findPortfolioItems).toHaveBeenCalledWith(profileId);
+    });
+
+    it("returns portfolio items to any authenticated user for a PUBLIC profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.findPortfolioItems).mockResolvedValue(items);
+
+      await expect(
+        service.listPortfolio(actorB, profileId),
+      ).resolves.toBe(items);
+    });
+
+    it("returns portfolio items to the owner of a PRIVATE profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(
+        makeProfile({ visibility: "PRIVATE" }),
+      );
+      vi.mocked(repo.findPortfolioItems).mockResolvedValue(items);
+
+      await expect(
+        service.listPortfolio(actorA, profileId),
+      ).resolves.toBe(items);
+    });
+
+    it("throws ForbiddenError for a PRIVATE profile when unauthenticated", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(
+        makeProfile({ visibility: "PRIVATE" }),
+      );
+
+      await expect(service.listPortfolio(null, profileId)).rejects.toBeInstanceOf(
+        ForbiddenError,
+      );
+      expect(repo.findPortfolioItems).not.toHaveBeenCalled();
+    });
+
+    it("throws ForbiddenError for a PRIVATE profile when not the owner", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(
+        makeProfile({ visibility: "PRIVATE" }),
+      );
+
+      await expect(
+        service.listPortfolio(actorB, profileId),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.findPortfolioItems).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundError when the profile does not exist", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(null);
+
+      await expect(
+        service.listPortfolio(actorA, profileId),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+
+  // ── addPortfolioItem ─────────────────────────────────────────────────────────
+
+  describe("addPortfolioItem", () => {
+    it("creates an item and applies defaults for omitted fields", async () => {
+      const created = makePortfolioItem();
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.countPortfolioItems).mockResolvedValue(0);
+      vi.mocked(repo.createPortfolioItem).mockResolvedValue(created);
+
+      const result = await service.addPortfolioItem(actorA, profileId, {
+        title: "G+2 Residential Villa",
+      });
+
+      expect(result).toBe(created);
+      expect(repo.createPortfolioItem).toHaveBeenCalledWith(profileId, {
+        title: "G+2 Residential Villa",
+        description: null,
+        projectType: null,
+        location: null,
+        completionDate: null,
+        images: [],
+        displayOrder: 0,
+      });
+    });
+
+    it("passes supplied fields through to the repository", async () => {
+      const created = makePortfolioItem({ displayOrder: 3, images: [] });
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.countPortfolioItems).mockResolvedValue(0);
+      vi.mocked(repo.createPortfolioItem).mockResolvedValue(created);
+
+      const completionDate = new Date("2025-06-15T00:00:00.000Z");
+      await service.addPortfolioItem(actorA, profileId, {
+        title: "Villa",
+        description: "Full build.",
+        projectType: "Residential",
+        location: "Addis Ababa",
+        completionDate,
+        images: ["https://example.com/a.jpg"],
+        displayOrder: 3,
+      });
+
+      expect(repo.createPortfolioItem).toHaveBeenCalledWith(profileId, {
+        title: "Villa",
+        description: "Full build.",
+        projectType: "Residential",
+        location: "Addis Ababa",
+        completionDate,
+        images: ["https://example.com/a.jpg"],
+        displayOrder: 3,
+      });
+    });
+
+    it("throws BadRequestError at the per-profile item cap", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.countPortfolioItems).mockResolvedValue(50);
+
+      await expect(
+        service.addPortfolioItem(actorA, profileId, { title: "One too many" }),
+      ).rejects.toBeInstanceOf(BadRequestError);
+      expect(repo.createPortfolioItem).not.toHaveBeenCalled();
+    });
+
+    it("throws ForbiddenError when actor does not own the profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+
+      await expect(
+        service.addPortfolioItem(actorB, profileId, { title: "X" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.createPortfolioItem).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundError when the profile does not exist", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(null);
+
+      await expect(
+        service.addPortfolioItem(actorA, profileId, { title: "X" }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+
+  // ── updatePortfolioItem ──────────────────────────────────────────────────────
+
+  describe("updatePortfolioItem", () => {
+    it("updates an item scoped to the owning profile", async () => {
+      const updated = makePortfolioItem({ title: "Renamed" });
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.updatePortfolioItem).mockResolvedValue(updated);
+
+      const result = await service.updatePortfolioItem(
+        actorA,
+        profileId,
+        itemId,
+        { title: "Renamed" },
+      );
+
+      expect(result.title).toBe("Renamed");
+      expect(repo.updatePortfolioItem).toHaveBeenCalledWith(
+        profileId,
+        itemId,
+        { title: "Renamed" },
+      );
+    });
+
+    it("only passes supplied fields to the repository", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.updatePortfolioItem).mockResolvedValue(makePortfolioItem());
+
+      await service.updatePortfolioItem(actorA, profileId, itemId, {
+        displayOrder: 2,
+      });
+
+      expect(repo.updatePortfolioItem).toHaveBeenCalledWith(
+        profileId,
+        itemId,
+        { displayOrder: 2 },
+      );
+    });
+
+    it("throws NotFoundError when the item is missing or belongs to another profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.updatePortfolioItem).mockResolvedValue(null);
+
+      await expect(
+        service.updatePortfolioItem(actorA, profileId, itemId, {
+          title: "X",
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("throws ForbiddenError when actor does not own the profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+
+      await expect(
+        service.updatePortfolioItem(actorB, profileId, itemId, { title: "X" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.updatePortfolioItem).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── deletePortfolioItem ──────────────────────────────────────────────────────
+
+  describe("deletePortfolioItem", () => {
+    it("deletes an item owned by the actor's profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.deletePortfolioItem).mockResolvedValue(true);
+
+      await expect(
+        service.deletePortfolioItem(actorA, profileId, itemId),
+      ).resolves.toBeUndefined();
+      expect(repo.deletePortfolioItem).toHaveBeenCalledWith(
+        profileId,
+        itemId,
+      );
+    });
+
+    it("throws NotFoundError when the item is missing or belongs to another profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.deletePortfolioItem).mockResolvedValue(false);
+
+      await expect(
+        service.deletePortfolioItem(actorA, profileId, itemId),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("throws ForbiddenError when actor does not own the profile", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+
+      await expect(
+        service.deletePortfolioItem(actorB, profileId, itemId),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.deletePortfolioItem).not.toHaveBeenCalled();
+    });
+  });
 });
 
 // ── Validator schema tests ────────────────────────────────────────────────────
@@ -684,6 +954,129 @@ describe("Professional profile validators", () => {
 
     it("rejects an empty object", () => {
       const result = updateCredentialBodySchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+  });
+
+  // ── createPortfolioItemBodySchema ────────────────────────────────────────────
+
+  describe("createPortfolioItemBodySchema", () => {
+    it("accepts minimal valid input (title only)", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "G+2 Residential Villa",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts all fields and coerces completionDate to a Date", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "G+2 Residential Villa",
+        description: "Full structural design.",
+        projectType: "Residential",
+        location: "Addis Ababa",
+        completionDate: "2025-06-15T00:00:00.000Z",
+        images: ["https://example.com/work-1.jpg"],
+        displayOrder: 2,
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.completionDate).toBeInstanceOf(Date);
+      }
+    });
+
+    it("accepts a date-only completion date string", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        completionDate: "2025-06-15",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts a null completion date", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        completionDate: null,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects an empty title", () => {
+      const result = createPortfolioItemBodySchema.safeParse({ title: "" });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a title over 200 characters", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "a".repeat(201),
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid completion date", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        completionDate: "not-a-date",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects more than 8 images", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        images: Array.from(
+          { length: 9 },
+          (_, i) => `https://example.com/${i}.jpg`,
+        ),
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid image URL", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        images: ["not-a-url"],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a negative displayOrder", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        displayOrder: -1,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects unknown fields (strict schema)", () => {
+      const result = createPortfolioItemBodySchema.safeParse({
+        title: "X",
+        rogue: "field",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  // ── updatePortfolioItemBodySchema ────────────────────────────────────────────
+
+  describe("updatePortfolioItemBodySchema", () => {
+    it("accepts a single field update", () => {
+      const result = updatePortfolioItemBodySchema.safeParse({
+        displayOrder: 1,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects an empty object", () => {
+      const result = updatePortfolioItemBodySchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects unknown fields", () => {
+      const result = updatePortfolioItemBodySchema.safeParse({
+        title: "X",
+        rogue: "field",
+      });
       expect(result.success).toBe(false);
     });
   });

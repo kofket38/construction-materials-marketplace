@@ -1,11 +1,13 @@
 import type { AuthenticatedUser } from "../types/auth.js";
 import {
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "../utils/api-error.js";
 import { DuplicateProfessionalProfileError } from "../repositories/professional-profile.errors.js";
 import type {
+  PortfolioItemEntity,
   ProfessionalCredentialEntity,
   ProfessionalDirectoryResult,
   ProfessionalProfileEntity,
@@ -13,12 +15,17 @@ import type {
 } from "../repositories/professional-profile.repository.js";
 import type {
   CreateCredentialBody,
+  CreatePortfolioItemBody,
   CreateProfessionalProfileBody,
   ListProfessionalProfilesQueryParams,
   ReplaceSpecialtiesBody,
   UpdateCredentialBody,
+  UpdatePortfolioItemBody,
   UpdateProfessionalProfileBody,
 } from "../validators/professional-profile.validators.js";
+
+/** Hard cap on portfolio items per profile (mirrors the specialty cap). */
+const MAX_PORTFOLIO_ITEMS_PER_PROFILE = 50;
 
 function defaultDirectorySortOrder(
   sortBy: "newest" | "oldest" | "experience" | "name",
@@ -300,5 +307,119 @@ export class ProfessionalProfileService {
     }
 
     return profile;
+  }
+
+  // ── Portfolio items ───────────────────────────────────────────────────────
+
+  /**
+   * Lists a profile's portfolio in display order.
+   * PUBLIC profiles are readable by anyone (including anonymous visitors);
+   * PRIVATE profiles are readable only by their owner, who receives all
+   * other errors as usual.
+   */
+  async listPortfolio(
+    actor: AuthenticatedUser | null,
+    profileId: string,
+  ): Promise<PortfolioItemEntity[]> {
+    const profile = await this.profiles.findById(profileId);
+
+    if (!profile) {
+      throw new NotFoundError("Professional profile not found.");
+    }
+
+    if (
+      actor === null ||
+      actor.userId !== profile.userId
+    ) {
+      if (profile.visibility !== "PUBLIC") {
+        throw new ForbiddenError("This profile is private.");
+      }
+    }
+
+    return this.profiles.findPortfolioItems(profileId);
+  }
+
+  async addPortfolioItem(
+    actor: AuthenticatedUser,
+    profileId: string,
+    input: CreatePortfolioItemBody,
+  ): Promise<PortfolioItemEntity> {
+    await this.requireOwnership(actor, profileId);
+
+    const count = await this.profiles.countPortfolioItems(profileId);
+    if (count >= MAX_PORTFOLIO_ITEMS_PER_PROFILE) {
+      throw new BadRequestError(
+        `A profile may have at most ${MAX_PORTFOLIO_ITEMS_PER_PROFILE} portfolio items.`,
+      );
+    }
+
+    return this.profiles.createPortfolioItem(profileId, {
+      title: input.title,
+      description: input.description ?? null,
+      projectType: input.projectType ?? null,
+      location: input.location ?? null,
+      completionDate: input.completionDate ?? null,
+      images: input.images ?? [],
+      displayOrder: input.displayOrder ?? 0,
+    });
+  }
+
+  async updatePortfolioItem(
+    actor: AuthenticatedUser,
+    profileId: string,
+    itemId: string,
+    input: UpdatePortfolioItemBody,
+  ): Promise<PortfolioItemEntity> {
+    await this.requireOwnership(actor, profileId);
+
+    // Scoped to this profile — an item belonging to another profile is
+    // reported as missing rather than modified.
+    const updated = await this.profiles.updatePortfolioItem(
+      profileId,
+      itemId,
+      {
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.description !== undefined
+          ? { description: input.description }
+          : {}),
+        ...(input.projectType !== undefined
+          ? { projectType: input.projectType }
+          : {}),
+        ...(input.location !== undefined
+          ? { location: input.location }
+          : {}),
+        ...(input.completionDate !== undefined
+          ? { completionDate: input.completionDate }
+          : {}),
+        ...(input.images !== undefined ? { images: input.images } : {}),
+        ...(input.displayOrder !== undefined
+          ? { displayOrder: input.displayOrder }
+          : {}),
+      },
+    );
+
+    if (!updated) {
+      throw new NotFoundError("Portfolio item not found.");
+    }
+
+    return updated;
+  }
+
+  async deletePortfolioItem(
+    actor: AuthenticatedUser,
+    profileId: string,
+    itemId: string,
+  ): Promise<void> {
+    await this.requireOwnership(actor, profileId);
+
+    // Scoped to this profile for the same ownership reason as update.
+    const deleted = await this.profiles.deletePortfolioItem(
+      profileId,
+      itemId,
+    );
+
+    if (!deleted) {
+      throw new NotFoundError("Portfolio item not found.");
+    }
   }
 }

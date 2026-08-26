@@ -4,13 +4,16 @@ import { validateRequest } from "../middleware/validate-request.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
   createCredentialBodySchema,
+  createPortfolioItemBodySchema,
   createProfessionalProfileBodySchema,
   credentialIdParamsSchema,
   emptyProfessionalProfileObjectSchema,
   listProfessionalProfilesQuerySchema,
+  portfolioItemIdParamsSchema,
   profileIdParamsSchema,
   replaceSpecialtiesBodySchema,
   updateCredentialBodySchema,
+  updatePortfolioItemBodySchema,
   updateProfessionalProfileBodySchema,
 } from "../validators/professional-profile.validators.js";
 
@@ -148,6 +151,57 @@ export function createProfessionalProfileRouter(
       query: emptyProfessionalProfileObjectSchema,
     }),
     asyncHandler(controller.deleteCredential),
+  );
+
+  // ── GET /api/professional-profiles/:profileId/portfolio ──────────────────────
+  // PUBLIC profiles are readable by anyone (authentication optional);
+  // PRIVATE profiles are readable only by their owner. The service enforces
+  // visibility, so tryAuthenticate is used exactly as for GET /:profileId.
+  router.get(
+    "/:profileId/portfolio",
+    tryAuthenticate(requireAuthentication),
+    validateRequest({
+      body: emptyProfessionalProfileObjectSchema,
+      params: profileIdParamsSchema,
+      query: emptyProfessionalProfileObjectSchema,
+    }),
+    asyncHandler(controller.listPortfolio),
+  );
+
+  // ── POST /api/professional-profiles/:profileId/portfolio ─────────────────────
+  router.post(
+    "/:profileId/portfolio",
+    requireAuthentication,
+    validateRequest({
+      body: createPortfolioItemBodySchema,
+      params: profileIdParamsSchema,
+      query: emptyProfessionalProfileObjectSchema,
+    }),
+    asyncHandler(controller.addPortfolioItem),
+  );
+
+  // ── PATCH /api/professional-profiles/:profileId/portfolio/:itemId ────────────
+  router.patch(
+    "/:profileId/portfolio/:itemId",
+    requireAuthentication,
+    validateRequest({
+      body: updatePortfolioItemBodySchema,
+      params: profileIdParamsSchema.merge(portfolioItemIdParamsSchema),
+      query: emptyProfessionalProfileObjectSchema,
+    }),
+    asyncHandler(controller.updatePortfolioItem),
+  );
+
+  // ── DELETE /api/professional-profiles/:profileId/portfolio/:itemId ───────────
+  router.delete(
+    "/:profileId/portfolio/:itemId",
+    requireAuthentication,
+    validateRequest({
+      body: emptyProfessionalProfileObjectSchema,
+      params: profileIdParamsSchema.merge(portfolioItemIdParamsSchema),
+      query: emptyProfessionalProfileObjectSchema,
+    }),
+    asyncHandler(controller.deletePortfolioItem),
   );
 
   return router;

@@ -10,6 +10,7 @@ const userId    = "00000000-0000-4000-8000-000000000001";
 const profileId = "00000000-0000-4000-8000-000000000002";
 const credId    = "00000000-0000-4000-8000-000000000003";
 const specId    = "00000000-0000-4000-8000-000000000004";
+const itemId    = "00000000-0000-4000-8000-000000000005";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function prismaError(code: string): Error & { code: string } {
@@ -69,6 +70,23 @@ function baseCredentialRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function basePortfolioItemRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: itemId,
+    profileId,
+    title: "G+2 Residential Villa",
+    description: "Full structural design and supervision.",
+    projectType: "Residential",
+    location: "Addis Ababa",
+    completionDate: new Date("2025-06-15T00:00:00.000Z"),
+    images: ["https://example.com/work-1.jpg"],
+    displayOrder: 0,
+    createdAt: new Date("2026-08-25T10:00:00.000Z"),
+    updatedAt: new Date("2026-08-25T10:00:00.000Z"),
+    ...overrides,
+  };
+}
+
 // ── Mock factory ──────────────────────────────────────────────────────────────
 function createMock() {
   const mock = {
@@ -83,6 +101,13 @@ function createMock() {
       createMany: vi.fn(),
     },
     professionalCredential: {
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    portfolioItem: {
+      count: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -487,5 +512,161 @@ describe("PrismaProfessionalProfileRepository", () => {
     );
     const profile = await repo.findById(profileId);
     expect(profile!.specialties[0]!.profileId).toBe(profileId);
+  });
+
+  // ── countPortfolioItems ─────────────────────────────────────────────────────
+
+  it("counts portfolio items scoped to the profile", async () => {
+    mock.portfolioItem.count.mockResolvedValue(3);
+
+    expect(await repo.countPortfolioItems(profileId)).toBe(3);
+    expect(mock.portfolioItem.count).toHaveBeenCalledWith({
+      where: { profileId },
+    });
+  });
+
+  // ── findPortfolioItems ──────────────────────────────────────────────────────
+
+  it("lists portfolio items ordered by display order, then newest first, then ID", async () => {
+    mock.portfolioItem.findMany.mockResolvedValue([
+      basePortfolioItemRow(),
+    ]);
+
+    const items = await repo.findPortfolioItems(profileId);
+
+    expect(items).toHaveLength(1);
+    expect(mock.portfolioItem.findMany).toHaveBeenCalledWith({
+      where: { profileId },
+      select: expect.objectContaining({ title: true, images: true }),
+      orderBy: [
+        { displayOrder: "asc" },
+        { createdAt: "desc" },
+        { id: "asc" },
+      ],
+    });
+  });
+
+  it("maps portfolio item rows including image arrays", async () => {
+    const row = basePortfolioItemRow();
+    mock.portfolioItem.findMany.mockResolvedValue([row]);
+
+    const [item] = await repo.findPortfolioItems(profileId);
+
+    expect(item).not.toBeUndefined();
+    expect(item!.title).toBe("G+2 Residential Villa");
+    expect(item!.projectType).toBe("Residential");
+    expect(item!.location).toBe("Addis Ababa");
+    expect(item!.completionDate).toEqual(row.completionDate);
+    expect(item!.images).toEqual(["https://example.com/work-1.jpg"]);
+    expect(item!.displayOrder).toBe(0);
+    expect(item!.profileId).toBe(profileId);
+  });
+
+  it("returns a defensive copy of stored image arrays", async () => {
+    const row = basePortfolioItemRow();
+    mock.portfolioItem.findMany.mockResolvedValue([row]);
+
+    const [item] = await repo.findPortfolioItems(profileId);
+    item!.images.push("https://example.com/mutated.jpg");
+
+    expect(row.images).toEqual(["https://example.com/work-1.jpg"]);
+  });
+
+  // ── createPortfolioItem ─────────────────────────────────────────────────────
+
+  it("creates a portfolio item and applies defaults for omitted fields", async () => {
+    mock.portfolioItem.create.mockResolvedValue(basePortfolioItemRow());
+
+    await repo.createPortfolioItem(profileId, {
+      title: "  G+2 Residential Villa  ",
+    });
+
+    expect(mock.portfolioItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          profileId,
+          title: "G+2 Residential Villa",
+          description: null,
+          projectType: null,
+          location: null,
+          completionDate: null,
+          images: [],
+          displayOrder: 0,
+        }),
+      }),
+    );
+  });
+
+  it("passes supplied portfolio fields through to Prisma", async () => {
+    mock.portfolioItem.create.mockResolvedValue(basePortfolioItemRow());
+
+    const completionDate = new Date("2025-06-15T00:00:00.000Z");
+    await repo.createPortfolioItem(profileId, {
+      title: "Villa",
+      description: "Full build.",
+      projectType: "Residential",
+      location: "Addis Ababa",
+      completionDate,
+      images: ["https://example.com/a.jpg"],
+      displayOrder: 2,
+    });
+
+    expect(mock.portfolioItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: "Villa",
+          description: "Full build.",
+          projectType: "Residential",
+          location: "Addis Ababa",
+          completionDate,
+          images: ["https://example.com/a.jpg"],
+          displayOrder: 2,
+        }),
+      }),
+    );
+  });
+
+  // ── updatePortfolioItem ─────────────────────────────────────────────────────
+
+  it("scopes updates to both the item ID and the owning profile", async () => {
+    mock.portfolioItem.update.mockResolvedValue(
+      basePortfolioItemRow({ title: "Renamed" }),
+    );
+
+    await repo.updatePortfolioItem(profileId, itemId, { title: "Renamed" });
+
+    expect(mock.portfolioItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: itemId, profileId },
+        data: { title: "Renamed" },
+      }),
+    );
+  });
+
+  it("returns null when updating an item that does not exist on the profile", async () => {
+    mock.portfolioItem.update.mockRejectedValue(prismaError("P2025"));
+
+    expect(
+      await repo.updatePortfolioItem(profileId, itemId, { title: "X" }),
+    ).toBeNull();
+  });
+
+  // ── deletePortfolioItem ─────────────────────────────────────────────────────
+
+  it("deletes a portfolio item scoped to the profile and returns true", async () => {
+    mock.portfolioItem.delete.mockResolvedValue(
+      basePortfolioItemRow(),
+    );
+
+    expect(await repo.deletePortfolioItem(profileId, itemId)).toBe(true);
+    expect(mock.portfolioItem.delete).toHaveBeenCalledWith({
+      where: { id: itemId, profileId },
+    });
+  });
+
+  it("returns false when deleting an item that does not exist on the profile", async () => {
+    mock.portfolioItem.delete.mockRejectedValue(prismaError("P2025"));
+
+    expect(await repo.deletePortfolioItem(profileId, itemId)).toBe(false);
   });
 });

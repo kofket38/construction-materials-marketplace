@@ -238,6 +238,86 @@ export const updateCredentialBodySchema = z
     "At least one field must be provided.",
   );
 
+// ── Portfolio item schemas ────────────────────────────────────────────────────
+
+const portfolioTitleSchema = z
+  .string()
+  .trim()
+  .min(1, "Title is required.")
+  .max(200, "Title must be 200 characters or fewer.");
+
+const portfolioDescriptionSchema = z
+  .string()
+  .trim()
+  .max(2000, "Description must be 2000 characters or fewer.")
+  .nullable()
+  .optional();
+
+const projectTypeSchema = z
+  .string()
+  .trim()
+  .max(150, "Project type must be 150 characters or fewer.")
+  .nullable()
+  .optional();
+
+const portfolioLocationSchema = z
+  .string()
+  .trim()
+  .max(200, "Location must be 200 characters or fewer.")
+  .nullable()
+  .optional();
+
+const completionDateSchema = z.coerce
+  .date({ message: "Completion date must be a valid date." })
+  .nullable()
+  .optional();
+
+const portfolioImagesSchema = z
+  .array(
+    z
+      .string()
+      .trim()
+      .url("Each image must be a valid URL.")
+      .max(500, "Each image URL must be 500 characters or fewer."),
+  )
+  .max(8, "A portfolio item may have at most 8 images.")
+  .optional();
+
+const displayOrderSchema = z
+  .number()
+  .int("Display order must be a whole number.")
+  .min(0, "Display order cannot be negative.")
+  .max(1_000_000, "Display order is too large.")
+  .optional();
+
+export const createPortfolioItemBodySchema = z
+  .object({
+    title: portfolioTitleSchema,
+    description: portfolioDescriptionSchema,
+    projectType: projectTypeSchema,
+    location: portfolioLocationSchema,
+    completionDate: completionDateSchema,
+    images: portfolioImagesSchema,
+    displayOrder: displayOrderSchema,
+  })
+  .strict();
+
+export const updatePortfolioItemBodySchema = z
+  .object({
+    title: portfolioTitleSchema.optional(),
+    description: portfolioDescriptionSchema,
+    projectType: projectTypeSchema,
+    location: portfolioLocationSchema,
+    completionDate: completionDateSchema,
+    images: portfolioImagesSchema,
+    displayOrder: displayOrderSchema,
+  })
+  .strict()
+  .refine(
+    (body) => Object.keys(body).length > 0,
+    "At least one field must be provided.",
+  );
+
 // ── Directory (public list) query schema ──────────────────────────────────────
 
 const positiveIntegerQuerySchema = z
@@ -300,6 +380,10 @@ export const credentialIdParamsSchema = z
   .object({ credentialId: z.string().uuid("Credential ID must be a valid UUID.") })
   .strict();
 
+export const portfolioItemIdParamsSchema = z
+  .object({ itemId: z.string().uuid("Portfolio item ID must be a valid UUID.") })
+  .strict();
+
 export const emptyProfessionalProfileObjectSchema = z.object({}).strict();
 
 // ── Inferred types ────────────────────────────────────────────────────────────
@@ -315,8 +399,17 @@ export type ReplaceSpecialtiesBody = z.infer<
 >;
 export type CreateCredentialBody = z.infer<typeof createCredentialBodySchema>;
 export type UpdateCredentialBody = z.infer<typeof updateCredentialBodySchema>;
+export type CreatePortfolioItemBody = z.infer<
+  typeof createPortfolioItemBodySchema
+>;
+export type UpdatePortfolioItemBody = z.infer<
+  typeof updatePortfolioItemBodySchema
+>;
 export type ListProfessionalProfilesQueryParams = z.infer<
   typeof listProfessionalProfilesQuerySchema
 >;
 export type ProfileIdParams = z.infer<typeof profileIdParamsSchema>;
 export type CredentialIdParams = z.infer<typeof credentialIdParamsSchema>;
+export type PortfolioItemIdParams = z.infer<
+  typeof portfolioItemIdParamsSchema
+>;

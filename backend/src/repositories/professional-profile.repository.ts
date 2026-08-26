@@ -31,6 +31,20 @@ export interface ProfessionalCredentialEntity {
   updatedAt: Date;
 }
 
+export interface PortfolioItemEntity {
+  id: string;
+  profileId: string;
+  title: string;
+  description: string | null;
+  projectType: string | null;
+  location: string | null;
+  completionDate: Date | null;
+  images: string[];
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ── Profile entity (always includes child relations) ─────────────────────────
 
 export interface ProfessionalProfileEntity {
@@ -112,6 +126,26 @@ export interface UpdateCredentialInput {
   yearObtained?: number | null;
   description?: string | null;
   credentialUrl?: string | null;
+}
+
+export interface CreatePortfolioItemInput {
+  title: string;
+  description?: string | null;
+  projectType?: string | null;
+  location?: string | null;
+  completionDate?: Date | null;
+  images?: string[];
+  displayOrder?: number;
+}
+
+export interface UpdatePortfolioItemInput {
+  title?: string;
+  description?: string | null;
+  projectType?: string | null;
+  location?: string | null;
+  completionDate?: Date | null;
+  images?: string[];
+  displayOrder?: number;
 }
 
 // ── Directory (public discovery) ──────────────────────────────────────────────
@@ -240,4 +274,43 @@ export interface ProfessionalProfileRepository {
    * found.
    */
   deleteCredential(credentialId: string): Promise<boolean>;
+
+  /**
+   * Count the portfolio items that belong to a profile.
+   */
+  countPortfolioItems(profileId: string): Promise<number>;
+
+  /**
+   * List the portfolio items of a profile in display order:
+   * displayOrder ascending, then newest first, with the item ID as the
+   * deterministic tie-breaker.
+   */
+  findPortfolioItems(profileId: string): Promise<PortfolioItemEntity[]>;
+
+  /**
+   * Create a portfolio item on a profile. The caller must verify that the
+   * profile exists before calling.
+   */
+  createPortfolioItem(
+    profileId: string,
+    input: CreatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity>;
+
+  /**
+   * Partially update a portfolio item. The update is scoped to the supplied
+   * profile, so an item belonging to another profile is reported as missing
+   * rather than being modified. Returns null when no matching item exists.
+   */
+  updatePortfolioItem(
+    profileId: string,
+    itemId: string,
+    input: UpdatePortfolioItemInput,
+  ): Promise<PortfolioItemEntity | null>;
+
+  /**
+   * Delete a portfolio item. The delete is scoped to the supplied profile,
+   * so an item belonging to another profile cannot be deleted through this
+   * method. Returns true when deleted, false when not found.
+   */
+  deletePortfolioItem(profileId: string, itemId: string): Promise<boolean>;
 }
