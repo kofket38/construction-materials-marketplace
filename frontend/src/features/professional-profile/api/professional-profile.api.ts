@@ -32,6 +32,21 @@ export interface ProfessionalCredential {
   updatedAt: string;
 }
 
+export interface PortfolioItem {
+  id: string;
+  profileId: string;
+  title: string;
+  description: string | null;
+  projectType: string | null;
+  location: string | null;
+  /** ISO date-time string, or null when not set. */
+  completionDate: string | null;
+  images: string[];
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProfessionalProfile {
   id: string;
   userId: string;
@@ -133,6 +148,18 @@ export interface CreateCredentialInput {
 }
 
 export type UpdateCredentialInput = Partial<CreateCredentialInput>;
+
+export interface CreatePortfolioItemInput {
+  title: string;
+  description?: string | null;
+  projectType?: string | null;
+  location?: string | null;
+  completionDate?: string | null;
+  images?: string[];
+  displayOrder?: number;
+}
+
+export type UpdatePortfolioItemInput = Partial<CreatePortfolioItemInput>;
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 
@@ -242,5 +269,53 @@ export async function deleteProfessionalCredential(
 ): Promise<void> {
   await apiClient.delete(
     `/professional-profiles/${encodeURIComponent(profileId)}/credentials/${encodeURIComponent(credentialId)}`,
+  );
+}
+
+// ── Portfolio items ───────────────────────────────────────────────────────────
+
+type PortfolioListData = { items: PortfolioItem[] };
+type PortfolioItemData = { item: PortfolioItem };
+
+export async function listProfessionalPortfolio(
+  profileId: string,
+  signal?: AbortSignal,
+): Promise<PortfolioItem[]> {
+  const res = await apiClient.get<ApiSuccessResponse<PortfolioListData>>(
+    `/professional-profiles/${encodeURIComponent(profileId)}/portfolio`,
+    { signal },
+  );
+  return res.data.data.items;
+}
+
+export async function addProfessionalPortfolioItem(
+  profileId: string,
+  input: CreatePortfolioItemInput,
+): Promise<PortfolioItem> {
+  const res = await apiClient.post<ApiSuccessResponse<PortfolioItemData>>(
+    `/professional-profiles/${encodeURIComponent(profileId)}/portfolio`,
+    input,
+  );
+  return res.data.data.item;
+}
+
+export async function updateProfessionalPortfolioItem(
+  profileId: string,
+  itemId: string,
+  input: UpdatePortfolioItemInput,
+): Promise<PortfolioItem> {
+  const res = await apiClient.patch<ApiSuccessResponse<PortfolioItemData>>(
+    `/professional-profiles/${encodeURIComponent(profileId)}/portfolio/${encodeURIComponent(itemId)}`,
+    input,
+  );
+  return res.data.data.item;
+}
+
+export async function deleteProfessionalPortfolioItem(
+  profileId: string,
+  itemId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/professional-profiles/${encodeURIComponent(profileId)}/portfolio/${encodeURIComponent(itemId)}`,
   );
 }

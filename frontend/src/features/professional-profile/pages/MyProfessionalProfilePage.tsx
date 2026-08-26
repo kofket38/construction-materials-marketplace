@@ -43,6 +43,7 @@ import type {
 } from "@/features/professional-profile/api/professional-profile.api";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
+import { PortfolioManagerSection } from "@/features/professional-profile/components/PortfolioManager";
 import { defaultFormOptions, zodResolver } from "@/shared/forms/form-config";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
@@ -370,6 +371,8 @@ function EditProfileSection({
       />
 
       <CredentialsSection profile={profile} onUpdated={onUpdated} />
+
+      <PortfolioManagerSection profile={profile} />
 
       {/* Danger zone */}
       <section

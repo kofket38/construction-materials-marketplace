@@ -23,6 +23,7 @@ import {
   getProfessionalProfileById,
 } from "@/features/professional-profile/api/professional-profile.api";
 import { ProfessionalAvatar } from "@/features/professional-profile/components/ProfessionalAvatar";
+import { PortfolioSection } from "@/features/professional-profile/components/PortfolioSection";
 import type {
   CredentialType,
   ProfessionalCredential,
@@ -280,6 +281,9 @@ export function ProfessionalProfilePage() {
                 </p>
               </section>
             ) : null}
+
+            {/* Portfolio */}
+            <PortfolioSection profileId={profile.id} />
 
             {/* Credentials */}
             {profile.credentials.length > 0 ? (
