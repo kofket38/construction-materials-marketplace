@@ -363,7 +363,11 @@ function EditProfileSection({
         submitLabel="Save changes"
       />
 
-      <SpecialtiesSection profile={profile} onUpdated={onUpdated} />
+      <SpecialtiesSection
+        key={profile.specialties.map((s) => s.name).join("\u0000")}
+        onUpdated={onUpdated}
+        profile={profile}
+      />
 
       <CredentialsSection profile={profile} onUpdated={onUpdated} />
 
@@ -435,10 +439,6 @@ function SpecialtiesSection({
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    setNames(profile.specialties.map((s) => s.name));
-  }, [profile.specialties]);
 
   const saveMutation = useMutation({
     mutationFn: () =>

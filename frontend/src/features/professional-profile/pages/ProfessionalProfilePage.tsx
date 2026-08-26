@@ -22,6 +22,7 @@ import { useAuthStore } from "@/features/auth/model/auth.store";
 import {
   getProfessionalProfileById,
 } from "@/features/professional-profile/api/professional-profile.api";
+import { ProfessionalAvatar } from "@/features/professional-profile/components/ProfessionalAvatar";
 import type {
   CredentialType,
   ProfessionalCredential,
@@ -149,8 +150,12 @@ export function ProfessionalProfilePage() {
           <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             {/* Avatar + identity */}
             <div className="flex items-start gap-5">
-              <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xl font-bold text-white">
-                {getInitials(profile.displayName)}
+              <span className="block size-16 shrink-0 overflow-hidden rounded-full">
+                <ProfessionalAvatar
+                  initialsClassName="text-xl"
+                  name={profile.displayName}
+                  src={profile.avatarUrl}
+                />
               </span>
               <div className="min-w-0">
                 {profile.visibility === "PRIVATE" && isOwner ? (
@@ -375,15 +380,4 @@ function SpecialtyBadge({ specialty }: { specialty: ProfessionalSpecialty }) {
       {specialty.name}
     </span>
   );
-}
-
-// ── Utility ───────────────────────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }

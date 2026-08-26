@@ -18,7 +18,13 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 
 import { logout } from "@/features/auth/api/auth.api";
@@ -42,6 +48,12 @@ export function PublicLayout() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSellerMenuOpen, setIsSellerMenuOpen] = useState(false);
   const [isPrimaryMenuOpen, setIsPrimaryMenuOpen] = useState(false);
+  const closeSellerMenu = useCallback(() => {
+    setIsSellerMenuOpen(false);
+  }, []);
+  const closePrimaryMenu = useCallback(() => {
+    setIsPrimaryMenuOpen(false);
+  }, []);
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const setUnauthenticated = useAuthStore(
@@ -224,23 +236,16 @@ export function PublicLayout() {
             ) : null}
             {status === "authenticated" && user?.role === "SELLER" ? (
               <>
-                <button
-                  aria-expanded={isSellerMenuOpen}
-                  aria-label="Open seller navigation"
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 xl:hidden"
-                  onClick={() =>
-                    setIsSellerMenuOpen((isOpen) => !isOpen)
-                  }
+                <HeaderDropdownMenu
+                  buttonClassName="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 xl:hidden"
+                  isOpen={isSellerMenuOpen}
+                  label="Open seller navigation"
+                  onClose={closeSellerMenu}
+                  onToggle={() => setIsSellerMenuOpen((isOpen) => !isOpen)}
+                  panelAriaLabel="Seller navigation"
+                  panelClassName="absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg xl:hidden"
                   title="Seller navigation"
-                  type="button"
                 >
-                  <Menu aria-hidden="true" className="size-5" />
-                </button>
-                {isSellerMenuOpen ? (
-                  <nav
-                    aria-label="Seller navigation"
-                    className="absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg xl:hidden"
-                  >
                     <MobileMenuLink
                       icon={LayoutDashboard}
                       label="Dashboard"
@@ -301,32 +306,24 @@ export function PublicLayout() {
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/professional/dashboard"
                     />
-                  </nav>
-                ) : null}
+                </HeaderDropdownMenu>
               </>
             ) : (
               <>
-                <button
-                  aria-expanded={isPrimaryMenuOpen}
-                  aria-label="Open navigation"
-                  className={`inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 ${
+                <HeaderDropdownMenu
+                  buttonClassName={`inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 ${
                     user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
                   }`}
-                  onClick={() =>
-                    setIsPrimaryMenuOpen((isOpen) => !isOpen)
-                  }
+                  isOpen={isPrimaryMenuOpen}
+                  label="Open navigation"
+                  onClose={closePrimaryMenu}
+                  onToggle={() => setIsPrimaryMenuOpen((isOpen) => !isOpen)}
+                  panelAriaLabel="Site navigation"
+                  panelClassName={`absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg ${
+                    user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
+                  }`}
                   title="Navigation"
-                  type="button"
                 >
-                  <Menu aria-hidden="true" className="size-5" />
-                </button>
-                {isPrimaryMenuOpen ? (
-                  <nav
-                    aria-label="Site navigation"
-                    className={`absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg ${
-                      user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
-                    }`}
-                  >
                     <MobileMenuLink
                       icon={Package}
                       label="Catalog"
@@ -388,8 +385,7 @@ export function PublicLayout() {
                         to="/admin/dashboard"
                       />
                     ) : null}
-                  </nav>
-                ) : null}
+                </HeaderDropdownMenu>
                 <Link
                   aria-label={`Cart with ${cartItemCount.toLocaleString()} ${
                     cartItemCount === 1 ? "item" : "items"
@@ -484,5 +480,106 @@ function MobileMenuLink({
       <Icon aria-hidden="true" className="size-4" />
       {label}
     </NavLink>
+  );
+}
+
+interface HeaderDropdownMenuProps {
+  buttonClassName: string;
+  children: ReactNode;
+  isOpen: boolean;
+  label: string;
+  onClose: () => void;
+  onToggle: () => void;
+  panelAriaLabel: string;
+  panelClassName: string;
+  title: string;
+}
+
+/**
+ * Header hamburger button with an anchored dropdown panel. Closes on Escape
+ * or pointer-down outside the trigger and panel, and returns focus to the
+ * trigger when the menu closes.
+ */
+function HeaderDropdownMenu({
+  buttonClassName,
+  children,
+  isOpen,
+  label,
+  onClose,
+  onToggle,
+  panelAriaLabel,
+  panelClassName,
+  title,
+}: HeaderDropdownMenuProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      if (triggerRef.current?.contains(target)) {
+        return;
+      }
+      if (panelRef.current?.contains(target)) {
+        return;
+      }
+      onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      triggerRef.current?.focus();
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        aria-expanded={isOpen}
+        aria-label={label}
+        className={buttonClassName}
+        onClick={onToggle}
+        ref={triggerRef}
+        title={title}
+        type="button"
+      >
+        <Menu aria-hidden="true" className="size-5" />
+      </button>
+      {isOpen ? (
+        <nav
+          aria-label={panelAriaLabel}
+          className={panelClassName}
+          ref={panelRef}
+        >
+          {children}
+        </nav>
+      ) : null}
+    </>
   );
 }

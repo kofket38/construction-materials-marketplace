@@ -2,6 +2,7 @@ import { Briefcase, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { ProfessionalDirectoryItem } from "@/features/professional-profile/api/professional-profile.api";
+import { ProfessionalAvatar } from "@/features/professional-profile/components/ProfessionalAvatar";
 
 // ── Professional directory card ───────────────────────────────────────────────
 
@@ -17,8 +18,11 @@ export function ProfessionalCard({
   return (
     <article className="flex min-h-full flex-col rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-lg font-bold text-white">
-          {getInitials(professional.displayName)}
+        <span className="block size-12 shrink-0 overflow-hidden rounded-full">
+          <ProfessionalAvatar
+            name={professional.displayName}
+            src={professional.avatarUrl}
+          />
         </span>
         <div className="min-w-0">
           <h2 className="truncate text-lg font-semibold text-zinc-950">
@@ -77,13 +81,4 @@ export function ProfessionalCard({
       </Link>
     </article>
   );
-}
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }

@@ -301,7 +301,29 @@ export function ProfessionalDirectoryPage() {
             Try again
           </button>
         </DirectoryStatus>
-      ) : directoryQuery.data.professionals.length === 0 ? (
+        ) : directoryQuery.data.totalPages > 0 &&
+          directoryQuery.data.currentPage > directoryQuery.data.totalPages ? (
+          <DirectoryStatus>
+            <Users aria-hidden="true" className="size-9 text-emerald-700" strokeWidth={1.6} />
+            <div className="text-center">
+              <h2 className="font-semibold text-zinc-950">
+                This page is out of range
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                Page {directoryQuery.data.currentPage} does not exist. The
+                directory has {directoryQuery.data.totalPages}{" "}
+                {directoryQuery.data.totalPages === 1 ? "page" : "pages"}.
+              </p>
+            </div>
+            <button
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+              onClick={() => updateSearchParams({ page: undefined })}
+              type="button"
+            >
+              Return to page 1
+            </button>
+          </DirectoryStatus>
+        ) : directoryQuery.data.professionals.length === 0 ? (
         hasActiveFilters ? (
           <DirectoryStatus>
             <Users aria-hidden="true" className="size-9 text-emerald-700" strokeWidth={1.6} />
