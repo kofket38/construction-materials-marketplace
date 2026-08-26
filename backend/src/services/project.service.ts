@@ -115,6 +115,24 @@ export class ProjectService {
     projectId: string,
     input: UpdateProjectBody,
   ): Promise<ProjectEntity> {
+    // Fetch first so we can enforce the terminal-status read-only rule and
+    // ownership in a single consistent pass. The lookup is owner-scoped so a
+    // foreign project ID is indistinguishable from a missing one (404).
+    const existing = await this.projects.findById(projectId);
+
+    if (!existing || existing.ownerId !== actor.userId) {
+      throw new NotFoundError("Project not found.");
+    }
+
+    // COMPLETED and CANCELLED projects are terminal and read-only. Field
+    // edits are rejected with a 400 so the caller receives a clear reason
+    // rather than a silent no-op.
+    if (existing.status === "COMPLETED" || existing.status === "CANCELLED") {
+      throw new BadRequestError(
+        `A ${existing.status.toLowerCase()} project cannot be edited.`,
+      );
+    }
+
     // Scoped by owner at the repository level; null means the project either
     // does not exist or belongs to someone else, which must be reported as
     // missing rather than forbidden.

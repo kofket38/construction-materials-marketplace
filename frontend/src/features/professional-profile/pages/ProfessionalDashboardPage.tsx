@@ -10,6 +10,8 @@ import {
   Circle,
   Eye,
   EyeOff,
+  FilePlus2,
+  FolderKanban,
   Globe,
   LayoutDashboard,
   Link2,
@@ -408,6 +410,18 @@ function QuickActionsSection({ profile }: { profile: ProfessionalProfile }) {
     to: string;
     accent?: boolean;
   }> = [
+    {
+      icon: FolderKanban,
+      label: "My projects",
+      description: "Manage your construction projects",
+      to: "/professional/projects",
+    },
+    {
+      icon: FilePlus2,
+      label: "Create project",
+      description: "Add a new project in draft mode",
+      to: "/professional/projects/new",
+    },
     {
       icon: Eye,
       label: "View my profile",

@@ -1,4 +1,11 @@
-import { LayoutDashboard, Package, Pencil, Users } from "lucide-react";
+import {
+  FilePlus2,
+  FolderKanban,
+  LayoutDashboard,
+  Package,
+  Pencil,
+  Users,
+} from "lucide-react";
 
 import { WorkspaceAccountFooter } from "@/features/auth/components/WorkspaceAccountFooter";
 import {
@@ -16,6 +23,16 @@ const PROFESSIONAL_NAV_GROUPS: DashboardNavGroup[] = [
         label: "Dashboard",
         href: "/professional/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        label: "My Projects",
+        href: "/professional/projects",
+        icon: FolderKanban,
+      },
+      {
+        label: "New Project",
+        href: "/professional/projects/new",
+        icon: FilePlus2,
       },
       {
         label: "Edit Profile",

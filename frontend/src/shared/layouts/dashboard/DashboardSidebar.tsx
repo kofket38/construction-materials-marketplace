@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";import { Building2, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { Building2, X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

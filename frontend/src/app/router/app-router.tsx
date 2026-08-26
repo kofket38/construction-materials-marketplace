@@ -27,6 +27,9 @@ import { ProfessionalProfilePage } from "@/features/professional-profile/pages/P
 import { ProfessionalDirectoryPage } from "@/features/professional-profile/pages/ProfessionalDirectoryPage";
 import { ProfessionalDashboardPage } from "@/features/professional-profile/pages/ProfessionalDashboardPage";
 import { ProfessionalLayout } from "@/features/professional-profile/layouts/ProfessionalLayout";
+import { CreateProjectPage } from "@/features/projects/pages/CreateProjectPage";
+import { MyProjectsPage } from "@/features/projects/pages/MyProjectsPage";
+import { ProjectDetailPage } from "@/features/projects/pages/ProjectDetailPage";
 import { CreateRfqPage } from "@/features/rfq/pages/CreateRfqPage";
 import { MyRfqsPage } from "@/features/rfq/pages/MyRfqsPage";
 import { RfqDetailPage } from "@/features/rfq/pages/RfqDetailPage";
@@ -222,6 +225,19 @@ export const appRouter = createBrowserRouter([
                   {
                     path: "profile/professional",
                     element: <MyProfessionalProfilePage />,
+                  },
+                  // ── Owner project management ───────────────────────────────
+                  {
+                    path: "professional/projects",
+                    element: <MyProjectsPage />,
+                  },
+                  {
+                    path: "professional/projects/new",
+                    element: <CreateProjectPage />,
+                  },
+                  {
+                    path: "professional/projects/:projectId",
+                    element: <ProjectDetailPage />,
                   },
                 ],
               },
