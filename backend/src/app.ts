@@ -34,6 +34,8 @@ import { SellerInventoryController } from "./controllers/seller-inventory.contro
 
 import { ProfessionalProfileController } from "./controllers/professional-profile.controller.js";
 
+import { ProjectController } from "./controllers/project.controller.js";
+
 import { SellerProfileController } from "./controllers/seller-profile.controller.js";
 
 import { WishlistController } from "./controllers/wishlist.controller.js";
@@ -72,6 +74,8 @@ import { PrismaSellerProfileRepository } from "./repositories/prisma-seller-prof
 
 import { PrismaProfessionalProfileRepository } from "./repositories/prisma-professional-profile.repository.js";
 
+import { PrismaProjectRepository } from "./repositories/prisma-project.repository.js";
+
 import { PrismaAdminDashboardRepository } from "./repositories/prisma-admin-dashboard.repository.js";
 
 import { PrismaWishlistRepository } from "./repositories/prisma-wishlist.repository.js";
@@ -99,6 +103,8 @@ import type { SellerInventoryRepository } from "./repositories/seller-inventory.
 import type { SellerProfileRepository } from "./repositories/seller-profile.repository.js";
 
 import type { ProfessionalProfileRepository } from "./repositories/professional-profile.repository.js";
+
+import type { ProjectRepository } from "./repositories/project.repository.js";
 
 import type { UserRepository } from "./repositories/user.repository.js";
 
@@ -137,6 +143,8 @@ import { SellerProfileService } from "./services/seller-profile.service.js";
 
 import { ProfessionalProfileService } from "./services/professional-profile.service.js";
 
+import { ProjectService } from "./services/project.service.js";
+
 import { WishlistService } from "./services/wishlist.service.js";
 
 import {
@@ -166,6 +174,7 @@ export interface AppDependencies {
   sellerInventoryRepository?: SellerInventoryRepository;
   sellerProfileRepository?: SellerProfileRepository;
   professionalProfileRepository?: ProfessionalProfileRepository;
+  projectRepository?: ProjectRepository;
   wishlistRepository?: WishlistRepository;
   paymentProofStorage?: PaymentProofStorage;
   tokenService?: TokenService;
@@ -215,6 +224,9 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const professionalProfileRepository =
     dependencies.professionalProfileRepository ??
     new PrismaProfessionalProfileRepository(prisma);
+
+  const projectRepository =
+    dependencies.projectRepository ?? new PrismaProjectRepository(prisma);
 
   const wishlistRepository =
     dependencies.wishlistRepository ?? new PrismaWishlistRepository(prisma);
@@ -315,6 +327,10 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     professionalProfileService,
   );
 
+  const projectService = new ProjectService(projectRepository);
+
+  const projectController = new ProjectController(projectService);
+
   const wishlistService = new WishlistService(wishlistRepository);
 
   const wishlistController = new WishlistController(wishlistService);
@@ -385,6 +401,7 @@ export function createApp(dependencies: AppDependencies = {}): Express {
       paymentController,
       productController,
       professionalProfileController,
+      projectController,
       reviewController,
       rfqController,
       sellerDashboardController,
