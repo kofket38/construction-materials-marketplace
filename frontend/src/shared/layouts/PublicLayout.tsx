@@ -82,7 +82,10 @@ export function PublicLayout() {
   return (
     <div className="min-h-screen bg-stone-50 text-zinc-950">
       <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-5 px-4 sm:px-6 lg:px-8">
+        {/* Tightened base-scale gaps/padding keep the authenticated customer
+            control cluster inside a 390px viewport without horizontal
+            overflow; larger breakpoints keep the original spacing. */}
+        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-3 px-3 sm:gap-5 sm:px-6 lg:px-8">
           <Link
             aria-label="Construction Materials Marketplace home"
             className="inline-flex shrink-0 items-center gap-3 font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
@@ -410,7 +413,7 @@ export function PublicLayout() {
                 </span>
                 <button
                   aria-label="Sign out"
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                   disabled={isSigningOut}
                   onClick={() => void handleSignOut()}
                   title="Sign out"
