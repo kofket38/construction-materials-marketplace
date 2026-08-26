@@ -62,6 +62,11 @@ export type ProfessionalCredential = Prisma.ProfessionalCredentialModel
  */
 export type PortfolioItem = Prisma.PortfolioItemModel
 /**
+ * Model Project
+ * 
+ */
+export type Project = Prisma.ProjectModel
+/**
  * Model User
  * 
  */

@@ -145,3 +145,14 @@ export const CredentialType = {
 } as const
 
 export type CredentialType = (typeof CredentialType)[keyof typeof CredentialType]
+
+
+export const ProjectStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus]

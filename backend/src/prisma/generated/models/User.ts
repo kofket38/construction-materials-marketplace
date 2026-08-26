@@ -265,6 +265,7 @@ export type UserWhereInput = {
   supplierQuotes?: Prisma.SupplierQuoteListRelationFilter
   sellerInventories?: Prisma.SellerInventoryListRelationFilter
   inventoryTransactions?: Prisma.InventoryTransactionListRelationFilter
+  projects?: Prisma.ProjectListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -293,6 +294,7 @@ export type UserOrderByWithRelationInput = {
   supplierQuotes?: Prisma.SupplierQuoteOrderByRelationAggregateInput
   sellerInventories?: Prisma.SellerInventoryOrderByRelationAggregateInput
   inventoryTransactions?: Prisma.InventoryTransactionOrderByRelationAggregateInput
+  projects?: Prisma.ProjectOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -324,6 +326,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   supplierQuotes?: Prisma.SupplierQuoteListRelationFilter
   sellerInventories?: Prisma.SellerInventoryListRelationFilter
   inventoryTransactions?: Prisma.InventoryTransactionListRelationFilter
+  projects?: Prisma.ProjectListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -392,6 +395,7 @@ export type UserCreateInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -420,6 +424,7 @@ export type UserUncheckedCreateInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -448,6 +453,7 @@ export type UserUpdateInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -476,6 +482,7 @@ export type UserUncheckedUpdateInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -602,6 +609,20 @@ export type UserUpdateOneRequiredWithoutProfessionalProfileNestedInput = {
   upsert?: Prisma.UserUpsertWithoutProfessionalProfileInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProfessionalProfileInput, Prisma.UserUpdateWithoutProfessionalProfileInput>, Prisma.UserUncheckedUpdateWithoutProfessionalProfileInput>
+}
+
+export type UserCreateNestedOneWithoutProjectsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutProjectsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectsInput
+  upsert?: Prisma.UserUpsertWithoutProjectsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProjectsInput, Prisma.UserUpdateWithoutProjectsInput>, Prisma.UserUncheckedUpdateWithoutProjectsInput>
 }
 
 export type EnumRoleFieldUpdateOperationsInput = {
@@ -779,6 +800,7 @@ export type UserCreateWithoutProfessionalProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutProfessionalProfileInput = {
@@ -806,6 +828,7 @@ export type UserUncheckedCreateWithoutProfessionalProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutProfessionalProfileInput = {
@@ -849,6 +872,7 @@ export type UserUpdateWithoutProfessionalProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutProfessionalProfileInput = {
@@ -867,6 +891,135 @@ export type UserUncheckedUpdateWithoutProfessionalProfileInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
+  createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutCustomerNestedInput
+  wishlistItems?: Prisma.WishlistItemUncheckedUpdateManyWithoutCustomerNestedInput
+  rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutCustomerNestedInput
+  supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
+  sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
+  inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutProjectsInput = {
+  id?: string
+  name: string
+  firstName?: string | null
+  lastName?: string | null
+  email: string
+  passwordHash: string
+  phone?: string | null
+  company?: string | null
+  role?: $Enums.Role
+  isActive?: boolean
+  emailVerified?: boolean
+  refreshToken?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sellerProfile?: Prisma.SellerProfileCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileCreateNestedOneWithoutUserInput
+  listedProducts?: Prisma.ProductCreateNestedManyWithoutSellerInput
+  createdProducts?: Prisma.ProductCreateNestedManyWithoutCreatedBySellerInput
+  orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutCustomerInput
+  wishlistItems?: Prisma.WishlistItemCreateNestedManyWithoutCustomerInput
+  rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutCustomerInput
+  supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
+  sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
+  inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+}
+
+export type UserUncheckedCreateWithoutProjectsInput = {
+  id?: string
+  name: string
+  firstName?: string | null
+  lastName?: string | null
+  email: string
+  passwordHash: string
+  phone?: string | null
+  company?: string | null
+  role?: $Enums.Role
+  isActive?: boolean
+  emailVerified?: boolean
+  refreshToken?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sellerProfile?: Prisma.SellerProfileUncheckedCreateNestedOneWithoutUserInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedCreateNestedOneWithoutUserInput
+  listedProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutSellerInput
+  createdProducts?: Prisma.ProductUncheckedCreateNestedManyWithoutCreatedBySellerInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutCustomerInput
+  wishlistItems?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutCustomerInput
+  rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutCustomerInput
+  supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
+  sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
+  inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+}
+
+export type UserCreateOrConnectWithoutProjectsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+}
+
+export type UserUpsertWithoutProjectsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutProjectsInput, Prisma.UserUncheckedUpdateWithoutProjectsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutProjectsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutProjectsInput, Prisma.UserUncheckedUpdateWithoutProjectsInput>
+}
+
+export type UserUpdateWithoutProjectsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sellerProfile?: Prisma.SellerProfileUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUpdateOneWithoutUserNestedInput
+  listedProducts?: Prisma.ProductUpdateManyWithoutSellerNestedInput
+  createdProducts?: Prisma.ProductUpdateManyWithoutCreatedBySellerNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutCustomerNestedInput
+  wishlistItems?: Prisma.WishlistItemUpdateManyWithoutCustomerNestedInput
+  rfqs?: Prisma.RequestForQuoteUpdateManyWithoutCustomerNestedInput
+  supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
+  sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
+  inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutProjectsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sellerProfile?: Prisma.SellerProfileUncheckedUpdateOneWithoutUserNestedInput
+  professionalProfile?: Prisma.ProfessionalProfileUncheckedUpdateOneWithoutUserNestedInput
   listedProducts?: Prisma.ProductUncheckedUpdateManyWithoutSellerNestedInput
   createdProducts?: Prisma.ProductUncheckedUpdateManyWithoutCreatedBySellerNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -903,6 +1056,7 @@ export type UserCreateWithoutSellerProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutSellerProfileInput = {
@@ -930,6 +1084,7 @@ export type UserUncheckedCreateWithoutSellerProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutSellerProfileInput = {
@@ -973,6 +1128,7 @@ export type UserUpdateWithoutSellerProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSellerProfileInput = {
@@ -1000,6 +1156,7 @@ export type UserUncheckedUpdateWithoutSellerProfileInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutListedProductsInput = {
@@ -1027,6 +1184,7 @@ export type UserCreateWithoutListedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutListedProductsInput = {
@@ -1054,6 +1212,7 @@ export type UserUncheckedCreateWithoutListedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutListedProductsInput = {
@@ -1086,6 +1245,7 @@ export type UserCreateWithoutCreatedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutCreatedProductsInput = {
@@ -1113,6 +1273,7 @@ export type UserUncheckedCreateWithoutCreatedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutCreatedProductsInput = {
@@ -1156,6 +1317,7 @@ export type UserUpdateWithoutListedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutListedProductsInput = {
@@ -1183,6 +1345,7 @@ export type UserUncheckedUpdateWithoutListedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUpsertWithoutCreatedProductsInput = {
@@ -1221,6 +1384,7 @@ export type UserUpdateWithoutCreatedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCreatedProductsInput = {
@@ -1248,6 +1412,7 @@ export type UserUncheckedUpdateWithoutCreatedProductsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutSellerInventoriesInput = {
@@ -1275,6 +1440,7 @@ export type UserCreateWithoutSellerInventoriesInput = {
   rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutCustomerInput
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutSellerInventoriesInput = {
@@ -1302,6 +1468,7 @@ export type UserUncheckedCreateWithoutSellerInventoriesInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutCustomerInput
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutSellerInventoriesInput = {
@@ -1345,6 +1512,7 @@ export type UserUpdateWithoutSellerInventoriesInput = {
   rfqs?: Prisma.RequestForQuoteUpdateManyWithoutCustomerNestedInput
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSellerInventoriesInput = {
@@ -1372,6 +1540,7 @@ export type UserUncheckedUpdateWithoutSellerInventoriesInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutCustomerNestedInput
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutOrdersInput = {
@@ -1399,6 +1568,7 @@ export type UserCreateWithoutOrdersInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutOrdersInput = {
@@ -1426,6 +1596,7 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutOrdersInput = {
@@ -1469,6 +1640,7 @@ export type UserUpdateWithoutOrdersInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOrdersInput = {
@@ -1496,6 +1668,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutInventoryTransactionsInput = {
@@ -1523,6 +1696,7 @@ export type UserCreateWithoutInventoryTransactionsInput = {
   rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutCustomerInput
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutInventoryTransactionsInput = {
@@ -1550,6 +1724,7 @@ export type UserUncheckedCreateWithoutInventoryTransactionsInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutCustomerInput
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutInventoryTransactionsInput = {
@@ -1593,6 +1768,7 @@ export type UserUpdateWithoutInventoryTransactionsInput = {
   rfqs?: Prisma.RequestForQuoteUpdateManyWithoutCustomerNestedInput
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutInventoryTransactionsInput = {
@@ -1620,6 +1796,7 @@ export type UserUncheckedUpdateWithoutInventoryTransactionsInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutCustomerNestedInput
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutReviewsInput = {
@@ -1647,6 +1824,7 @@ export type UserCreateWithoutReviewsInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutReviewsInput = {
@@ -1674,6 +1852,7 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutReviewsInput = {
@@ -1717,6 +1896,7 @@ export type UserUpdateWithoutReviewsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsInput = {
@@ -1744,6 +1924,7 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutWishlistItemsInput = {
@@ -1771,6 +1952,7 @@ export type UserCreateWithoutWishlistItemsInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutWishlistItemsInput = {
@@ -1798,6 +1980,7 @@ export type UserUncheckedCreateWithoutWishlistItemsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutWishlistItemsInput = {
@@ -1841,6 +2024,7 @@ export type UserUpdateWithoutWishlistItemsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWishlistItemsInput = {
@@ -1868,6 +2052,7 @@ export type UserUncheckedUpdateWithoutWishlistItemsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutRfqsInput = {
@@ -1895,6 +2080,7 @@ export type UserCreateWithoutRfqsInput = {
   supplierQuotes?: Prisma.SupplierQuoteCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutRfqsInput = {
@@ -1922,6 +2108,7 @@ export type UserUncheckedCreateWithoutRfqsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedCreateNestedManyWithoutSellerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutRfqsInput = {
@@ -1965,6 +2152,7 @@ export type UserUpdateWithoutRfqsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRfqsInput = {
@@ -1992,6 +2180,7 @@ export type UserUncheckedUpdateWithoutRfqsInput = {
   supplierQuotes?: Prisma.SupplierQuoteUncheckedUpdateManyWithoutSellerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutSupplierQuotesInput = {
@@ -2019,6 +2208,7 @@ export type UserCreateWithoutSupplierQuotesInput = {
   rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutCustomerInput
   sellerInventories?: Prisma.SellerInventoryCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutSupplierQuotesInput = {
@@ -2046,6 +2236,7 @@ export type UserUncheckedCreateWithoutSupplierQuotesInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutCustomerInput
   sellerInventories?: Prisma.SellerInventoryUncheckedCreateNestedManyWithoutSellerInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedCreateNestedManyWithoutSellerInput
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutSupplierQuotesInput = {
@@ -2089,6 +2280,7 @@ export type UserUpdateWithoutSupplierQuotesInput = {
   rfqs?: Prisma.RequestForQuoteUpdateManyWithoutCustomerNestedInput
   sellerInventories?: Prisma.SellerInventoryUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSupplierQuotesInput = {
@@ -2116,6 +2308,7 @@ export type UserUncheckedUpdateWithoutSupplierQuotesInput = {
   rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutCustomerNestedInput
   sellerInventories?: Prisma.SellerInventoryUncheckedUpdateManyWithoutSellerNestedInput
   inventoryTransactions?: Prisma.InventoryTransactionUncheckedUpdateManyWithoutSellerNestedInput
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 
@@ -2133,6 +2326,7 @@ export type UserCountOutputType = {
   supplierQuotes: number
   sellerInventories: number
   inventoryTransactions: number
+  projects: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2145,6 +2339,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   supplierQuotes?: boolean | UserCountOutputTypeCountSupplierQuotesArgs
   sellerInventories?: boolean | UserCountOutputTypeCountSellerInventoriesArgs
   inventoryTransactions?: boolean | UserCountOutputTypeCountInventoryTransactionsArgs
+  projects?: boolean | UserCountOutputTypeCountProjectsArgs
 }
 
 /**
@@ -2220,6 +2415,13 @@ export type UserCountOutputTypeCountInventoryTransactionsArgs<ExtArgs extends ru
   where?: Prisma.InventoryTransactionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountProjectsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProjectWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2247,6 +2449,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   supplierQuotes?: boolean | Prisma.User$supplierQuotesArgs<ExtArgs>
   sellerInventories?: boolean | Prisma.User$sellerInventoriesArgs<ExtArgs>
   inventoryTransactions?: boolean | Prisma.User$inventoryTransactionsArgs<ExtArgs>
+  projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -2314,6 +2517,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   supplierQuotes?: boolean | Prisma.User$supplierQuotesArgs<ExtArgs>
   sellerInventories?: boolean | Prisma.User$sellerInventoriesArgs<ExtArgs>
   inventoryTransactions?: boolean | Prisma.User$inventoryTransactionsArgs<ExtArgs>
+  projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2333,6 +2537,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     supplierQuotes: Prisma.$SupplierQuotePayload<ExtArgs>[]
     sellerInventories: Prisma.$SellerInventoryPayload<ExtArgs>[]
     inventoryTransactions: Prisma.$InventoryTransactionPayload<ExtArgs>[]
+    projects: Prisma.$ProjectPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2754,6 +2959,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   supplierQuotes<T extends Prisma.User$supplierQuotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supplierQuotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupplierQuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sellerInventories<T extends Prisma.User$sellerInventoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sellerInventoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SellerInventoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   inventoryTransactions<T extends Prisma.User$inventoryTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$inventoryTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  projects<T extends Prisma.User$projectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3441,6 +3647,30 @@ export type User$inventoryTransactionsArgs<ExtArgs extends runtime.Types.Extensi
   take?: number
   skip?: number
   distinct?: Prisma.InventoryTransactionScalarFieldEnum | Prisma.InventoryTransactionScalarFieldEnum[]
+}
+
+/**
+ * User.projects
+ */
+export type User$projectsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Project
+   */
+  select?: Prisma.ProjectSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Project
+   */
+  omit?: Prisma.ProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  where?: Prisma.ProjectWhereInput
+  orderBy?: Prisma.ProjectOrderByWithRelationInput | Prisma.ProjectOrderByWithRelationInput[]
+  cursor?: Prisma.ProjectWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProjectScalarFieldEnum | Prisma.ProjectScalarFieldEnum[]
 }
 
 /**
