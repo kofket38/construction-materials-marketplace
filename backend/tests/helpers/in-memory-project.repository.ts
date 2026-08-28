@@ -4,6 +4,8 @@ import type {
   CreateProjectInput,
   ProjectEntity,
   ProjectStatus,
+  PublicProjectDetail,
+  PublicProjectItem,
   PublishedProjectQuery,
   PublishedProjectResult,
   UpdateProjectInput,
@@ -23,6 +25,26 @@ function containsInsensitive(
  * state through shared references. */
 function cloneProject(project: ProjectEntity): ProjectEntity {
   return { ...project, images: [...project.images] };
+}
+
+/** Convert an owned ProjectEntity to the public card shape (owner = null in
+ * the test context because the in-memory repo has no professional profile
+ * data). This is the correct behaviour for the test layer. */
+function toPublicItem(project: ProjectEntity): PublicProjectItem {
+  return {
+    id: project.id,
+    title: project.title,
+    description: project.description,
+    projectType: project.projectType,
+    location: project.location,
+    budget: project.budget,
+    startDate: project.startDate,
+    endDate: project.endDate,
+    images: [...project.images],
+    status: project.status,
+    publishedAt: project.publishedAt,
+    owner: null,
+  };
 }
 
 export class InMemoryProjectRepository implements ProjectRepository {
@@ -209,9 +231,17 @@ export class InMemoryProjectRepository implements ProjectRepository {
       (project) => project.status === "PUBLISHED",
     );
 
+    if (query.ownerId !== undefined) {
+      matches = matches.filter((p) => p.ownerId === query.ownerId);
+    }
     if (query.projectType !== undefined) {
       matches = matches.filter((p) =>
         containsInsensitive(p.projectType, query.projectType!),
+      );
+    }
+    if (query.location !== undefined) {
+      matches = matches.filter((p) =>
+        containsInsensitive(p.location, query.location!),
       );
     }
     if (query.search !== undefined) {
@@ -244,13 +274,32 @@ export class InMemoryProjectRepository implements ProjectRepository {
     );
 
     return {
-      projects: page.map(cloneProject),
+      projects: page.map(toPublicItem),
       totalItems,
       totalPages,
       currentPage: query.page,
       pageSize: query.limit,
       hasNextPage: query.page < totalPages,
       hasPreviousPage: query.page > 1,
+    };
+  }
+
+  async findPublicById(projectId: string): Promise<PublicProjectDetail | null> {
+    const project = this.projects.get(projectId);
+    if (!project || project.status !== "PUBLISHED") return null;
+    return {
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      projectType: project.projectType,
+      location: project.location,
+      budget: project.budget,
+      startDate: project.startDate,
+      endDate: project.endDate,
+      images: [...project.images],
+      status: project.status,
+      publishedAt: project.publishedAt,
+      owner: null,
     };
   }
 

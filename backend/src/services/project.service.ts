@@ -6,6 +6,7 @@ import type {
   ProjectEntity,
   ProjectRepository,
   ProjectStatus,
+  PublicProjectDetail,
   PublishedProjectResult,
   UpdateProjectInput,
 } from "../repositories/project.repository.js";
@@ -194,7 +195,24 @@ export class ProjectService {
       ...(input.projectType !== undefined
         ? { projectType: input.projectType }
         : {}),
+      ...(input.location !== undefined ? { location: input.location } : {}),
+      ...(input.ownerId !== undefined ? { ownerId: input.ownerId } : {}),
     });
+  }
+
+  /**
+   * Returns a PUBLISHED project with safe public owner info.
+   * Non-published projects are reported as missing (404) so draft/hidden
+   * existence is never exposed to anonymous callers.
+   */
+  async getPublicProject(projectId: string): Promise<PublicProjectDetail> {
+    const project = await this.projects.findPublicById(projectId);
+
+    if (!project) {
+      throw new NotFoundError("Project not found.");
+    }
+
+    return project;
   }
 
   // ── Lifecycle transitions ─────────────────────────────────────────────────

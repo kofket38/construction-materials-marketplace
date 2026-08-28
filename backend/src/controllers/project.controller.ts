@@ -61,17 +61,29 @@ export class ProjectController {
   /**
    * GET /api/projects/:projectId
    *
-   * Owners may read their project in any status; everyone else only sees
-   * PUBLISHED projects. Non-published projects are reported as missing so
-   * hidden state and existence never leak.
+   * Owners may read their project in any status and receive the full
+   * ProjectEntity shape. Anonymous / non-owner callers receive the enriched
+   * public detail shape (with safe owner info) for PUBLISHED projects only.
+   * Non-published projects are reported as missing so hidden state never leaks.
    */
   getById = async (req: Request, res: Response): Promise<void> => {
     const { projectId } = req.params as ProjectIdParams;
-    const project = await this.service.getProject(
-      req.auth ?? null,
-      projectId,
-    );
 
+    // Authenticated owner: return the full owner project shape.
+    if (req.auth) {
+      const existingProject = await this.service.getProject(req.auth, projectId);
+
+      // Check if the caller is the owner; if so, return the owner shape.
+      // If they are authenticated but NOT the owner and the project is
+      // published, fall through to the public shape below.
+      if (existingProject.ownerId === req.auth.userId) {
+        res.status(200).json({ success: true, data: { project: existingProject } });
+        return;
+      }
+    }
+
+    // Public / non-owner path: return enriched public detail (PUBLISHED only).
+    const project = await this.service.getPublicProject(projectId);
     res.status(200).json({ success: true, data: { project } });
   };
 

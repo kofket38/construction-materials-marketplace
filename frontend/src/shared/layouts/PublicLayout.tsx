@@ -4,6 +4,7 @@ import {
   ClipboardList,
   CreditCard,
   FileText,
+  FolderKanban,
   Heart,
   LayoutDashboard,
   LoaderCircle,
@@ -120,6 +121,9 @@ export function PublicLayout() {
             ) : null}
             <NavLink className={navLinkClassName} to="/professionals">
               Professionals
+            </NavLink>
+            <NavLink className={navLinkClassName} to="/projects">
+              Projects
             </NavLink>
             {status === "authenticated" &&
             user?.role === "CUSTOMER" ? (
@@ -304,6 +308,12 @@ export function PublicLayout() {
                       to="/professionals"
                     />
                     <MobileMenuLink
+                      icon={FolderKanban}
+                      label="Projects"
+                      onClick={() => setIsSellerMenuOpen(false)}
+                      to="/projects"
+                    />
+                    <MobileMenuLink
                       icon={LayoutDashboard}
                       label="Pro Dashboard"
                       onClick={() => setIsSellerMenuOpen(false)}
@@ -344,6 +354,12 @@ export function PublicLayout() {
                       label="Professionals"
                       onClick={() => setIsPrimaryMenuOpen(false)}
                       to="/professionals"
+                    />
+                    <MobileMenuLink
+                      icon={FolderKanban}
+                      label="Projects"
+                      onClick={() => setIsPrimaryMenuOpen(false)}
+                      to="/projects"
                     />
                     {status === "authenticated" &&
                     user?.role === "CUSTOMER" ? (

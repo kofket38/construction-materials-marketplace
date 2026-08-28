@@ -29,6 +29,75 @@ export interface Project {
   updatedAt: string;
 }
 
+// ── Public discovery types ────────────────────────────────────────────────────
+
+/**
+ * Safe professional info attached to a public project card.
+ * Only present when the owner has a PUBLIC professional profile.
+ * Never contains phone, email, userId, or any User-level fields.
+ */
+export interface PublicOwnerInfo {
+  /** ProfessionalProfile.id — links to /professionals/:profileId */
+  profileId: string;
+  displayName: string;
+  headline: string | null;
+  profession: string | null;
+  avatarUrl: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+/** Richer owner info for the public project detail page. */
+export interface PublicOwnerDetailInfo extends PublicOwnerInfo {
+  yearsExperience: number | null;
+  company: string | null;
+  region: string | null;
+  website: string | null;
+  linkedinUrl: string | null;
+  specialties: string[];
+}
+
+/** Published project card shape — no ownerId, no displayOrder, no updatedAt. */
+export interface PublicProjectItem {
+  id: string;
+  title: string;
+  description: string | null;
+  projectType: string | null;
+  location: string | null;
+  budget: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  images: string[];
+  status: ProjectStatus;
+  publishedAt: string | null;
+  owner: PublicOwnerInfo | null;
+}
+
+/** Full public project detail with richer owner info. */
+export interface PublicProjectDetail extends PublicProjectItem {
+  owner: PublicOwnerDetailInfo | null;
+}
+
+export interface PublishedProjectsResult {
+  projects: PublicProjectItem[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface GetPublishedProjectsInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  projectType?: string;
+  location?: string;
+  /** Filter by owner User.id (not profile id). */
+  ownerId?: string;
+}
+
 // ── Input types ───────────────────────────────────────────────────────────────
 
 export interface CreateProjectInput {
@@ -121,4 +190,39 @@ export async function reorderProjects(projectIds: string[]): Promise<Project[]> 
     { projectIds },
   );
   return res.data.data.projects;
+}
+
+// ── Public discovery API calls ────────────────────────────────────────────────
+
+/**
+ * Searches published projects for public/anonymous discovery.
+ * No authentication required. Only PUBLISHED projects are ever returned —
+ * the backend enforces this at the database-query level.
+ */
+export async function getPublishedProjects(
+  input: GetPublishedProjectsInput,
+  signal?: AbortSignal,
+): Promise<PublishedProjectsResult> {
+  const res = await apiClient.get<ApiSuccessResponse<PublishedProjectsResult>>(
+    "/projects",
+    { params: input, signal },
+  );
+  return res.data.data;
+}
+
+/**
+ * Fetches a single published project with safe owner info for the public
+ * detail page. Returns the enriched PublicProjectDetail shape.
+ * Non-published projects return 404 — the backend never reveals their
+ * existence to anonymous callers.
+ */
+export async function getPublicProjectById(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<PublicProjectDetail> {
+  const res = await apiClient.get<ApiSuccessResponse<{ project: PublicProjectDetail }>>(
+    `/projects/${encodeURIComponent(projectId)}`,
+    { signal },
+  );
+  return res.data.data.project;
 }

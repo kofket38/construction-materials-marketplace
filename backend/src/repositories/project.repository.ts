@@ -68,10 +68,67 @@ export interface PublishedProjectQuery {
   limit: number;
   search?: string;
   projectType?: string;
+  /** Filter by project location (case-insensitive substring). */
+  location?: string;
+  /**
+   * Filter by owner User.id. Used by the professional profile page to show
+   * only published projects belonging to a specific professional.
+   * This is deliberately User.id (not ProfessionalProfile.id) because the
+   * Project model's ownerId references the users table directly.
+   */
+  ownerId?: string;
+}
+
+// ── Public owner information (safe subset for unauthenticated consumers) ──────
+
+/**
+ * Minimal safe professional info attached to a published project card.
+ * Only returned when the owner has a PUBLIC professional profile.
+ * Fields that must NEVER appear: phone, email, userId, and any User fields.
+ */
+export interface PublicOwnerInfo {
+  /** ProfessionalProfile.id — the correct public identifier for /professionals/:profileId */
+  profileId: string;
+  displayName: string;
+  headline: string | null;
+  profession: string | null;
+  avatarUrl: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+/** Richer safe owner info for the public project detail page. */
+export interface PublicOwnerDetailInfo extends PublicOwnerInfo {
+  yearsExperience: number | null;
+  company: string | null;
+  region: string | null;
+  website: string | null;
+  linkedinUrl: string | null;
+  specialties: string[];
+}
+
+/** A published project card enriched with safe owner info. */
+export interface PublicProjectItem extends Omit<ProjectEntity,
+  | "ownerId"
+  | "displayOrder"
+  | "updatedAt"
+  | "createdAt"
+> {
+  owner: PublicOwnerInfo | null;
+}
+
+/** Full published project detail enriched with safe detailed owner info. */
+export interface PublicProjectDetail extends Omit<ProjectEntity,
+  | "ownerId"
+  | "displayOrder"
+  | "updatedAt"
+  | "createdAt"
+> {
+  owner: PublicOwnerDetailInfo | null;
 }
 
 export interface PublishedProjectResult {
-  projects: ProjectEntity[];
+  projects: PublicProjectItem[];
   totalItems: number;
   totalPages: number;
   currentPage: number;
@@ -141,6 +198,15 @@ export interface ProjectRepository {
    * and CANCELLED projects can never leak through any filter combination.
    * Results are ordered by most recently published first, with the project
    * ID as the deterministic tie-breaker.
+   * The response shape is the public card shape (no ownerId, no displayOrder,
+   * includes safe owner info when the owner has a PUBLIC professional profile).
    */
   searchPublished(query: PublishedProjectQuery): Promise<PublishedProjectResult>;
+
+  /**
+   * Fetch a single PUBLISHED project by ID with enriched safe owner info for
+   * the public detail page. Returns null when not found or not published.
+   * The caller (service) is responsible for the 404 error.
+   */
+  findPublicById(projectId: string): Promise<PublicProjectDetail | null>;
 }

@@ -8,6 +8,10 @@ import type {
   CreateProjectInput,
   ProjectEntity,
   ProjectStatus,
+  PublicOwnerDetailInfo,
+  PublicOwnerInfo,
+  PublicProjectDetail,
+  PublicProjectItem,
   PublishedProjectQuery,
   PublishedProjectResult,
   ProjectRepository,
@@ -35,6 +39,84 @@ const projectSelect = {
 } as const;
 
 /**
+ * Public select for list cards: includes owner → professionalProfile via the
+ * users relation. Deliberately excludes ownerId, displayOrder, updatedAt,
+ * createdAt, and every private User/ProfessionalProfile field.
+ */
+const publicProjectCardSelect = {
+  id: true,
+  title: true,
+  description: true,
+  projectType: true,
+  location: true,
+  budget: true,
+  startDate: true,
+  endDate: true,
+  images: true,
+  status: true,
+  publishedAt: true,
+  owner: {
+    select: {
+      professionalProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          headline: true,
+          profession: true,
+          avatarUrl: true,
+          city: true,
+          country: true,
+          visibility: true,
+        },
+      },
+    },
+  },
+} as const;
+
+/**
+ * Public select for the detail page: includes the richer professional
+ * profile fields (region, website, linkedinUrl, specialties).
+ */
+const publicProjectDetailSelect = {
+  id: true,
+  title: true,
+  description: true,
+  projectType: true,
+  location: true,
+  budget: true,
+  startDate: true,
+  endDate: true,
+  images: true,
+  status: true,
+  publishedAt: true,
+  owner: {
+    select: {
+      professionalProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          headline: true,
+          profession: true,
+          avatarUrl: true,
+          city: true,
+          region: true,
+          country: true,
+          website: true,
+          linkedinUrl: true,
+          yearsExperience: true,
+          company: true,
+          visibility: true,
+          specialties: {
+            select: { name: true },
+            orderBy: { name: "asc" as const },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+/**
  * Deterministic owner listing order: explicit position first, newest projects
  * next within the same position, project ID as the stable tie-breaker.
  */
@@ -56,10 +138,19 @@ function publishedProjectWhere(
     // filter lives at the database-query level so DRAFT and non-published
     // lifecycle states can never leak through search, filters, or pagination.
     status: PrismaProjectStatus.PUBLISHED,
+    ...(query.ownerId !== undefined ? { ownerId: query.ownerId } : {}),
     ...(query.projectType !== undefined
       ? {
           projectType: {
             contains: query.projectType,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+    ...(query.location !== undefined
+      ? {
+          location: {
+            contains: query.location,
             mode: "insensitive" as const,
           },
         }
@@ -117,6 +208,81 @@ function mapProject(
     publishedAt: row.publishedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  };
+}
+
+// ── Public mappers ────────────────────────────────────────────────────────────
+
+type PublicCardRow = Prisma.ProjectGetPayload<{
+  select: typeof publicProjectCardSelect;
+}>;
+type PublicDetailRow = Prisma.ProjectGetPayload<{
+  select: typeof publicProjectDetailSelect;
+}>;
+
+function mapPublicCardBase(row: PublicCardRow | PublicDetailRow) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    projectType: row.projectType,
+    location: row.location,
+    budget: row.budget !== null ? row.budget.toFixed(2) : null,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    images: [...row.images],
+    status: row.status as ProjectStatus,
+    publishedAt: row.publishedAt,
+  };
+}
+
+function mapPublicOwnerCard(
+  profile: PublicCardRow["owner"]["professionalProfile"],
+): PublicOwnerInfo | null {
+  if (!profile || profile.visibility !== "PUBLIC") return null;
+  return {
+    profileId: profile.id,
+    displayName: profile.displayName,
+    headline: profile.headline,
+    profession: profile.profession,
+    avatarUrl: profile.avatarUrl,
+    city: profile.city,
+    country: profile.country,
+  };
+}
+
+function mapPublicOwnerDetail(
+  profile: PublicDetailRow["owner"]["professionalProfile"],
+): PublicOwnerDetailInfo | null {
+  if (!profile || profile.visibility !== "PUBLIC") return null;
+  return {
+    profileId: profile.id,
+    displayName: profile.displayName,
+    headline: profile.headline,
+    profession: profile.profession,
+    avatarUrl: profile.avatarUrl,
+    city: profile.city,
+    region: profile.region,
+    country: profile.country,
+    website: profile.website,
+    linkedinUrl: profile.linkedinUrl,
+    yearsExperience: profile.yearsExperience,
+    company: profile.company,
+    specialties: profile.specialties.map((s) => s.name),
+  };
+}
+
+function mapPublicCard(row: PublicCardRow): PublicProjectItem {
+  return {
+    ...mapPublicCardBase(row),
+    owner: mapPublicOwnerCard(row.owner.professionalProfile),
+  };
+}
+
+function mapPublicDetail(row: PublicDetailRow): PublicProjectDetail {
+  return {
+    ...mapPublicCardBase(row),
+    owner: mapPublicOwnerDetail(row.owner.professionalProfile),
   };
 }
 
@@ -307,7 +473,7 @@ export class PrismaProjectRepository implements ProjectRepository {
         this.client.project.count({ where }),
         this.client.project.findMany({
           where,
-          select: projectSelect,
+          select: publicProjectCardSelect,
           orderBy: publishedProjectOrderBy(),
           skip: (query.page - 1) * query.limit,
           take: query.limit,
@@ -319,7 +485,7 @@ export class PrismaProjectRepository implements ProjectRepository {
     const totalPages = Math.ceil(totalItems / query.limit);
 
     return {
-      projects: rows.map(mapProject),
+      projects: rows.map(mapPublicCard),
       totalItems,
       totalPages,
       currentPage: query.page,
@@ -327,5 +493,19 @@ export class PrismaProjectRepository implements ProjectRepository {
       hasNextPage: query.page < totalPages,
       hasPreviousPage: query.page > 1,
     };
+  }
+
+  async findPublicById(projectId: string): Promise<PublicProjectDetail | null> {
+    const row = await this.client.project.findUnique({
+      where: {
+        id: projectId,
+        // Security: only return PUBLISHED projects through this method.
+        // Non-published projects are invisible to public consumers.
+        status: PrismaProjectStatus.PUBLISHED,
+      },
+      select: publicProjectDetailSelect,
+    });
+
+    return row ? mapPublicDetail(row) : null;
   }
 }

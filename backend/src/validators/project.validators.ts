@@ -161,6 +161,16 @@ const projectTypeFilterSchema = z
   .min(1, "Project type filter cannot be empty.")
   .max(150, "Project type filter must be 150 characters or fewer.");
 
+const locationFilterSchema = z
+  .string()
+  .trim()
+  .min(1, "Location filter cannot be empty.")
+  .max(200, "Location filter must be 200 characters or fewer.");
+
+const ownerIdFilterSchema = z
+  .string()
+  .uuid("ownerId must be a valid UUID.");
+
 export const listPublishedProjectsQuerySchema = z
   .object({
     page: positiveIntegerQuerySchema
@@ -174,6 +184,8 @@ export const listPublishedProjectsQuerySchema = z
       .optional(),
     search: projectSearchSchema.optional(),
     projectType: projectTypeFilterSchema.optional(),
+    location: locationFilterSchema.optional(),
+    ownerId: ownerIdFilterSchema.optional(),
   })
   .strict();
 

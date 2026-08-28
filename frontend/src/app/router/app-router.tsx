@@ -30,6 +30,8 @@ import { ProfessionalLayout } from "@/features/professional-profile/layouts/Prof
 import { CreateProjectPage } from "@/features/projects/pages/CreateProjectPage";
 import { MyProjectsPage } from "@/features/projects/pages/MyProjectsPage";
 import { ProjectDetailPage } from "@/features/projects/pages/ProjectDetailPage";
+import { PublicProjectsPage } from "@/features/projects/pages/PublicProjectsPage";
+import { PublicProjectDetailPage } from "@/features/projects/pages/PublicProjectDetailPage";
 import { CreateRfqPage } from "@/features/rfq/pages/CreateRfqPage";
 import { MyRfqsPage } from "@/features/rfq/pages/MyRfqsPage";
 import { RfqDetailPage } from "@/features/rfq/pages/RfqDetailPage";
@@ -248,6 +250,16 @@ export const appRouter = createBrowserRouter([
           {
             path: "professionals/:profileId",
             element: <ProfessionalProfilePage />,
+          },
+
+          // ── Public project discovery ──────────────────────────────────────
+          {
+            path: "projects",
+            element: <PublicProjectsPage />,
+          },
+          {
+            path: "projects/:projectId",
+            element: <PublicProjectDetailPage />,
           },
 
           {
