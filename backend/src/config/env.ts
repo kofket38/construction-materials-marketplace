@@ -25,9 +25,12 @@ const environmentSchema = z
       .trim()
       .min(1)
       .default("uploads/payment-proofs"),
-    // ── Supabase Storage (production only) ─────────────────────────────────
+    // ── Supabase Storage ────────────────────────────────────────────────────
     // When all three are present the backend uses SupabasePaymentProofStorage.
-    // The service-role key must NEVER appear in any VITE_* variable.
+    // In production all three are REQUIRED — the local filesystem fallback is
+    // ephemeral on Render and would silently lose payment-proof files on
+    // every redeploy. The service-role key must NEVER appear in any VITE_*
+    // variable.
     SUPABASE_URL: z.string().url().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
     SUPABASE_STORAGE_BUCKET: z.string().min(1).optional(),
@@ -37,6 +40,20 @@ const environmentSchema = z
     {
       message: "JWT access and refresh secrets must be different.",
       path: ["JWT_REFRESH_SECRET"],
+    },
+  )
+  .refine(
+    (values) =>
+      values.NODE_ENV !== "production" ||
+      (Boolean(values.SUPABASE_URL) &&
+        Boolean(values.SUPABASE_SERVICE_ROLE_KEY) &&
+        Boolean(values.SUPABASE_STORAGE_BUCKET)),
+    {
+      message:
+        "SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET " +
+        "are required in production. The local filesystem fallback is not " +
+        "suitable for production on Render because the filesystem is ephemeral.",
+      path: ["SUPABASE_URL"],
     },
   );
 

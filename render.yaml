@@ -11,7 +11,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false           # Supplied via Render dashboard (Supabase session-pooler URL)
+        sync: false           # Supabase session-pooler URL (port 6543) — used by the app at runtime
+      - key: DIRECT_URL
+        sync: false           # Supabase direct connection URL (port 5432) — required by prisma migrate deploy
       - key: JWT_ACCESS_SECRET
         generateValue: true   # Or supply via dashboard — must be ≥32 chars
       - key: JWT_REFRESH_SECRET

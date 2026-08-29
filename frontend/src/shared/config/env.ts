@@ -1,10 +1,13 @@
 import { z } from "zod";
 
 const frontendEnvironmentSchema = z.object({
+  // Default to localhost so local development builds never accidentally hit
+  // the production API when VITE_API_BASE_URL is not set. On Render the
+  // actual production URL is injected via the dashboard env var.
   VITE_API_BASE_URL: z
     .string()
     .url()
-   .default("https://cmm-backend-j0op.onrender.com/api")
+    .default("http://localhost:3000/api")
     .transform((value) => value.replace(/\/+$/, "")),
   VITE_API_TIMEOUT_MS: z.coerce
     .number()

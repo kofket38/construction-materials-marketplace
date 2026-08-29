@@ -3,4 +3,5 @@
 products-smoke*.png
 frontend/.edge-*/
 frontend/screenshots/
+frontend/dist/
 backend/uploads/
