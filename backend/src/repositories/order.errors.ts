@@ -62,3 +62,17 @@ export class OrderStateChangedError extends Error {
     this.name = "OrderStateChangedError";
   }
 }
+
+/**
+ * Raised when PostgreSQL aborts a Serializable transaction due to a
+ * concurrent write conflict (error code P2034 / sqlstate 40001). The caller
+ * should ask the client to retry the request.
+ */
+export class OrderSerializationError extends Error {
+  constructor() {
+    super(
+      "Another order was placed at the same time. Please try again.",
+    );
+    this.name = "OrderSerializationError";
+  }
+}

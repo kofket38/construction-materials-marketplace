@@ -10,6 +10,7 @@ import {
   OrderCustomerNotFoundError,
   OrderNotPendingError,
   OrderProductNotFoundError,
+  OrderSerializationError,
   OrderStateChangedError,
   OrderTerminalStatusError,
   OwnProductOrderError,
@@ -172,8 +173,22 @@ export class PrismaOrderRepository implements OrderRepository {
         await reserveOrderInventory(transaction, order.id, input.items);
 
         return mapOrder(order);
-      }, { timeout: 30_000, maxWait: 10_000 });
+      }, {
+        // Serializable isolation prevents two concurrent orders from both
+        // reading the same inventory quantity, both passing the stock check,
+        // and both deducting — the classic TOCTOU race. PostgreSQL will abort
+        // one transaction with error code P2034 (serialization failure /
+        // sqlstate 40001); we translate that into a user-facing conflict error.
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 30_000,
+        maxWait: 10_000,
+      });
     } catch (error) {
+      // P2034 = serialization failure or deadlock — safe to surface as a
+      // conflict so the client can retry.
+      if (hasPrismaCode(error, "P2034")) {
+        throw new OrderSerializationError();
+      }
       if (hasPrismaCode(error, "P2003")) {
         throw new OrderCustomerNotFoundError();
       }

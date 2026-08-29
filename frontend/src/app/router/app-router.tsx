@@ -107,15 +107,14 @@ export const appRouter = createBrowserRouter([
             element: <CartPage />,
           },
 
-          {
-            path: "checkout",
-            element: <CheckoutPage />,
-          },
-
           // ── Authenticated buyer routes ───────────────────────────────────
           {
             element: <RequireRole role="CUSTOMER" />,
             children: [
+              {
+                path: "checkout",
+                element: <CheckoutPage />,
+              },
               {
                 path: "orders",
                 element: <MyOrdersPage />,

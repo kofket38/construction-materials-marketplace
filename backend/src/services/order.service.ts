@@ -4,6 +4,7 @@ import {
   OrderCustomerNotFoundError,
   OrderNotPendingError,
   OrderProductNotFoundError,
+  OrderSerializationError,
   OrderStateChangedError,
   OrderTerminalStatusError,
   OwnProductOrderError,
@@ -270,6 +271,11 @@ export class OrderService {
       error instanceof OrderTerminalStatusError ||
       error instanceof OrderStateChangedError
     ) {
+      throw new ConflictError(error.message);
+    }
+    // P2034 serialization failure: two concurrent orders competed for the
+    // same inventory. Surface as 409 so the client can safely retry.
+    if (error instanceof OrderSerializationError) {
       throw new ConflictError(error.message);
     }
 

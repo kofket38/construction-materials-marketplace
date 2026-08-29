@@ -375,7 +375,9 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     });
   });
 
-  // Health endpoint
+  // Health endpoint — includes a lightweight database connectivity probe so
+  // Render's health check detects database-down scenarios, not just process
+  // crashes. Returns 503 when the database is unreachable.
   app.get(
     "/health",
     validateRequest({
@@ -383,11 +385,19 @@ export function createApp(dependencies: AppDependencies = {}): Express {
       params: emptyObjectSchema,
       query: emptyObjectSchema,
     }),
-    (_req, res) => {
-      res.status(200).json({
-        success: true,
-        data: { status: "ok" },
-      });
+    async (_req, res) => {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.status(200).json({
+          success: true,
+          data: { status: "ok" },
+        });
+      } catch {
+        res.status(503).json({
+          success: false,
+          data: { status: "unavailable" },
+        });
+      }
     },
   );
 

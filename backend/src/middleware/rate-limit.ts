@@ -34,11 +34,12 @@ export function createAuthRateLimiter(options?: { forceEnable?: boolean }) {
     legacyHeaders: false,
     // Successful auth requests do not consume the brute-force budget.
     skipSuccessfulRequests: true,
-    // Bypass the limiter in non-production environments so local development
-    // and automated test suites are not blocked by the 20-request cap.
+    // Bypass the limiter only in the automated test environment so local
+    // development, staging, and production are all protected against
+    // brute-force attacks.
     // Pass forceEnable:true in tests that specifically verify rate-limit
     // behaviour without needing to change NODE_ENV.
-    skip: forceEnable ? () => false : () => env.NODE_ENV !== "production",
+    skip: forceEnable ? () => false : () => env.NODE_ENV === "test",
     handler: rateLimitHandler,
   });
 }

@@ -133,6 +133,7 @@ export function createProductRouter(
   router.put(
     "/:id",
     requireAuthentication,
+    authorizeRoles("SELLER"),
     validateRequest({
       body: updateProductBodySchema,
       params: productIdParamsSchema,
@@ -144,6 +145,7 @@ export function createProductRouter(
   router.delete(
     "/:id",
     requireAuthentication,
+    authorizeRoles("SELLER"),
     validateRequest({
       body: emptyProductObjectSchema,
       params: productIdParamsSchema,
