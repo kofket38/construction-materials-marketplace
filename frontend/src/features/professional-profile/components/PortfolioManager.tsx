@@ -107,6 +107,7 @@ export function PortfolioManagerSection({
     <section
       aria-labelledby="portfolio-heading"
       className="border-t border-zinc-200 pt-6"
+      id="portfolio"
     >
       <div className="flex items-center justify-between gap-4 pb-4">
         <div className="flex items-center gap-2">

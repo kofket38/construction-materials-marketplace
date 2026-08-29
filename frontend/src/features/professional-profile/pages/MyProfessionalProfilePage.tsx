@@ -100,6 +100,23 @@ const OWN_PROFILE_KEY = ["professional-profile", "me"] as const;
 
 export function MyProfessionalProfilePage() {
   // Route protection (authentication) is handled by RequireAuth in the router.
+
+  // React Router v6 does not auto-scroll to hash fragments on client-side
+  // navigation. When the page receives a hash (e.g. #portfolio from the
+  // sidebar link), scroll to the matching element after the page renders.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    // Defer one tick so the page has rendered before we try to find the element.
+    const id = setTimeout(() => {
+      const el = document.getElementById(hash.slice(1));
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, []);
+
   return <ProfileContent isAuthenticated />;
 }
 

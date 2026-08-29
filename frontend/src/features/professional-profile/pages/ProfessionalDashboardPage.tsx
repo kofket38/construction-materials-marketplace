@@ -13,6 +13,7 @@ import {
   FilePlus2,
   FolderKanban,
   Globe,
+  Images,
   LayoutDashboard,
   Link2,
   LoaderCircle,
@@ -27,7 +28,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
-import { getOwnProfessionalProfile } from "@/features/professional-profile/api/professional-profile.api";
+import {
+  getOwnProfessionalProfile,
+  listProfessionalPortfolio,
+} from "@/features/professional-profile/api/professional-profile.api";
 import type { ProfessionalProfile } from "@/features/professional-profile/api/professional-profile.api";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
@@ -136,6 +140,15 @@ function EmptyProfileState() {
 function PopulatedDashboard({ profile }: { profile: ProfessionalProfile }) {
   const completion = computeCompletion(profile);
 
+  // Portfolio count — uses the same cache key as PortfolioManagerSection so
+  // the result is shared when both components are mounted (no duplicate fetch).
+  const portfolioQuery = useQuery({
+    queryKey: ["professional-profile", "me", "portfolio"] as const,
+    queryFn: ({ signal }) => listProfessionalPortfolio(profile.id, signal),
+    staleTime: 30_000,
+  });
+  const portfolioCount = portfolioQuery.data?.length;
+
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)_18rem]">
       {/* ── LEFT: Profile summary card ──────────────────────────────────── */}
@@ -151,7 +164,7 @@ function PopulatedDashboard({ profile }: { profile: ProfessionalProfile }) {
 
       {/* ── RIGHT: Stats + links ────────────────────────────────────────── */}
       <aside className="space-y-5">
-        <StatsCard profile={profile} />
+        <StatsCard profile={profile} portfolioCount={portfolioCount} />
         <ProfileCompletionCard completion={completion} />
       </aside>
     </div>
@@ -435,6 +448,12 @@ function QuickActionsSection({ profile }: { profile: ProfessionalProfile }) {
       to: "/profile/professional",
     },
     {
+      icon: Images,
+      label: "Manage portfolio",
+      description: "Add and manage your project showcase",
+      to: "/profile/professional#portfolio",
+    },
+    {
       icon: Sparkles,
       label: "Manage specialties",
       description: `${profile.specialties.length} specialt${profile.specialties.length === 1 ? "y" : "ies"} added`,
@@ -498,7 +517,13 @@ function QuickActionCard({
 
 // ── Stats card (right column) ─────────────────────────────────────────────────
 
-function StatsCard({ profile }: { profile: ProfessionalProfile }) {
+function StatsCard({
+  portfolioCount,
+  profile,
+}: {
+  portfolioCount: number | undefined;
+  profile: ProfessionalProfile;
+}) {
   const stats = [
     {
       label: "Specialties",
@@ -509,6 +534,12 @@ function StatsCard({ profile }: { profile: ProfessionalProfile }) {
       label: "Credentials",
       value: profile.credentials.length,
       icon: Award,
+    },
+    {
+      label: "Portfolio items",
+      // Show "—" while the portfolio query is loading so the card stays stable.
+      value: portfolioCount !== undefined ? portfolioCount : "—",
+      icon: Images,
     },
     {
       label: "Years experience",

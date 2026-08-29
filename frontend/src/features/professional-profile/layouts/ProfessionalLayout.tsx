@@ -1,6 +1,7 @@
 import {
   FilePlus2,
   FolderKanban,
+  Images,
   LayoutDashboard,
   Package,
   Pencil,
@@ -38,6 +39,11 @@ const PROFESSIONAL_NAV_GROUPS: DashboardNavGroup[] = [
         label: "Edit Profile",
         href: "/profile/professional",
         icon: Pencil,
+      },
+      {
+        label: "Portfolio",
+        href: "/profile/professional#portfolio",
+        icon: Images,
       },
     ],
   },
