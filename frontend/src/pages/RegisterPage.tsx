@@ -1,13 +1,45 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle, UserPlus } from "lucide-react";
+import { Briefcase, HardHat, LoaderCircle, ShoppingCart, UserPlus } from "lucide-react";
+import { useState } from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { register as registerAccount } from "@/features/auth/api/auth.api";
+import type { RegistrationRole } from "@/features/auth/model/auth.types";
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { defaultFormOptions } from "@/shared/forms/form-config";
+
+// ── Role picker configuration ─────────────────────────────────────────────────
+
+const ROLE_OPTIONS: ReadonlyArray<{
+  role: RegistrationRole;
+  icon: typeof ShoppingCart;
+  title: string;
+  description: string;
+}> = [
+  {
+    role: "CUSTOMER",
+    icon: ShoppingCart,
+    title: "Customer / Buyer",
+    description: "Browse and purchase construction materials",
+  },
+  {
+    role: "SELLER",
+    icon: HardHat,
+    title: "Seller / Supplier",
+    description: "List products and sell construction materials",
+  },
+  {
+    role: "PROFESSIONAL",
+    icon: Briefcase,
+    title: "Professional",
+    description: "Showcase your expertise, services, and projects",
+  },
+];
+
+// ── RHF schema — role is managed via local state, not RHF ────────────────────
 
 const registrationSchema = z.object({
   name: z
@@ -23,7 +55,6 @@ const registrationSchema = z.object({
     .regex(/[a-z]/, "Password must contain a lowercase letter.")
     .regex(/[A-Z]/, "Password must contain an uppercase letter.")
     .regex(/[0-9]/, "Password must contain a number."),
-  role: z.enum(["CUSTOMER", "SELLER"]),
   phone: z
     .string()
     .trim()
@@ -36,11 +67,18 @@ const registrationSchema = z.object({
 
 type RegistrationFormValues = z.infer<typeof registrationSchema>;
 
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const setSession = useAuthStore((state) => state.setSession);
+
+  // UI-only role selection. PROFESSIONAL maps to CUSTOMER on the wire — see
+  // auth.api.ts. ADMIN is intentionally absent from ROLE_OPTIONS.
+  const [selectedRole, setSelectedRole] = useState<RegistrationRole>("CUSTOMER");
+
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
@@ -54,7 +92,6 @@ export function RegisterPage() {
       name: "",
       password: "",
       phone: "",
-      role: "CUSTOMER",
     },
     resolver: zodResolver(registrationSchema),
   });
@@ -63,9 +100,7 @@ export function RegisterPage() {
     return (
       <Navigate
         replace
-        to={
-          user.role === "SELLER" ? "/seller/inventory" : "/products"
-        }
+        to={user.role === "SELLER" ? "/seller/inventory" : "/products"}
       />
     );
   }
@@ -75,19 +110,25 @@ export function RegisterPage() {
     const phone = values.phone.trim();
 
     try {
+      // auth.api.ts maps PROFESSIONAL → CUSTOMER before the HTTP request.
+      // The backend never receives PROFESSIONAL as a role value.
       const session = await registerAccount({
         name: values.name.trim(),
         email: values.email.trim().toLowerCase(),
         password: values.password,
-        role: values.role,
+        role: selectedRole,
         ...(company ? { company } : {}),
         ...(phone ? { phone } : {}),
       });
       setSession(session);
+      // Post-registration redirect is based on the UI role selection, NOT
+      // session.user.role, because PROFESSIONAL creates a CUSTOMER account.
       navigate(
-        session.user.role === "SELLER"
+        selectedRole === "SELLER"
           ? "/seller/inventory"
-          : "/products",
+          : selectedRole === "PROFESSIONAL"
+            ? "/profile/professional"
+            : "/products",
         { replace: true },
       );
     } catch (error) {
@@ -116,8 +157,48 @@ export function RegisterPage() {
           Create your account
         </h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600">
-          Join as a customer or supplier.
+          Choose how you'll use CMM.
         </p>
+
+        {/* ── Role picker ──────────────────────────────────────────────────── */}
+        <div
+          aria-label="Account type"
+          className="mt-6 grid gap-3 sm:grid-cols-3"
+          role="group"
+        >
+          {ROLE_OPTIONS.map(({ role, icon: Icon, title, description }) => {
+            const isSelected = selectedRole === role;
+            return (
+              <button
+                aria-pressed={isSelected}
+                className={`flex flex-col items-start gap-2 rounded-md border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${
+                  isSelected
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-900"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                }`}
+                key={role}
+                onClick={() => setSelectedRole(role)}
+                type="button"
+              >
+                <span
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
+                    isSelected
+                      ? "bg-emerald-700 text-white"
+                      : "bg-zinc-100 text-zinc-500"
+                  }`}
+                >
+                  <Icon aria-hidden="true" className="size-4" />
+                </span>
+                <span className="text-sm font-semibold leading-tight">
+                  {title}
+                </span>
+                <span className="text-xs leading-snug text-zinc-500">
+                  {description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {errors.root?.message ? (
           <div
@@ -128,6 +209,7 @@ export function RegisterPage() {
           </div>
         ) : null}
 
+        {/* ── Registration form ─────────────────────────────────────────────── */}
         <form
           className="mt-6 grid gap-5 sm:grid-cols-2"
           noValidate
@@ -181,23 +263,6 @@ export function RegisterPage() {
           <div>
             <label
               className="block text-sm font-medium text-zinc-800"
-              htmlFor="role"
-            >
-              Account type
-            </label>
-            <select
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
-              id="role"
-              {...register("role")}
-            >
-              <option value="CUSTOMER">Customer</option>
-              <option value="SELLER">Supplier</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              className="block text-sm font-medium text-zinc-800"
               htmlFor="phone"
             >
               Phone{" "}
@@ -219,7 +284,7 @@ export function RegisterPage() {
             ) : null}
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <label
               className="block text-sm font-medium text-zinc-800"
               htmlFor="company"

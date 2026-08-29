@@ -1,5 +1,13 @@
 export type UserRole = "CUSTOMER" | "SELLER" | "ADMIN";
 
+/**
+ * UI-only registration role. PROFESSIONAL is a product-level concept that
+ * creates a CUSTOMER account and redirects to professional profile onboarding.
+ * It must NEVER be sent to the backend — auth.api.ts maps it to "CUSTOMER"
+ * before the API request.
+ */
+export type RegistrationRole = "CUSTOMER" | "SELLER" | "PROFESSIONAL";
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -30,5 +38,9 @@ export interface RegisterInput {
   password: string;
   phone?: string;
   company?: string;
-  role: Exclude<UserRole, "ADMIN">;
+  /**
+   * The UI registration role. PROFESSIONAL maps to CUSTOMER on the wire.
+   * auth.api.ts performs the mapping — the backend never receives PROFESSIONAL.
+   */
+  role: RegistrationRole;
 }
