@@ -21,7 +21,7 @@ export function createPaymentRouter(
   router.post(
     "/options",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: checkoutPaymentOptionsBodySchema,
       params: emptyPaymentObjectSchema,
@@ -33,7 +33,7 @@ export function createPaymentRouter(
   router.post(
     "/manual",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     uploadPaymentProof,
     validateRequest({
       body: submitManualPaymentBodySchema,
@@ -47,7 +47,7 @@ export function createPaymentRouter(
   router.get(
     "/proof/:filename",
     requireAuthentication,
-    authorizeRoles("CUSTOMER", "SELLER", "ADMIN"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL", "SELLER", "ADMIN"),
     validateRequest({
       body: emptyPaymentObjectSchema,
       params: paymentFilenameParamsSchema,
@@ -59,7 +59,7 @@ export function createPaymentRouter(
   router.get(
     "/:orderId",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyPaymentObjectSchema,
       params: paymentOrderIdParamsSchema,

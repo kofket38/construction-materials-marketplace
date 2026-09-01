@@ -17,7 +17,7 @@ export function createWishlistRouter(
   router.get(
     "/",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyWishlistObjectSchema,
       params: emptyWishlistObjectSchema,
@@ -29,7 +29,7 @@ export function createWishlistRouter(
   router.post(
     "/:productId",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyWishlistObjectSchema,
       params: wishlistProductIdParamsSchema,
@@ -41,7 +41,7 @@ export function createWishlistRouter(
   router.delete(
     "/:productId",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyWishlistObjectSchema,
       params: wishlistProductIdParamsSchema,

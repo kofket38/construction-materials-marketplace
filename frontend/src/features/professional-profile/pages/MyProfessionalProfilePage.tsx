@@ -99,8 +99,6 @@ const OWN_PROFILE_KEY = ["professional-profile", "me"] as const;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function MyProfessionalProfilePage() {
-  // Route protection (authentication) is handled by RequireAuth in the router.
-
   // React Router v6 does not auto-scroll to hash fragments on client-side
   // navigation. When the page receives a hash (e.g. #portfolio from the
   // sidebar link), scroll to the matching element after the page renders.

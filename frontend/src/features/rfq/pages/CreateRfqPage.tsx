@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { createRfq } from "@/features/rfq/api/rfq.api";
 import { RFQ_UNIT_LABELS, RFQ_UNITS, type RfqItemInput, type RfqUnit } from "@/features/rfq/model/rfq";
 import { getMarketplaceCategories } from "@/features/marketplace/api/marketplace.api";
@@ -58,7 +59,7 @@ export function CreateRfqPage() {
   if (authStatus !== "authenticated" || !user) {
     return <Navigate replace state={{ returnTo: "/rfqs/new" }} to="/login" />;
   }
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return <Navigate replace to="/products" />;
   }
 

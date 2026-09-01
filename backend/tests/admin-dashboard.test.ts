@@ -9,6 +9,7 @@ import { InMemoryUserRepository } from "./helpers/in-memory-user.repository.js";
 
 const adminId = randomUUID();
 const customerId = randomUUID();
+const professionalId = randomUUID();
 const firstSellerId = randomUUID();
 const secondSellerId = randomUUID();
 const cementCategoryId = randomUUID();
@@ -53,8 +54,8 @@ describe("Admin Dashboard API", () => {
     const response = await adminGet("/api/admin/dashboard").expect(200);
 
     expect(response.body.data.dashboard).toMatchObject({
-      totalUsers: 4,
-      totalCustomers: 1,
+      totalUsers: 5,
+      totalCustomers: 2,
       totalSellers: 2,
       totalProducts: 4,
       totalCategories: 2,
@@ -317,6 +318,14 @@ describe("Admin Dashboard API", () => {
       company: "Alice Construction",
       role: "CUSTOMER",
       createdAt: dateInCurrentUtcMonth(11),
+    });
+    users.addUser({
+      id: professionalId,
+      name: "Peter Professional",
+      email: "peter@example.com",
+      company: "Peter Contractors",
+      role: "PROFESSIONAL",
+      createdAt: dateInCurrentUtcMonth(9),
     });
     users.addUser({
       id: firstSellerId,

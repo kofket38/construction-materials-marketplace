@@ -11,7 +11,12 @@ import { UnauthorizedError } from "../utils/api-error.js";
 
 const TOKEN_ISSUER = "cmm-api";
 const TOKEN_AUDIENCE = "cmm-client";
-const USER_ROLES: readonly UserRole[] = ["CUSTOMER", "SELLER", "ADMIN"];
+const USER_ROLES: readonly UserRole[] = [
+  "CUSTOMER",
+  "SELLER",
+  "ADMIN",
+  "PROFESSIONAL",
+];
 
 export interface TokenService {
   createAccessToken(user: AuthenticatedUser): string;

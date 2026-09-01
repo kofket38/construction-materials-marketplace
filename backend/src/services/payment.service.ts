@@ -220,7 +220,9 @@ export class PaymentService {
     // Authorization — unchanged from original
     if (actor.role === "ADMIN") {
       // admins may view all proofs
-    } else if (actor.role === "CUSTOMER") {
+    } else if (actor.role === "CUSTOMER" || actor.role === "PROFESSIONAL") {
+      // PROFESSIONAL accounts are buyer-capable and may view proofs for
+      // orders they placed.
       if (authInfo.customerId !== actor.userId) {
         throw new ForbiddenError(
           "You do not have permission to view this payment proof.",
@@ -272,7 +274,8 @@ export class PaymentService {
   }
 
   private requireCustomer(actor: AuthenticatedUser): void {
-    if (actor.role !== "CUSTOMER") {
+    // PROFESSIONAL accounts are buyer-capable and share customer purchasing.
+    if (actor.role !== "CUSTOMER" && actor.role !== "PROFESSIONAL") {
       throw new ForbiddenError("Customer access is required.");
     }
   }

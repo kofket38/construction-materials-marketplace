@@ -225,7 +225,11 @@ export class PrismaProductRepository implements ProductRepository {
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-    ], { timeout: 30_000 });
+    ],
+    // maxWait matches the RFQ repository's transaction budget: the 2s default
+    // is too tight against Supabase latency under concurrent page-load traffic.
+    { timeout: 30_000, maxWait: 10_000 },
+  );
     const totalPages = Math.ceil(totalItems / query.limit);
 
     return {

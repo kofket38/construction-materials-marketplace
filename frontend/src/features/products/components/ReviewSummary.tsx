@@ -15,6 +15,7 @@ import { StarRating } from "@/features/products/components/StarRating";
 import { formatProductDate } from "@/features/products/lib/product-display";
 import type { ProductReview } from "@/features/products/model/product";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import {
   getApiErrorMessage,
   getHttpStatus,
@@ -42,9 +43,10 @@ export function ReviewSummary({
   const user = useAuthStore((state) => state.user);
   const authStatus = useAuthStore((state) => state.status);
   const queryClient = useQueryClient();
-  const isCustomer = authStatus === "authenticated" && user?.role === "CUSTOMER";
+  // PROFESSIONAL accounts are buyer-capable and may review purchased products.
+  const isCustomer = authStatus === "authenticated" && isBuyerRole(user?.role);
 
-  // Check whether this customer has already reviewed.
+  // Check whether this buyer has already reviewed.
   const hasReviewed = Boolean(
     user &&
       reviews.some((r) => r.customerId === user.id),

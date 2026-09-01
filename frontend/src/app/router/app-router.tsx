@@ -37,8 +37,8 @@ import { MyRfqsPage } from "@/features/rfq/pages/MyRfqsPage";
 import { RfqDetailPage } from "@/features/rfq/pages/RfqDetailPage";
 import { SellerRfqsPage } from "@/features/rfq/pages/SellerRfqsPage";
 import { SubmitQuotePage } from "@/features/rfq/pages/SubmitQuotePage";
-import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import { RequireRole } from "@/features/auth/components/RequireRole";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { AdminLayout } from "@/features/admin/layouts/AdminLayout";
 import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
@@ -108,8 +108,11 @@ export const appRouter = createBrowserRouter([
           },
 
           // ── Authenticated buyer routes ───────────────────────────────────
+          // CUSTOMER and PROFESSIONAL are both buyer-capable — isBuyerRole is
+          // the single source of truth, matching the backend's
+          // authorizeRoles("CUSTOMER", "PROFESSIONAL") on these endpoints.
           {
-            element: <RequireRole role="CUSTOMER" />,
+            element: <RequireRole role={isBuyerRole} />,
             children: [
               {
                 path: "checkout",
@@ -212,9 +215,9 @@ export const appRouter = createBrowserRouter([
             ],
           },
 
-          // ── Professional workspace routes (auth-guarded, persistent shell) ─
+          // ── Professional workspace routes (PROFESSIONAL-guarded shell) ─────
           {
-            element: <RequireAuth />,
+            element: <RequireRole role="PROFESSIONAL" />,
             children: [
               {
                 element: <ProfessionalLayout />,

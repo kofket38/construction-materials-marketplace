@@ -42,8 +42,9 @@ describe("Projects API", () => {
     projects = new InMemoryProjectRepository();
     users = new InMemoryUserRepository();
 
-    users.addUser({ id: userAId, role: "CUSTOMER" });
-    users.addUser({ id: userBId, role: "CUSTOMER" });
+    // M1: project mutations require the real PROFESSIONAL role.
+    users.addUser({ id: userAId, role: "PROFESSIONAL" });
+    users.addUser({ id: userBId, role: "PROFESSIONAL" });
 
     app = createApp({
       projectRepository: projects,
@@ -52,8 +53,91 @@ describe("Projects API", () => {
       logger: pino({ level: "silent" }),
     });
 
-    tokenA = tokenService.createAccessToken({ userId: userAId, role: "CUSTOMER" });
-    tokenB = tokenService.createAccessToken({ userId: userBId, role: "CUSTOMER" });
+    tokenA = tokenService.createAccessToken({ userId: userAId, role: "PROFESSIONAL" });
+    tokenB = tokenService.createAccessToken({ userId: userBId, role: "PROFESSIONAL" });
+  });
+
+  // ── Role authorization (M1) ──────────────────────────────────────────────────
+
+  describe("role authorization", () => {
+    const customerId = randomUUID();
+    const sellerId = randomUUID();
+    const adminId = randomUUID();
+    let customerToken: string;
+    let sellerToken: string;
+    let adminToken: string;
+
+    beforeEach(() => {
+      users.addUser({ id: customerId, role: "CUSTOMER" });
+      users.addUser({ id: sellerId, role: "SELLER" });
+      users.addUser({ id: adminId, role: "ADMIN" });
+
+      customerToken = tokenService.createAccessToken({ userId: customerId, role: "CUSTOMER" });
+      sellerToken = tokenService.createAccessToken({ userId: sellerId, role: "SELLER" });
+      adminToken = tokenService.createAccessToken({ userId: adminId, role: "ADMIN" });
+    });
+
+    it("rejects CUSTOMER project creation with 403", async () => {
+      await post("/api/projects", customerToken, validCreateBody).expect(403);
+    });
+
+    it("rejects SELLER project creation with 403", async () => {
+      await post("/api/projects", sellerToken, validCreateBody).expect(403);
+    });
+
+    it("rejects ADMIN project creation with 403", async () => {
+      await post("/api/projects", adminToken, validCreateBody).expect(403);
+    });
+
+    it("rejects CUSTOMER project update with 403", async () => {
+      const project = projects.addProject(userAId);
+
+      await patch(`/api/projects/${project.id}`, customerToken, {
+        title: "Hijacked title",
+      }).expect(403);
+    });
+
+    it("rejects CUSTOMER status transition with 403", async () => {
+      const project = projects.addProject(userAId);
+
+      await patch(`/api/projects/${project.id}/status`, customerToken, {
+        status: "PUBLISHED",
+      }).expect(403);
+    });
+
+    it("rejects SELLER reorder with 403", async () => {
+      const project = projects.addProject(userAId);
+
+      await put("/api/projects/me/reorder", sellerToken, {
+        projectIds: [project.id],
+      }).expect(403);
+    });
+
+    it("rejects ADMIN project deletion with 403", async () => {
+      const project = projects.addProject(userAId);
+
+      await del(`/api/projects/${project.id}`, adminToken).expect(403);
+    });
+
+    // M1 Task 4: own-project reads are PROFESSIONAL-only. Other roles cannot
+    // own projects, so they receive 403 rather than an empty list.
+    it("rejects CUSTOMER own-project reads with 403", async () => {
+      await get("/api/projects/me", customerToken).expect(403);
+    });
+
+    it("rejects SELLER own-project reads with 403", async () => {
+      await get("/api/projects/me", sellerToken).expect(403);
+    });
+
+    it("rejects ADMIN own-project reads with 403", async () => {
+      await get("/api/projects/me", adminToken).expect(403);
+    });
+
+    it("keeps public project search anonymous and unchanged", async () => {
+      projects.addProject(userAId, { status: "PUBLISHED" });
+
+      await request(app).get("/api/projects").expect(200);
+    });
   });
 
   // ── POST /api/projects ───────────────────────────────────────────────────────

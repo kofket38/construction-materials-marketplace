@@ -349,22 +349,27 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
     ]);
 
     await expect(
-      prisma.$transaction(async (transaction) => {
-        await transaction.supplierQuote.update({
-          where: { id: scenario.quoteId },
-          data: {
-            status: "ACCEPTED",
-            orderId: firstOrder.id,
-          },
-        });
-        await transaction.supplierQuote.update({
-          where: { id: scenario.secondQuoteId! },
-          data: {
-            status: "ACCEPTED",
-            orderId: secondOrder.id,
-          },
-        });
-      }),
+      prisma.$transaction(
+        async (transaction) => {
+          await transaction.supplierQuote.update({
+            where: { id: scenario.quoteId },
+            data: {
+              status: "ACCEPTED",
+              orderId: firstOrder.id,
+            },
+          });
+          await transaction.supplierQuote.update({
+            where: { id: scenario.secondQuoteId! },
+            data: {
+              status: "ACCEPTED",
+              orderId: secondOrder.id,
+            },
+          });
+        },
+        // Match the transaction budget used by PrismaRfqRepository in
+        // production; the 5s default is too tight against Supabase latency.
+        { timeout: 30_000, maxWait: 10_000 },
+      ),
     ).rejects.toMatchObject({ code: "P2002" });
   });
 
@@ -517,8 +522,16 @@ describe.sequential("PrismaRfqRepository PostgreSQL integration", () => {
 });
 
 function createPrismaClient(connectionString: string): PrismaClient {
+  // Mirror the pool settings from src/prisma/client.ts: Supabase cloud
+  // PostgreSQL latency breaks the pg defaults (max=10, short acquisition
+  // timeout) and causes transaction-start timeouts under load.
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({
+      connectionString,
+      max: 5,
+      connectionTimeoutMillis: 30_000,
+      idleTimeoutMillis: 10_000,
+    }),
   });
 }
 

@@ -45,8 +45,9 @@ describe("Professional Profiles API", () => {
     profiles = new InMemoryProfessionalProfileRepository();
     users = new InMemoryUserRepository();
 
-    users.addUser({ id: userAId, role: "CUSTOMER" });
-    users.addUser({ id: userBId, role: "CUSTOMER" });
+    // M1: professional profile mutations require the real PROFESSIONAL role.
+    users.addUser({ id: userAId, role: "PROFESSIONAL" });
+    users.addUser({ id: userBId, role: "PROFESSIONAL" });
 
     app = createApp({
       professionalProfileRepository: profiles,
@@ -55,8 +56,90 @@ describe("Professional Profiles API", () => {
       logger: pino({ level: "silent" }),
     });
 
-    tokenA = tokenService.createAccessToken({ userId: userAId, role: "CUSTOMER" });
-    tokenB = tokenService.createAccessToken({ userId: userBId, role: "CUSTOMER" });
+    tokenA = tokenService.createAccessToken({ userId: userAId, role: "PROFESSIONAL" });
+    tokenB = tokenService.createAccessToken({ userId: userBId, role: "PROFESSIONAL" });
+  });
+
+  // ── Role authorization (M1) ──────────────────────────────────────────────────
+
+  describe("role authorization", () => {
+    const customerId = randomUUID();
+    const sellerId = randomUUID();
+    const adminId = randomUUID();
+    let customerToken: string;
+    let sellerToken: string;
+    let adminToken: string;
+
+    beforeEach(() => {
+      users.addUser({ id: customerId, role: "CUSTOMER" });
+      users.addUser({ id: sellerId, role: "SELLER" });
+      users.addUser({ id: adminId, role: "ADMIN" });
+
+      customerToken = tokenService.createAccessToken({ userId: customerId, role: "CUSTOMER" });
+      sellerToken = tokenService.createAccessToken({ userId: sellerId, role: "SELLER" });
+      adminToken = tokenService.createAccessToken({ userId: adminId, role: "ADMIN" });
+    });
+
+    it("rejects CUSTOMER profile creation with 403", async () => {
+      await post("/api/professional-profiles", customerToken, validCreateBody)
+        .expect(403);
+    });
+
+    it("rejects SELLER profile creation with 403", async () => {
+      await post("/api/professional-profiles", sellerToken, validCreateBody)
+        .expect(403);
+    });
+
+    it("rejects ADMIN profile creation with 403", async () => {
+      await post("/api/professional-profiles", adminToken, validCreateBody)
+        .expect(403);
+    });
+
+    it("rejects CUSTOMER portfolio creation on an existing profile with 403", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await post(
+        `/api/professional-profiles/${profile.id}/portfolio`,
+        customerToken,
+        { title: "Bridge retrofit" },
+      ).expect(403);
+    });
+
+    it("rejects SELLER profile update with 403", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await patch(`/api/professional-profiles/${profile.id}`, sellerToken, {
+        headline: "Hijacked headline",
+      }).expect(403);
+    });
+
+    it("rejects ADMIN profile deletion with 403", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      await del(`/api/professional-profiles/${profile.id}`, adminToken).expect(
+        403,
+      );
+    });
+
+    // M1 Task 4: own-profile reads are PROFESSIONAL-only. Other roles cannot
+    // own a professional profile, so they receive 403 rather than a null body.
+    it("rejects CUSTOMER own-profile reads with 403", async () => {
+      await get("/api/professional-profiles/me", customerToken).expect(403);
+    });
+
+    it("rejects SELLER own-profile reads with 403", async () => {
+      await get("/api/professional-profiles/me", sellerToken).expect(403);
+    });
+
+    it("rejects ADMIN own-profile reads with 403", async () => {
+      await get("/api/professional-profiles/me", adminToken).expect(403);
+    });
+
+    it("keeps public directory access anonymous and unchanged", async () => {
+      profiles.addProfile(userAId, { displayName: "Public Pro" });
+
+      await request(app).get("/api/professional-profiles").expect(200);
+    });
   });
 
   // ── POST /api/professional-profiles ──────────────────────────────────────────
@@ -590,7 +673,7 @@ describe("Professional Profiles API", () => {
       new Date(Date.UTC(2026, 0, 1 + offset));
 
     beforeEach(() => {
-      users.addUser({ id: privateUserId, role: "CUSTOMER" });
+      users.addUser({ id: privateUserId, role: "PROFESSIONAL" });
 
       const abebe = profiles.addProfile(userAId, {
         displayName: "Abebe Bekele",
@@ -753,7 +836,7 @@ describe("Professional Profiles API", () => {
     it("paginates results and reports pagination metadata", async () => {
       profiles.addProfile(randomUUID(), { displayName: "Extra One" });
       profiles.addProfile(randomUUID(), { displayName: "Extra Two" });
-      users.addUser({ id: randomUUID(), role: "CUSTOMER" });
+      users.addUser({ id: randomUUID(), role: "PROFESSIONAL" });
 
       const page1 = await request(app)
         .get("/api/professional-profiles?page=1&limit=2")

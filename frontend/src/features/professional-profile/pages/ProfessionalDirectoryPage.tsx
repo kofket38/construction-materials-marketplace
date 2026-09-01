@@ -435,11 +435,16 @@ function DirectoryJoinCta() {
   const isAuthenticated = useAuthStore(
     (state) => state.status === "authenticated",
   );
+  // Professional accounts are registration-only — a CUSTOMER, SELLER, or ADMIN
+  // cannot create a professional profile, so only PROFESSIONAL accounts are
+  // offered the CTA (and only they need the own-profile lookup).
+  const role = useAuthStore((state) => state.user?.role);
+  const isProfessional = isAuthenticated && role === "PROFESSIONAL";
 
   const meQuery = useQuery({
     queryKey: ["professional-profile", "me"] as const,
     queryFn: ({ signal }) => getOwnProfessionalProfile(signal),
-    enabled: isAuthenticated,
+    enabled: isProfessional,
     staleTime: 30_000,
     retry: false,
   });
@@ -459,7 +464,7 @@ function DirectoryJoinCta() {
     );
   }
 
-  if (!meQuery.isSuccess || meQuery.data !== null) {
+  if (!isProfessional || !meQuery.isSuccess || meQuery.data !== null) {
     return null;
   }
 

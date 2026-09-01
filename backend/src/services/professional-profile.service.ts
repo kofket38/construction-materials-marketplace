@@ -67,6 +67,8 @@ export class ProfessionalProfileService {
     actor: AuthenticatedUser,
     input: CreateProfessionalProfileBody,
   ): Promise<ProfessionalProfileEntity> {
+    this.requireProfessional(actor);
+
     try {
       return await this.profiles.create({
         userId: actor.userId,
@@ -99,6 +101,8 @@ export class ProfessionalProfileService {
   async getOwnProfile(
     actor: AuthenticatedUser,
   ): Promise<ProfessionalProfileEntity | null> {
+    this.requireProfessional(actor);
+
     return this.profiles.findByUserId(actor.userId);
   }
 
@@ -117,6 +121,7 @@ export class ProfessionalProfileService {
     profileId: string,
     input: UpdateProfessionalProfileBody,
   ): Promise<ProfessionalProfileEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     const updated = await this.profiles.update(profileId, {
@@ -158,6 +163,7 @@ export class ProfessionalProfileService {
     actor: AuthenticatedUser,
     profileId: string,
   ): Promise<void> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     const deleted = await this.profiles.delete(profileId);
@@ -173,6 +179,7 @@ export class ProfessionalProfileService {
     profileId: string,
     input: ReplaceSpecialtiesBody,
   ): Promise<ProfessionalProfileEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     const updated = await this.profiles.replaceSpecialties(
@@ -194,6 +201,7 @@ export class ProfessionalProfileService {
     profileId: string,
     input: CreateCredentialBody,
   ): Promise<ProfessionalProfileEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     const updated = await this.profiles.addCredential(profileId, {
@@ -218,6 +226,7 @@ export class ProfessionalProfileService {
     credentialId: string,
     input: UpdateCredentialBody,
   ): Promise<ProfessionalCredentialEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     // Verify the credential belongs to this profile before updating.
@@ -262,6 +271,7 @@ export class ProfessionalProfileService {
     profileId: string,
     credentialId: string,
   ): Promise<void> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     // Verify the credential belongs to this profile before deleting.
@@ -283,7 +293,19 @@ export class ProfessionalProfileService {
     }
   }
 
-  // ── Authorization helper ──────────────────────────────────────────────────
+  // ── Authorization helpers ─────────────────────────────────────────────────
+
+  /**
+   * Profile mutations and own-profile reads are restricted to PROFESSIONAL
+   * accounts. This mirrors the seller services' requireSeller defense-in-depth:
+   * the route-level authorizeRoles("PROFESSIONAL") guard stops requests early,
+   * while this check keeps the service contract safe for any caller.
+   */
+  private requireProfessional(actor: AuthenticatedUser): void {
+    if (actor.role !== "PROFESSIONAL") {
+      throw new ForbiddenError("Professional access is required.");
+    }
+  }
 
   /**
    * Resolves the profile and throws ForbiddenError if the actor does not own
@@ -344,6 +366,7 @@ export class ProfessionalProfileService {
     profileId: string,
     input: CreatePortfolioItemBody,
   ): Promise<PortfolioItemEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     const count = await this.profiles.countPortfolioItems(profileId);
@@ -370,6 +393,7 @@ export class ProfessionalProfileService {
     itemId: string,
     input: UpdatePortfolioItemBody,
   ): Promise<PortfolioItemEntity> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     // Scoped to this profile — an item belonging to another profile is
@@ -410,6 +434,7 @@ export class ProfessionalProfileService {
     profileId: string,
     itemId: string,
   ): Promise<void> {
+    this.requireProfessional(actor);
     await this.requireOwnership(actor, profileId);
 
     // Scoped to this profile for the same ownership reason as update.

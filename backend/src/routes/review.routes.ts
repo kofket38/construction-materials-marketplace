@@ -30,7 +30,7 @@ export function createReviewRouter(
   router.post(
     "/products/:id/reviews",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: createReviewBodySchema,
       params: reviewProductIdParamsSchema,
@@ -42,7 +42,7 @@ export function createReviewRouter(
   router.put(
     "/reviews/:id",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: updateReviewBodySchema,
       params: reviewIdParamsSchema,
@@ -54,7 +54,7 @@ export function createReviewRouter(
   router.delete(
     "/reviews/:id",
     requireAuthentication,
-    authorizeRoles("CUSTOMER", "ADMIN"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL", "ADMIN"),
     validateRequest({
       body: emptyReviewObjectSchema,
       params: reviewIdParamsSchema,

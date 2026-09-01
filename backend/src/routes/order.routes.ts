@@ -19,7 +19,7 @@ export function createOrderRouter(
   router.post(
     "/",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: createOrderBodySchema,
       params: emptyOrderObjectSchema,
@@ -31,7 +31,7 @@ export function createOrderRouter(
   router.get(
     "/",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: emptyOrderObjectSchema,
@@ -43,7 +43,7 @@ export function createOrderRouter(
   router.get(
     "/me",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: emptyOrderObjectSchema,
@@ -67,7 +67,7 @@ export function createOrderRouter(
   router.post(
     "/:id/complete",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,
@@ -79,7 +79,7 @@ export function createOrderRouter(
   router.get(
     "/:id",
     requireAuthentication,
-    authorizeRoles("CUSTOMER", "ADMIN"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL", "ADMIN"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,
@@ -91,7 +91,7 @@ export function createOrderRouter(
   router.delete(
     "/:id",
     requireAuthentication,
-    authorizeRoles("CUSTOMER", "ADMIN"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL", "ADMIN"),
     validateRequest({
       body: emptyOrderObjectSchema,
       params: orderIdParamsSchema,

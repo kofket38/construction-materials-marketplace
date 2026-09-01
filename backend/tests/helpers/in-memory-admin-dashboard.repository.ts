@@ -193,7 +193,9 @@ export class InMemoryAdminDashboardRepository
 
     return {
       totalUsers: users.length,
-      totalCustomers: users.filter((user) => user.role === "CUSTOMER").length,
+      totalCustomers: users.filter(
+        (user) => user.role === "CUSTOMER" || user.role === "PROFESSIONAL",
+      ).length,
       totalSellers: users.filter((user) => user.role === "SELLER").length,
       totalProducts: products.length,
       totalCategories: this.categories.size,

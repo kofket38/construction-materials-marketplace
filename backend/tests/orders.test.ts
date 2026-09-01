@@ -10,6 +10,7 @@ import { InMemoryUserRepository } from "./helpers/in-memory-user.repository.js";
 
 const customerId = randomUUID();
 const otherCustomerId = randomUUID();
+const professionalId = randomUUID();
 const sellerId = randomUUID();
 const secondSellerId = randomUUID();
 const firstProductId = randomUUID();
@@ -77,6 +78,7 @@ describe("Order API", () => {
   let customerToken: string;
   let otherCustomerToken: string;
   let adminToken: string;
+  let professionalToken: string;
 
   beforeEach(() => {
     orders = new InMemoryOrderRepository();
@@ -89,6 +91,11 @@ describe("Order API", () => {
       id: otherCustomerId,
       name: "Other Customer",
       email: "other@example.com",
+    });
+    orders.addCustomer({
+      id: professionalId,
+      name: "Professional Buyer",
+      email: "professional@example.com",
     });
     orders.addProduct({
       id: firstProductId,
@@ -135,6 +142,7 @@ describe("Order API", () => {
     const adminId = randomUUID();
     users.addUser({ id: customerId, role: "CUSTOMER" });
     users.addUser({ id: otherCustomerId, role: "CUSTOMER" });
+    users.addUser({ id: professionalId, role: "PROFESSIONAL" });
     users.addUser({ id: adminId, role: "ADMIN" });
     const sellerPayments = new InMemorySellerPaymentRepository();
     sellerPayments.addProduct(firstProductId, sellerId);
@@ -168,6 +176,10 @@ describe("Order API", () => {
     adminToken = tokenService.createAccessToken({
       userId: adminId,
       role: "ADMIN",
+    });
+    professionalToken = tokenService.createAccessToken({
+      userId: professionalId,
+      role: "PROFESSIONAL",
     });
   });
 
@@ -656,6 +668,104 @@ describe("Order API", () => {
       .send({})
       .expect(200);
     expect(orders.getProductQuantity(firstProductId)).toBe(8);
+  });
+
+  // ── Professional buyer capability (M1) ──────────────────────────────────────
+  // PROFESSIONAL accounts are buyer-capable and place orders exactly like
+  // customers, matching authorizeRoles("CUSTOMER", "PROFESSIONAL") on the
+  // order routes.
+  describe("professional buyer capability", () => {
+    it("allows a professional to place an order and reserves stock", async () => {
+      const response = await createOrder(professionalToken, [
+        { productId: firstProductId, sellerId, quantity: 2 },
+      ]);
+
+      expect(response.body.data.order).toMatchObject({
+        customerId: professionalId,
+        status: "PENDING_CONFIRMATION",
+        paymentMethod: "CASH_ON_DELIVERY",
+        totalAmount: "200.00",
+        items: [
+          {
+            productId: firstProductId,
+            quantity: 2,
+            unitPrice: "100.00",
+            subtotal: "200.00",
+          },
+        ],
+      });
+      expect(orders.getProductQuantity(firstProductId)).toBe(8);
+      expect(
+        orders.getInventoryTransactionCount(response.body.data.order.id),
+      ).toBe(1);
+    });
+
+    it("returns only the professional's own orders", async () => {
+      const ownOrder = await createOrder(professionalToken, [
+        { productId: firstProductId, sellerId, quantity: 1 },
+      ]);
+      await createOrder(customerToken, [
+        { productId: secondProductId, sellerId: secondSellerId, quantity: 1 },
+      ]);
+
+      const response = await request(app)
+        .get("/api/orders")
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+
+      expect(response.body.data.orders).toHaveLength(1);
+      expect(response.body.data.orders[0].id).toBe(
+        ownOrder.body.data.order.id,
+      );
+    });
+
+    it("allows a professional to view their own order but not another buyer's", async () => {
+      const own = await createOrder(professionalToken, [
+        { productId: firstProductId, sellerId, quantity: 1 },
+      ]);
+      const foreign = await createOrder(customerToken, [
+        { productId: firstProductId, sellerId, quantity: 1 },
+      ]);
+
+      const ownResponse = await request(app)
+        .get(`/api/orders/${own.body.data.order.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+      expect(ownResponse.body.data.order.customerId).toBe(professionalId);
+
+      await request(app)
+        .get(`/api/orders/${foreign.body.data.order.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(403);
+    });
+
+    it("allows a professional to cancel their own order and restores stock", async () => {
+      const created = await createOrder(professionalToken, [
+        { productId: firstProductId, sellerId, quantity: 2 },
+      ]);
+      const orderId = created.body.data.order.id as string;
+      expect(orders.getProductQuantity(firstProductId)).toBe(8);
+
+      await request(app)
+        .delete(`/api/orders/${orderId}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(200);
+
+      expect(orders.getProductQuantity(firstProductId)).toBe(10);
+      expect((await orders.findById(orderId))?.status).toBe("CANCELLED");
+    });
+
+    it("produces an order an administrator can still oversee", async () => {
+      const created = await createOrder(professionalToken, [
+        { productId: firstProductId, sellerId, quantity: 1 },
+      ]);
+
+      await request(app)
+        .get(`/api/orders/${created.body.data.order.id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+    });
   });
 
   async function createOrder(

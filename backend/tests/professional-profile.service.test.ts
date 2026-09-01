@@ -35,8 +35,9 @@ const profileId  = "00000000-0000-4000-8000-000000000010";
 const credId     = "00000000-0000-4000-8000-000000000020";
 const itemId     = "00000000-0000-4000-8000-000000000030";
 
-const actorA: AuthenticatedUser = { userId: userAId, role: "CUSTOMER" };
-const actorB: AuthenticatedUser = { userId: userBId, role: "CUSTOMER" };
+// M1: mutating profile operations require the real PROFESSIONAL role.
+const actorA: AuthenticatedUser = { userId: userAId, role: "PROFESSIONAL" };
+const actorB: AuthenticatedUser = { userId: userBId, role: "PROFESSIONAL" };
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,77 @@ describe("ProfessionalProfileService", () => {
   beforeEach(() => {
     repo = createMockRepo();
     service = new ProfessionalProfileService(repo);
+  });
+
+  // ── Role authorization (M1) ─────────────────────────────────────────────────
+
+  describe("role authorization", () => {
+    it("rejects CUSTOMER actors on create with ForbiddenError", async () => {
+      const customer: AuthenticatedUser = { userId: userAId, role: "CUSTOMER" };
+
+      await expect(
+        service.create(customer, { displayName: "Abebe Bekele" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects SELLER actors on update with ForbiddenError", async () => {
+      const seller: AuthenticatedUser = { userId: userAId, role: "SELLER" };
+
+      await expect(
+        service.update(seller, profileId, { headline: "Hijacked" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects ADMIN actors on addCredential with ForbiddenError", async () => {
+      const admin: AuthenticatedUser = { userId: userAId, role: "ADMIN" };
+
+      await expect(
+        service.addCredential(admin, profileId, { title: "Cert" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.addCredential).not.toHaveBeenCalled();
+    });
+
+    it("rejects CUSTOMER actors on addPortfolioItem with ForbiddenError", async () => {
+      const customer: AuthenticatedUser = { userId: userAId, role: "CUSTOMER" };
+
+      await expect(
+        service.addPortfolioItem(customer, profileId, { title: "Item" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(repo.createPortfolioItem).not.toHaveBeenCalled();
+    });
+
+    it("allows PROFESSIONAL actors through to ownership checks", async () => {
+      vi.mocked(repo.findById).mockResolvedValue(makeProfile());
+      vi.mocked(repo.createPortfolioItem).mockResolvedValue(
+        makePortfolioItem(),
+      );
+
+      await expect(
+        service.addPortfolioItem(actorA, profileId, { title: "Item" }),
+      ).resolves.toBeDefined();
+    });
+
+    // M1 Task 4: own-profile reads are PROFESSIONAL-only too.
+    it.each(["CUSTOMER", "SELLER", "ADMIN"] as const)(
+      "rejects %s actors on getOwnProfile with ForbiddenError",
+      async (role) => {
+        const actor: AuthenticatedUser = { userId: userAId, role };
+
+        await expect(
+          service.getOwnProfile(actor),
+        ).rejects.toBeInstanceOf(ForbiddenError);
+        expect(repo.findByUserId).not.toHaveBeenCalled();
+      },
+    );
+
+    it("allows PROFESSIONAL actors to read their own profile", async () => {
+      const profile = makeProfile();
+      vi.mocked(repo.findByUserId).mockResolvedValue(profile);
+
+      await expect(service.getOwnProfile(actorA)).resolves.toBe(profile);
+    });
   });
 
   // ── create ──────────────────────────────────────────────────────────────────

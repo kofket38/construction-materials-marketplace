@@ -72,6 +72,10 @@ describe("PrismaAdminDashboardRepository", () => {
       totalRevenue: "1250.50",
       monthlyRevenue: "450.25",
     });
+    // totalCustomers counts every buyer-capable role (CUSTOMER, PROFESSIONAL).
+    expect(client.user.count).toHaveBeenNthCalledWith(2, {
+      where: { role: { in: ["CUSTOMER", "PROFESSIONAL"] } },
+    });
     expect(result.recentActivity).toEqual([
       {
         type: "ORDER_CREATED",

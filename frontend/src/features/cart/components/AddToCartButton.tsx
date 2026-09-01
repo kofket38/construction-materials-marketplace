@@ -9,6 +9,7 @@ import {
 import type { CartMutationResult } from "@/features/cart/model/cart";
 import { effectiveQuantity } from "@/features/cart/model/cart";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import type { Product } from "@/features/products/model/product";
 
 interface AddToCartButtonProps {
@@ -59,9 +60,9 @@ export function AddToCartButton({
       return;
     }
 
-    if (user.role !== "CUSTOMER") {
+    if (!isBuyerRole(user.role)) {
       onResult?.({
-        message: "Shopping cart actions are available to customer accounts.",
+        message: "Shopping cart actions are available to customer and professional accounts.",
         productId: product.id,
         status: "error",
       });

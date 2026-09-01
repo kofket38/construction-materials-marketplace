@@ -75,8 +75,9 @@ export function RegisterPage() {
   const user = useAuthStore((state) => state.user);
   const setSession = useAuthStore((state) => state.setSession);
 
-  // UI-only role selection. PROFESSIONAL maps to CUSTOMER on the wire — see
-  // auth.api.ts. ADMIN is intentionally absent from ROLE_OPTIONS.
+  // Registration role selection. Since M1, PROFESSIONAL is a real backend
+  // role and is sent as chosen — see auth.api.ts. ADMIN is intentionally
+  // absent from ROLE_OPTIONS.
   const [selectedRole, setSelectedRole] = useState<RegistrationRole>("CUSTOMER");
 
   const {
@@ -100,7 +101,13 @@ export function RegisterPage() {
     return (
       <Navigate
         replace
-        to={user.role === "SELLER" ? "/seller/inventory" : "/products"}
+        to={
+          user.role === "SELLER"
+            ? "/seller/inventory"
+            : user.role === "PROFESSIONAL"
+              ? "/professional/dashboard"
+              : "/products"
+        }
       />
     );
   }
@@ -110,8 +117,6 @@ export function RegisterPage() {
     const phone = values.phone.trim();
 
     try {
-      // auth.api.ts maps PROFESSIONAL → CUSTOMER before the HTTP request.
-      // The backend never receives PROFESSIONAL as a role value.
       const session = await registerAccount({
         name: values.name.trim(),
         email: values.email.trim().toLowerCase(),
@@ -121,8 +126,7 @@ export function RegisterPage() {
         ...(phone ? { phone } : {}),
       });
       setSession(session);
-      // Post-registration redirect is based on the UI role selection, NOT
-      // session.user.role, because PROFESSIONAL creates a CUSTOMER account.
+      // Post-registration onboarding redirect by the chosen role.
       navigate(
         selectedRole === "SELLER"
           ? "/seller/inventory"

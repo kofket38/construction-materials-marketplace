@@ -114,7 +114,9 @@ export class PrismaAdminDashboardRepository
       recentOrders,
     ] = await Promise.all([
       this.client.user.count(),
-      this.client.user.count({ where: { role: Role.CUSTOMER } }),
+      this.client.user.count({
+        where: { role: { in: [Role.CUSTOMER, Role.PROFESSIONAL] } },
+      }),
       this.client.user.count({ where: { role: Role.SELLER } }),
       this.client.product.count(),
       this.client.category.count(),

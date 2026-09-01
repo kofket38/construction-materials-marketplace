@@ -21,6 +21,7 @@ import { effectivePrice, effectiveQuantity } from "@/features/cart/model/cart";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { resolveLocalProductImage } from "@/features/products/lib/product-images";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 
 export function WishlistPage() {
@@ -31,7 +32,7 @@ export function WishlistPage() {
 
   const wishlistQuery = useQuery({
     queryKey: wishlistKey,
-    enabled: authStatus === "authenticated" && user?.role === "CUSTOMER",
+    enabled: authStatus === "authenticated" && isBuyerRole(user?.role),
     queryFn: ({ signal }) => getWishlist(signal),
   });
 
@@ -54,7 +55,7 @@ export function WishlistPage() {
       <Navigate replace state={{ returnTo: "/wishlist" }} to="/login" />
     );
   }
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return <Navigate replace to="/products" />;
   }
 

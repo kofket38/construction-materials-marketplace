@@ -44,7 +44,6 @@ const OWN_PROFILE_KEY = ["professional-profile", "me"] as const;
 export function ProfessionalDashboardPage() {
   const user = useAuthStore((state) => state.user);
 
-  // Route protection (authentication) is handled by RequireAuth in the router.
   return <DashboardContent userName={user?.name ?? ""} />;
 }
 

@@ -46,7 +46,13 @@ export function LoginPage() {
     return (
       <Navigate
         replace
-        to={user.role === "SELLER" ? "/seller/inventory" : returnTo}
+        to={
+          user.role === "SELLER"
+            ? "/seller/inventory"
+            : user.role === "PROFESSIONAL"
+              ? "/professional/dashboard"
+              : returnTo
+        }
       />
     );
   }
@@ -61,7 +67,9 @@ export function LoginPage() {
       navigate(
         session.user.role === "SELLER"
           ? "/seller/inventory"
-          : returnTo,
+          : session.user.role === "PROFESSIONAL"
+            ? "/professional/dashboard"
+            : returnTo,
         { replace: true },
       );
     } catch (error) {

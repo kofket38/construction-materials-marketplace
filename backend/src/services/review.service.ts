@@ -100,7 +100,9 @@ export class ReviewService {
   }
 
   private requireCustomer(actor: AuthenticatedUser): void {
-    if (actor.role !== "CUSTOMER") {
+    // PROFESSIONAL accounts are buyer-capable and may review products they
+    // purchased through delivered orders.
+    if (actor.role !== "CUSTOMER" && actor.role !== "PROFESSIONAL") {
       throw new ForbiddenError("Customer access is required.");
     }
   }

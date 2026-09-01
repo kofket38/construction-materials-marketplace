@@ -207,7 +207,8 @@ export class OrderService {
   }
 
   private requireCustomer(actor: AuthenticatedUser): void {
-    if (actor.role !== "CUSTOMER") {
+    // PROFESSIONAL accounts are buyer-capable and share customer purchasing.
+    if (actor.role !== "CUSTOMER" && actor.role !== "PROFESSIONAL") {
       throw new ForbiddenError("Customer access is required.");
     }
   }

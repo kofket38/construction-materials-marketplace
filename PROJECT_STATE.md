@@ -1,13 +1,14 @@
 # Project State
 
-Last updated: 2026-07-21
+Last updated: 2026-09-01
 
 ## 1. Project Overview
 
 Construction Materials Marketplace is a TypeScript/Express backend for a
 multi-role marketplace. It supports customer purchasing, seller catalog and
 business management, customer wishlists, verified-purchase product reviews,
-RFQs and supplier quotations, and administrator marketplace monitoring and
+RFQs and supplier quotations, professional identity (profiles, portfolios,
+projects, and a public directory), and administrator marketplace monitoring and
 moderation.
 
 The API uses a layered architecture:
@@ -35,18 +36,21 @@ applicable.
 | Phase 2 | Complete | Marketplace foundation: categories, products, orders, stock management, and seller profiles. |
 | Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
 | Phase 4 | Complete and stabilized | Administrator oversight, verified-purchase product reviews and ratings, customer product wishlists, and RFQ and supplier quotations. |
+| M1 | Complete | Professional Identity: PROFESSIONAL as a real backend role, professional profiles, portfolio items, professional projects, public professional directory, public project discovery, professional registration, and full buyer capabilities for professional accounts. |
 
 ## 3. Current Phase
 
-**Phase 4 - Module 3: RFQ & Supplier Quotations is approved, complete, and
-stabilized.**
+**Milestone M1 — Professional Identity is complete and verified.**
 
-The most recently completed work is **Phase 4 - Module 3 Stabilization**.
+The most recently completed work is **M1 Professional Identity**.
 
-Module 3 lets customers submit requests for quotation, eligible suppliers
-respond with structured quotations, and customers reject or atomically accept
-a quote into a stock-reserving `PENDING` order. Payments, messaging,
-notifications, and delivery charges are not included.
+M1 introduces `PROFESSIONAL` as a first-class backend role. Professional
+accounts register publicly, manage exactly one professional profile with
+specialties and credentials, maintain portfolio items and professional
+projects, and appear in the public professional directory and project
+discovery. Professionals keep the full customer buying capability set (orders,
+payments, reviews, wishlists, RFQs). Payments, messaging, notifications, and
+delivery charges are not included.
 
 ## 4. Completed Modules
 
@@ -120,6 +124,24 @@ notifications, and delivery charges are not included.
     competing-quotation confidentiality.
   - Live PostgreSQL verification of acceptance, rollback, concurrent awards,
     row locking, uniqueness, and cross-table workflow constraints.
+- Professional identity (M1) with:
+  - `PROFESSIONAL` as a real backend role accepted by public registration and
+    every role-based access control path.
+  - Professional registration through the standard public registration flow
+    (`PROFESSIONAL` selectable alongside `CUSTOMER` and `SELLER`).
+  - Exactly one professional profile per account with specialties and
+    credentials, created and mutated only by the owning professional.
+  - Portfolio item management (add, update, delete, list) restricted to the
+    owning professional's profile.
+  - Professional project management (create, update, reorder, delete) scoped
+    to the owning professional.
+  - Public professional directory with search, filtering, and pagination.
+  - Public project discovery across professional profiles.
+  - Full buyer capabilities for professional accounts: `authorizeRoles(
+    "CUSTOMER", "PROFESSIONAL")` on order, payment, review, wishlist, and RFQ
+    routes, and `isBuyerRole` as the frontend single source of truth.
+  - Administrator dashboard buyer totals counting both `CUSTOMER` and
+    `PROFESSIONAL` accounts.
 
 ## 5. Folder Structure
 
@@ -168,7 +190,7 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 
 | Model | Purpose |
 | --- | --- |
-| `User` | Customer, seller, or administrator account; stores active/disabled state and a hashed refresh token. |
+| `User` | Customer, professional, seller, or administrator account; stores active/disabled state and a hashed refresh token. |
 | `SellerProfile` | One-to-one seller profile containing shop name, phone, and address. |
 | `Category` | Administrator-managed product category. |
 | `Product` | Seller listing with category, decimal price, stock quantity, primary-image projection, and timestamps. |
@@ -181,11 +203,18 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `RfqItem` | Requested material/category/quantity snapshot belonging to an RFQ. |
 | `SupplierQuote` | Seller response with validity, terms, total amount, lifecycle status, and an optional generated order. |
 | `SupplierQuoteItem` | Seller product, offered quantity, and quoted-price snapshot for an RFQ item. |
+| `ProfessionalProfile` | One-to-one professional identity with headline, bio, specialties, and credentials; mutations are professional-only. |
+| `PortfolioItem` | Portfolio entry belonging to a professional profile; managed only by the owning professional. |
+| `Project` | Professional project belonging to a professional profile with ordering support; managed only by the owning professional. |
 
 Relations:
 
 - A `User` may have one `SellerProfile`, many listed products, and many
   customer orders.
+- A `User` may have at most one `ProfessionalProfile`; a professional profile
+  owns many portfolio items and projects.
+- A `ProfessionalProfile` is unique per user, and its write endpoints are
+  restricted to the owning professional account.
 - A `Product` belongs to one seller and category, and has many images and
   order items.
 - A `ProductImage` belongs to one product and is deleted with that product.
@@ -208,7 +237,7 @@ Relations:
 
 Enums:
 
-- `Role`: `CUSTOMER`, `SELLER`, `ADMIN`
+- `Role`: `CUSTOMER`, `SELLER`, `PROFESSIONAL`, `ADMIN`
 - `OrderStatus`: `PENDING`, `CONFIRMED`, `SHIPPED`, `DELIVERED`, `CANCELLED`
 - `RfqStatus`: `OPEN`, `AWARDED`, `CANCELLED`, `EXPIRED`
 - `SupplierQuoteStatus`: `SUBMITTED`, `ACCEPTED`, `REJECTED`, `WITHDRAWN`,
@@ -231,6 +260,21 @@ Applied migrations:
 11. `20260720231500_rfq_database_constraints`
 12. `20260721150000_phase_4_module_3_stabilization`
 13. `20260721170000_phase_4_module_3_constraint_closure`
+14. `20260802130708_product_catalog_inventory`
+15. `20260804190000_complete_checkout_orders`
+16. `20260804193000_preserve_legacy_order_default`
+17. `20260804220000_bank_transfer_payments`
+18. `20260804223000_ethiopian_payment_agents`
+19. `20260805113000_seller_manual_payment_profiles`
+20. `20260805143000_seller_order_fulfillment`
+21. `20260805230000_shipment_inventory_transactions`
+22. `20260808150000_order_completion`
+23. `20260810204353_seller_inventory_transaction_fields`
+24. `20260820160217_professional_profiles`
+25. `20260826000000_professional_portfolio_items`
+26. `20260827000000_professional_projects`
+27. `20260829120000_professional_role`
+28. `20260829130000_professional_role_backfill`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
@@ -345,10 +389,9 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**Await the next formally approved module.** Phase 4, Module 3 and its
-stabilization are complete, so do not begin payments, messaging, notifications,
-frontend work, or another business module until the next requirements are
-provided and approved.
+**M1 Professional Identity is complete; commit and close the milestone.**
+Do not begin payments, messaging, notifications, or another business module
+until the next requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -365,8 +408,9 @@ provided and approved.
 - Disabling a user clears the stored refresh-token hash, immediately rejects
   login and refresh attempts, and invalidates already-issued access tokens on
   their next protected request. Administrators cannot disable themselves.
-- Public registration permits only `CUSTOMER` and `SELLER`; `BUYER` is
-  accepted as a legacy alias. `ADMIN` cannot be self-registered.
+- Public registration permits `CUSTOMER`, `SELLER`, and `PROFESSIONAL`;
+  `BUYER` is accepted as a legacy alias for `CUSTOMER`. `ADMIN` cannot be
+  self-registered.
 - Monetary values are stored as PostgreSQL decimals and returned as fixed
   two-decimal strings to avoid API precision loss.
 - Order creation snapshots item prices and changes stock in a single database
@@ -441,7 +485,10 @@ provided and approved.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-07-21.
+No known failing tests or confirmed functional bugs as of 2026-09-01. The
+product-discovery batch transaction now sets an explicit transaction-start
+budget (`maxWait`) after live smoke verification surfaced Prisma `P2028`
+"unable to start a transaction" failures under Supabase latency.
 
 Current limitations and deferred work:
 
@@ -472,16 +519,42 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Most recent Phase 4 Module 3 Stabilization verification completed
-successfully:
+Most recent M1 Professional Identity verification completed successfully
+(2026-09-01, re-verified end to end after the local frontend API base URL was
+corrected):
 
 ```text
-npm run typecheck     PASS
-npm test              PASS (125 tests)
-npm run build         PASS
-prisma validate       PASS
-prisma migrate status PASS (13 migrations applied)
+backend typecheck            PASS
+frontend typecheck           PASS
+frontend lint                PASS
+frontend build               PASS (bakes http://localhost:3055/api locally)
+backend test suite           PASS (804 tests, 33 files, 510s, live PostgreSQL)
+prisma migrate status        PASS (28 migrations applied, schema up to date)
+RFQ integration suite        PASS (10/10, inside the full suite)
+frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
 ```
+
+The full backend suite covers the RFQ live-PostgreSQL integration, rate-limit,
+and admin dashboard tests; they are no longer tracked as separate baseline
+lines.
+
+The frontend marketplace smoke test (`node frontend/scripts/smoke-marketplace.mjs`,
+run from the repository root) now passes against the local backend on port 3055.
+Its earlier failures had two causes, both resolved: the product-discovery
+transaction-start failure documented above (fixed by the explicit `maxWait`), and
+a local `frontend/.env` that pointed `VITE_API_BASE_URL` at the deployed Render
+backend instead of `http://localhost:3055/api`.
+
+Local development requires `frontend/.env` to set
+`VITE_API_BASE_URL=http://localhost:3055/api` so it matches `PORT=3055` in
+`backend/.env`. That file is gitignored; the production value is injected by
+Render (`render.yaml`, `VITE_API_BASE_URL`, `sync: false`).
+
+The live RFQ integration tests are latency-sensitive against the Supabase
+pooler in `eu-west-1`. An intermediate run failed 5/10 with Prisma `P2028`
+transaction-expiry and dropped-connection errors purely from network latency;
+the same file passes when latency is normal. Treat isolated failures of that
+file as environmental until reproduced twice.
 
 RFQ HTTP tests cover customer and seller lifecycles, authentication, role and
 ownership enforcement, customer and quotation isolation, strict validation,
@@ -493,4 +566,7 @@ decimal totals, seller-scoped quote loading, lock ordering, duplicate-quote
 translation, acceptance transactions, order creation, and insufficient-stock
 handling. Live PostgreSQL tests cover acceptance commits, transaction rollback,
 competing concurrent acceptance, row locking, uniqueness, quote-line movement,
-award-state transitions, and strengthened cross-table constraints.
+award-state transitions, and strengthened cross-table constraints. Professional
+identity is covered by profile, portfolio, project, directory, discovery, and
+registration tests, including professional-only mutation enforcement and
+professional buyer-capability tests across orders and RFQs.

@@ -2,14 +2,19 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { InMemoryProjectRepository } from "./helpers/in-memory-project.repository.js";
 import { ProjectService } from "../src/services/project.service.js";
 import type { AuthenticatedUser } from "../src/types/auth.js";
-import { BadRequestError, NotFoundError } from "../src/utils/api-error.js";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "../src/utils/api-error.js";
 
 // ── Fixed IDs / actors ────────────────────────────────────────────────────────
 const ownerAId = "00000000-0000-4000-8000-000000000001";
 const ownerBId = "00000000-0000-4000-8000-000000000002";
 
-const ownerA: AuthenticatedUser = { userId: ownerAId, role: "CUSTOMER" };
-const ownerB: AuthenticatedUser = { userId: ownerBId, role: "CUSTOMER" };
+// M1: mutating project operations require the real PROFESSIONAL role.
+const ownerA: AuthenticatedUser = { userId: ownerAId, role: "PROFESSIONAL" };
+const ownerB: AuthenticatedUser = { userId: ownerBId, role: "PROFESSIONAL" };
 
 const validCreateBody = {
   title: "G+2 Villa Construction",
@@ -28,6 +33,73 @@ describe("ProjectService", () => {
   beforeEach(() => {
     repo = new InMemoryProjectRepository();
     service = new ProjectService(repo);
+  });
+
+  // ── Role authorization (M1) ─────────────────────────────────────────────────
+
+  describe("role authorization", () => {
+    it("rejects CUSTOMER actors on createProject", async () => {
+      const customer: AuthenticatedUser = { userId: ownerAId, role: "CUSTOMER" };
+
+      // createProject is not async: the guard throws synchronously.
+      expect(() =>
+        service.createProject(customer, validCreateBody),
+      ).toThrow(ForbiddenError);
+      await expect(repo.findByOwnerId(customer.userId)).resolves.toHaveLength(0);
+    });
+
+    it("rejects CUSTOMER actors on updateProject", async () => {
+      const created = await service.createProject(ownerA, validCreateBody);
+      const customer: AuthenticatedUser = { userId: ownerAId, role: "CUSTOMER" };
+
+      await expect(
+        service.updateProject(customer, created.id, { title: "Hijacked" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+
+    it("rejects ADMIN actors on changeProjectStatus", async () => {
+      const created = await service.createProject(ownerA, validCreateBody);
+      const admin: AuthenticatedUser = { userId: ownerAId, role: "ADMIN" };
+
+      await expect(
+        service.changeProjectStatus(admin, created.id, { status: "PUBLISHED" }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+
+    it("rejects CUSTOMER actors on reorderProjects", async () => {
+      const customer: AuthenticatedUser = { userId: ownerAId, role: "CUSTOMER" };
+
+      await expect(
+        service.reorderProjects(customer, { projectIds: [] }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+
+    it("rejects SELLER actors on deleteProject", async () => {
+      const created = await service.createProject(ownerA, validCreateBody);
+      const seller: AuthenticatedUser = { userId: ownerAId, role: "SELLER" };
+
+      await expect(
+        service.deleteProject(seller, created.id),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+
+    // M1 Task 4: own-project reads are PROFESSIONAL-only too.
+    it.each(["CUSTOMER", "SELLER", "ADMIN"] as const)(
+      "rejects %s actors on getMyProjects",
+      async (role) => {
+        const actor: AuthenticatedUser = { userId: ownerAId, role };
+
+        await expect(
+          service.getMyProjects(actor),
+        ).rejects.toBeInstanceOf(ForbiddenError);
+      },
+    );
+
+    it("allows PROFESSIONAL actors to read their own projects", async () => {
+      await service.createProject(ownerA, validCreateBody);
+
+      await expect(service.getMyProjects(ownerA)).resolves.toHaveLength(1);
+    });
   });
 
   // ── createProject ───────────────────────────────────────────────────────────

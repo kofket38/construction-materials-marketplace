@@ -33,7 +33,6 @@ import { EmptyState } from "@/shared/layouts/dashboard";
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function MyProjectsPage() {
-  // Route protection (authentication) is handled by RequireAuth in the router.
   return <MyProjectsContent />;
 }
 

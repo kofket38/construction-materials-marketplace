@@ -6,7 +6,6 @@ import type {
   AuthUser,
   LoginInput,
   RegisterInput,
-  UserRole,
 } from "@/features/auth/model/auth.types";
 
 interface CurrentUserData {
@@ -27,15 +26,12 @@ export async function login(input: LoginInput): Promise<AuthSession> {
 }
 
 export async function register(input: RegisterInput): Promise<AuthSession> {
-  // PROFESSIONAL is a UI-only registration choice that creates a CUSTOMER
-  // account. The backend only accepts CUSTOMER or SELLER — ADMIN is
-  // structurally impossible (rejected by Zod enum with a 400 response).
-  const wireRole: Exclude<UserRole, "ADMIN"> =
-    input.role === "PROFESSIONAL" ? "CUSTOMER" : input.role;
-
+  // PROFESSIONAL is a real backend role since M1. Only ADMIN is not
+  // registrable — RegistrationRole excludes it at the type level, and the
+  // backend Zod enum would reject it with a 400 regardless.
   const response = await apiClient.post<ApiSuccessResponse<AuthSession>>(
     "/auth/register",
-    { ...input, role: wireRole },
+    input,
   );
 
   return response.data.data;

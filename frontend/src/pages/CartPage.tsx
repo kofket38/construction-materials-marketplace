@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { refreshCartProducts } from "@/features/cart/api/cart-products.api";
 import { CartItemRow } from "@/features/cart/components/CartItemRow";
 import { ConfirmCartActionDialog } from "@/features/cart/components/ConfirmCartActionDialog";
@@ -63,8 +64,9 @@ export function CartPage() {
     () => items.map((item) => item.productId).sort(),
     [items],
   );
+  // PROFESSIONAL accounts are buyer-capable and share the customer cart.
   const isCustomer =
-    authStatus === "authenticated" && user?.role === "CUSTOMER";
+    authStatus === "authenticated" && isBuyerRole(user?.role);
 
   const cartProductsQuery = useQuery({
     queryKey: ["cart", "products", userId, productIds],
@@ -164,12 +166,12 @@ export function CartPage() {
     return <CartAccessState />;
   }
 
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return (
       <CartAccessState
-        description="Shopping cart actions are available to customer accounts."
+        description="Shopping cart actions are available to customer and professional accounts."
         showSignIn={false}
-        title="Customer account required"
+        title="Buyer account required"
       />
     );
   }

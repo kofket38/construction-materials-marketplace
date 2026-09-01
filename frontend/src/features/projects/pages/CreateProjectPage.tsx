@@ -10,8 +10,6 @@ import { ProjectForm } from "@/features/projects/components/ProjectForm";
 export function CreateProjectPage() {
   const navigate = useNavigate();
 
-  // Route protection (authentication) is handled by RequireAuth in the router.
-
   async function submit(input: CreateProjectInput): Promise<Project> {
     return createProject(input);
   }

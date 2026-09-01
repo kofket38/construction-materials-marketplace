@@ -1,5 +1,9 @@
 import type { AuthenticatedUser } from "../types/auth.js";
-import { BadRequestError, NotFoundError } from "../utils/api-error.js";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "../utils/api-error.js";
 import { ProjectReorderOwnershipError } from "../repositories/project.errors.js";
 import type {
   CreateProjectInput,
@@ -40,6 +44,8 @@ export class ProjectService {
     actor: AuthenticatedUser,
     input: CreateProjectBody,
   ): Promise<ProjectEntity> {
+    this.requireProfessional(actor);
+
     const data: CreateProjectInput = {
       ownerId: actor.userId,
       title: input.title,
@@ -59,10 +65,12 @@ export class ProjectService {
   }
 
   /**
-   * Lists every project owned by the authenticated user in display order,
-   * regardless of status.
+   * Lists every project owned by the authenticated professional in display
+   * order, regardless of status.
    */
-  getMyProjects(actor: AuthenticatedUser): Promise<ProjectEntity[]> {
+  async getMyProjects(actor: AuthenticatedUser): Promise<ProjectEntity[]> {
+    this.requireProfessional(actor);
+
     return this.projects.findByOwnerId(actor.userId);
   }
 
@@ -116,6 +124,8 @@ export class ProjectService {
     projectId: string,
     input: UpdateProjectBody,
   ): Promise<ProjectEntity> {
+    this.requireProfessional(actor);
+
     // Fetch first so we can enforce the terminal-status read-only rule and
     // ownership in a single consistent pass. The lookup is owner-scoped so a
     // foreign project ID is indistinguishable from a missing one (404).
@@ -154,6 +164,8 @@ export class ProjectService {
     actor: AuthenticatedUser,
     projectId: string,
   ): Promise<void> {
+    this.requireProfessional(actor);
+
     const deleted = await this.projects.delete(projectId, actor.userId);
 
     if (!deleted) {
@@ -170,6 +182,8 @@ export class ProjectService {
     actor: AuthenticatedUser,
     input: ReorderProjectsBody,
   ): Promise<ProjectEntity[]> {
+    this.requireProfessional(actor);
+
     try {
       return await this.projects.reorder(actor.userId, input.projectIds);
     } catch (error) {
@@ -229,6 +243,8 @@ export class ProjectService {
     projectId: string,
     input: ChangeProjectStatusBody,
   ): Promise<ProjectEntity> {
+    this.requireProfessional(actor);
+
     const project = await this.projects.findById(projectId);
 
     if (!project || project.ownerId !== actor.userId) {
@@ -264,6 +280,18 @@ export class ProjectService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Project mutations and own-project reads are restricted to PROFESSIONAL
+   * accounts. This mirrors the seller services' requireSeller defense-in-depth:
+   * the route-level authorizeRoles("PROFESSIONAL") guard stops requests early,
+   * while this check keeps the service contract safe for any caller.
+   */
+  private requireProfessional(actor: AuthenticatedUser): void {
+    if (actor.role !== "PROFESSIONAL") {
+      throw new ForbiddenError("Professional access is required.");
+    }
+  }
 
   /**
    * Maps validated request fields onto the repository update input. Status

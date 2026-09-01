@@ -125,7 +125,8 @@ export class RfqService {
     if (actor.role === "ADMIN") {
       return rfq;
     }
-    if (actor.role === "CUSTOMER") {
+    if (actor.role === "CUSTOMER" || actor.role === "PROFESSIONAL") {
+      // PROFESSIONAL accounts are buyer-capable and own RFQs like customers.
       if (rfq.customerId !== actor.userId) {
         throw new ForbiddenError("You can only view your own RFQs.");
       }
@@ -265,7 +266,8 @@ export class RfqService {
   }
 
   private requireCustomer(actor: AuthenticatedUser): void {
-    if (actor.role !== "CUSTOMER") {
+    // PROFESSIONAL accounts are buyer-capable and share customer purchasing.
+    if (actor.role !== "CUSTOMER" && actor.role !== "PROFESSIONAL") {
       throw new ForbiddenError("Customer access is required.");
     }
   }

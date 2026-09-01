@@ -4,7 +4,12 @@ import { useAuthStore } from "@/features/auth/model/auth.store";
 import type { UserRole } from "@/features/auth/model/auth.types";
 
 export interface RequireRoleProps {
-  role: UserRole;
+  /**
+   * Either a single permitted role, or a predicate for capability-based
+   * access. Pass isBuyerRole for routes shared by CUSTOMER and PROFESSIONAL
+   * so the permitted set is not restated here.
+   */
+  role: UserRole | ((role: UserRole) => boolean);
 }
 
 export function RequireRole({ role }: RequireRoleProps) {
@@ -28,7 +33,10 @@ export function RequireRole({ role }: RequireRoleProps) {
     );
   }
 
-  if (user.role !== role) {
+  const isPermitted =
+    typeof role === "function" ? role(user.role) : user.role === role;
+
+  if (!isPermitted) {
     return <Navigate replace to="/products" />;
   }
 

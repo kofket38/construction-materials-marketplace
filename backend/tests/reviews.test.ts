@@ -13,6 +13,8 @@ const sellerId = randomUUID();
 const customerId = randomUUID();
 const otherCustomerId = randomUUID();
 const adminId = randomUUID();
+const professionalId = randomUUID();
+const unpurchasedProfessionalId = randomUUID();
 
 describe("Review API", () => {
   const tokenService = new JwtTokenService();
@@ -24,6 +26,8 @@ describe("Review API", () => {
   let otherCustomerToken: string;
   let sellerToken: string;
   let adminToken: string;
+  let professionalToken: string;
+  let unpurchasedProfessionalToken: string;
 
   beforeEach(async () => {
     products = new InMemoryProductRepository();
@@ -48,6 +52,15 @@ describe("Review API", () => {
       name: "Other Customer",
     });
     reviews.markDeliveredPurchase(customerId, productId);
+    reviews.addCustomer({
+      id: professionalId,
+      name: "Professional Buyer",
+    });
+    reviews.addCustomer({
+      id: unpurchasedProfessionalId,
+      name: "Unpurchased Professional",
+    });
+    reviews.markDeliveredPurchase(professionalId, productId);
 
     const users = new InMemoryUserRepository();
     users.addUser({
@@ -62,6 +75,16 @@ describe("Review API", () => {
     });
     users.addUser({ id: sellerId, name: "Seller One", role: "SELLER" });
     users.addUser({ id: adminId, name: "Admin User", role: "ADMIN" });
+    users.addUser({
+      id: professionalId,
+      name: "Professional Buyer",
+      role: "PROFESSIONAL",
+    });
+    users.addUser({
+      id: unpurchasedProfessionalId,
+      name: "Unpurchased Professional",
+      role: "PROFESSIONAL",
+    });
 
     app = createApp({
       userRepository: users,
@@ -75,6 +98,11 @@ describe("Review API", () => {
     otherCustomerToken = createToken(otherCustomerId, "CUSTOMER");
     sellerToken = createToken(sellerId, "SELLER");
     adminToken = createToken(adminId, "ADMIN");
+    professionalToken = createToken(professionalId, "PROFESSIONAL");
+    unpurchasedProfessionalToken = createToken(
+      unpurchasedProfessionalId,
+      "PROFESSIONAL",
+    );
   });
 
   it("allows a customer with a delivered purchase to review a product", async () => {
@@ -263,9 +291,100 @@ describe("Review API", () => {
     });
   });
 
+  // ── Professional buyer capability (M1) ──────────────────────────────────────
+  // PROFESSIONAL accounts are buyer-capable and may review products they
+  // purchased through delivered orders, exactly like customers.
+  describe("professional buyer capability", () => {
+    it("allows a professional with a delivered purchase to review a product", async () => {
+      const response = await createReview(professionalToken, {
+        rating: 4,
+        comment: "Consistent quality across three site deliveries.",
+      });
+
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          review: {
+            productId,
+            customerId: professionalId,
+            rating: 4,
+            comment: "Consistent quality across three site deliveries.",
+            customer: { id: professionalId, name: "Professional Buyer" },
+          },
+        },
+      });
+
+      // The review is a first-class review — publicly listed and aggregated.
+      const listing = await request(app)
+        .get(`/api/products/${productId}/reviews`)
+        .expect(200);
+      expect(listing.body.data).toMatchObject({
+        reviews: [{ customerId: professionalId, rating: 4 }],
+        averageRating: 4,
+        reviewCount: 1,
+      });
+    });
+
+    it("allows a professional to update and delete their own review", async () => {
+      const created = await createReview(professionalToken, { rating: 3 });
+      const reviewId = created.body.data.review.id as string;
+
+      const updated = await request(app)
+        .put(`/api/reviews/${reviewId}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({ rating: 5, comment: "Improved after the second batch." })
+        .expect(200);
+      expect(updated.body.data.review).toMatchObject({
+        id: reviewId,
+        rating: 5,
+        comment: "Improved after the second batch.",
+      });
+
+      await request(app)
+        .delete(`/api/reviews/${reviewId}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(200);
+      expect(await reviews.findById(reviewId)).toBeNull();
+    });
+
+    it("still requires a delivered purchase for professionals", async () => {
+      const response = await createReview(
+        unpurchasedProfessionalToken,
+        { rating: 5 },
+        403,
+      );
+
+      expect(response.body.message).toBe(
+        "You can only review products from your delivered orders.",
+      );
+    });
+
+    it("still enforces review ownership between a professional and a customer", async () => {
+      const created = await createReview(customerToken, { rating: 4 });
+      const reviewId = created.body.data.review.id as string;
+
+      await request(app)
+        .put(`/api/reviews/${reviewId}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({ rating: 1 })
+        .expect(403);
+
+      await request(app)
+        .delete(`/api/reviews/${reviewId}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(403);
+    });
+
+    it("still rejects seller accounts", async () => {
+      await createReview(sellerToken, { rating: 5 }, 403);
+    });
+  });
+
   function createToken(
     userId: string,
-    role: "CUSTOMER" | "SELLER" | "ADMIN",
+    role: "CUSTOMER" | "SELLER" | "ADMIN" | "PROFESSIONAL",
   ): string {
     return tokenService.createAccessToken({ userId, role });
   }

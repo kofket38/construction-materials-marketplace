@@ -37,6 +37,7 @@ import { RelatedProducts } from "@/features/products/components/RelatedProducts"
 import { RequestQuoteDialog } from "@/features/products/components/RequestQuoteDialog";
 import { ReviewSummary } from "@/features/products/components/ReviewSummary";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { useMarketplaceLocationStore } from "@/features/marketplace/model/marketplace-location.store";
 import {
   getApiErrorMessage,
@@ -63,8 +64,9 @@ export function ProductDetailsPage() {
     useState<ProductDetailsTab>("description");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
+  // PROFESSIONAL accounts are buyer-capable and share customer actions.
   const isCustomer =
-    authStatus === "authenticated" && user?.role === "CUSTOMER";
+    authStatus === "authenticated" && isBuyerRole(user?.role);
   const wishlistQueryKey = ["wishlist", user?.id ?? "anonymous"] as const;
 
   const productQuery = useQuery({
@@ -202,9 +204,9 @@ export function ProductDetailsPage() {
       return;
     }
 
-    if (user.role !== "CUSTOMER") {
+    if (!isBuyerRole(user.role)) {
       setActionMessage(
-        "Wishlist actions are available to customer accounts.",
+        "Wishlist actions are available to customer and professional accounts.",
       );
       return;
     }
@@ -220,9 +222,9 @@ export function ProductDetailsPage() {
       return;
     }
 
-    if (user.role !== "CUSTOMER") {
+    if (!isBuyerRole(user.role)) {
       setActionMessage(
-        "Quote requests are available to customer accounts.",
+        "Quote requests are available to customer and professional accounts.",
       );
       return;
     }

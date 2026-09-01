@@ -11,6 +11,7 @@ const cementCategoryId = randomUUID();
 const steelCategoryId = randomUUID();
 const customerId = randomUUID();
 const otherCustomerId = randomUUID();
+const professionalId = randomUUID();
 const sellerId = randomUUID();
 const secondSellerId = randomUUID();
 const ineligibleSellerId = randomUUID();
@@ -27,6 +28,7 @@ describe("RFQ API", () => {
   let rfqs: InMemoryRfqRepository;
   let customerToken: string;
   let otherCustomerToken: string;
+  let professionalToken: string;
   let sellerToken: string;
   let secondSellerToken: string;
   let ineligibleSellerToken: string;
@@ -47,6 +49,12 @@ describe("RFQ API", () => {
       name: "Other Customer",
       company: null,
       email: "other@example.com",
+    });
+    rfqs.addCustomer({
+      id: professionalId,
+      name: "Professional Buyer",
+      company: "Pro Consulting",
+      email: "professional@example.com",
     });
     rfqs.addSeller({
       id: sellerId,
@@ -93,6 +101,11 @@ describe("RFQ API", () => {
     const users = new InMemoryUserRepository();
     users.addUser({ id: customerId, name: "Primary Customer", role: "CUSTOMER" });
     users.addUser({ id: otherCustomerId, name: "Other Customer", role: "CUSTOMER" });
+    users.addUser({
+      id: professionalId,
+      name: "Professional Buyer",
+      role: "PROFESSIONAL",
+    });
     users.addUser({ id: sellerId, name: "First Seller", role: "SELLER" });
     users.addUser({ id: secondSellerId, name: "Second Seller", role: "SELLER" });
     users.addUser({ id: ineligibleSellerId, name: "Cement Only", role: "SELLER" });
@@ -107,6 +120,7 @@ describe("RFQ API", () => {
 
     customerToken = token(customerId, "CUSTOMER");
     otherCustomerToken = token(otherCustomerId, "CUSTOMER");
+    professionalToken = token(professionalId, "PROFESSIONAL");
     sellerToken = token(sellerId, "SELLER");
     secondSellerToken = token(secondSellerId, "SELLER");
     ineligibleSellerToken = token(ineligibleSellerId, "SELLER");
@@ -600,6 +614,97 @@ describe("RFQ API", () => {
     expect(response.body.data.rfq.items).toHaveLength(20);
   });
 
+  // ── Professional buyer capability (M1) ──────────────────────────────────────
+  // PROFESSIONAL accounts are buyer-capable and own RFQs exactly like
+  // customers, matching authorizeRoles("CUSTOMER", "PROFESSIONAL") on the
+  // RFQ routes.
+  describe("professional buyer capability", () => {
+    it("allows a professional to submit an RFQ", async () => {
+      const created = await createRfq(professionalToken);
+
+      expect(created.body.data.rfq).toMatchObject({
+        customerId: professionalId,
+        status: "OPEN",
+        title: "Bulk structural materials",
+      });
+      expect(created.body.data.rfq.items).toHaveLength(2);
+    });
+
+    it("returns only the professional's own RFQs", async () => {
+      const own = await createRfq(professionalToken);
+      await createRfq(customerToken);
+
+      const listing = await request(app)
+        .get("/api/rfqs/me")
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+
+      expect(listing.body.data.rfqs).toHaveLength(1);
+      expect(listing.body.data.rfqs[0].id).toBe(own.body.data.rfq.id);
+    });
+
+    it("allows a professional to view their own RFQ but not another buyer's", async () => {
+      const own = await createRfq(professionalToken);
+      const foreign = await createRfq(customerToken);
+
+      await request(app)
+        .get(`/api/rfqs/${own.body.data.rfq.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+
+      await request(app)
+        .get(`/api/rfqs/${foreign.body.data.rfq.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(403);
+    });
+
+    it("allows a professional to cancel their own RFQ", async () => {
+      const created = await createRfq(professionalToken);
+
+      const cancelled = await request(app)
+        .patch(`/api/rfqs/${created.body.data.rfq.id}/cancel`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(200);
+
+      expect(cancelled.body.data.rfq.status).toBe("CANCELLED");
+    });
+
+    it("allows a professional to accept a quote into an order at quoted prices", async () => {
+      const created = await createRfq(professionalToken);
+      const rfq = created.body.data.rfq;
+      const quote = await createQuote(
+        sellerToken,
+        rfq,
+        sellerCementId,
+        sellerSteelId,
+        { firstPrice: "4.00", secondPrice: "8.00" },
+      );
+
+      const response = await request(app)
+        .post(`/api/quotes/${quote.body.data.quote.id}/accept`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(201);
+
+      expect(response.body.data.order).toMatchObject({
+        customerId: professionalId,
+        status: "PENDING",
+        totalAmount: "520.00",
+      });
+      expect(response.body.data.rfq).toMatchObject({
+        status: "AWARDED",
+        awardedQuoteId: quote.body.data.quote.id,
+      });
+      expect(rfqs.getOrders()).toHaveLength(1);
+    });
+
+    it("still rejects seller and admin RFQ creation", async () => {
+      await createRfq(sellerToken, 403);
+      await createRfq(adminToken, 403);
+    });
+  });
+
   function addProduct(
     id: string,
     ownerId: string,
@@ -619,7 +724,7 @@ describe("RFQ API", () => {
 
   function token(
     userId: string,
-    role: "CUSTOMER" | "SELLER" | "ADMIN",
+    role: "CUSTOMER" | "SELLER" | "ADMIN" | "PROFESSIONAL",
   ): string {
     return tokenService.createAccessToken({ userId, role });
   }

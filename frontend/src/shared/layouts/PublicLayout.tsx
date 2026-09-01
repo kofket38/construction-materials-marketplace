@@ -30,6 +30,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 
 import { logout } from "@/features/auth/api/auth.api";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import {
   emptyCartItems,
   getCartItemCount,
@@ -61,7 +62,7 @@ export function PublicLayout() {
     (state) => state.setUnauthenticated,
   );
   const cartItems = useCartStore((state) =>
-    user?.role === "CUSTOMER"
+    user && isBuyerRole(user.role)
       ? (state.cartsByUserId[user.id] ?? emptyCartItems)
       : emptyCartItems,
   );
@@ -104,7 +105,7 @@ export function PublicLayout() {
           <nav
             aria-label="Primary navigation"
             className={
-              user?.role === "SELLER" || user?.role === "CUSTOMER"
+              user?.role === "SELLER" || isBuyerRole(user?.role)
                 ? "hidden self-stretch xl:flex"
                 : "hidden self-stretch sm:flex"
             }
@@ -126,25 +127,25 @@ export function PublicLayout() {
               Projects
             </NavLink>
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            isBuyerRole(user?.role) ? (
               <NavLink className={navLinkClassName} to="/orders">
                 My Orders
               </NavLink>
             ) : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            isBuyerRole(user?.role) ? (
               <NavLink className={navLinkClassName} to="/rfqs">
                 My RFQs
               </NavLink>
             ) : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            isBuyerRole(user?.role) ? (
               <NavLink className={navLinkClassName} to="/wishlist">
                 Wishlist
               </NavLink>
             ) : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            user?.role === "PROFESSIONAL" ? (
               <NavLink
                 className={navLinkClassName}
                 to="/profile/professional"
@@ -153,7 +154,7 @@ export function PublicLayout() {
               </NavLink>
             ) : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            user?.role === "PROFESSIONAL" ? (
               <NavLink
                 className={navLinkClassName}
                 to="/professional/dashboard"
@@ -201,18 +202,6 @@ export function PublicLayout() {
                 >
                   Settings
                 </NavLink>
-                <NavLink
-                  className={navLinkClassName}
-                  to="/profile/professional"
-                >
-                  My Profile
-                </NavLink>
-                <NavLink
-                  className={navLinkClassName}
-                  to="/professional/dashboard"
-                >
-                  Pro Dashboard
-                </NavLink>
               </>
             ) : null}
           </nav>
@@ -220,7 +209,7 @@ export function PublicLayout() {
           <div className="relative ml-auto flex items-center gap-2">
             {user?.role !== "SELLER" ? <MarketplaceCityButton /> : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            isBuyerRole(user?.role) ? (
               <Link
                 aria-label="My Orders"
                 className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 sm:hidden"
@@ -231,7 +220,7 @@ export function PublicLayout() {
               </Link>
             ) : null}
             {status === "authenticated" &&
-            user?.role === "CUSTOMER" ? (
+            isBuyerRole(user?.role) ? (
               <Link
                 aria-label="My Wishlist"
                 className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 sm:hidden"
@@ -296,12 +285,6 @@ export function PublicLayout() {
                       to="/seller/profile"
                     />
                     <MobileMenuLink
-                      icon={UserCircle}
-                      label="My Profile"
-                      onClick={() => setIsSellerMenuOpen(false)}
-                      to="/profile/professional"
-                    />
-                    <MobileMenuLink
                       icon={Users}
                       label="Professionals"
                       onClick={() => setIsSellerMenuOpen(false)}
@@ -313,19 +296,13 @@ export function PublicLayout() {
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/projects"
                     />
-                    <MobileMenuLink
-                      icon={LayoutDashboard}
-                      label="Pro Dashboard"
-                      onClick={() => setIsSellerMenuOpen(false)}
-                      to="/professional/dashboard"
-                    />
                 </HeaderDropdownMenu>
               </>
             ) : (
               <>
                 <HeaderDropdownMenu
                   buttonClassName={`inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 ${
-                    user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
+                    isBuyerRole(user?.role) ? "xl:hidden" : "sm:hidden"
                   }`}
                   isOpen={isPrimaryMenuOpen}
                   label="Open navigation"
@@ -333,7 +310,7 @@ export function PublicLayout() {
                   onToggle={() => setIsPrimaryMenuOpen((isOpen) => !isOpen)}
                   panelAriaLabel="Site navigation"
                   panelClassName={`absolute right-0 top-12 z-40 w-56 rounded-md border border-zinc-200 bg-white p-2 shadow-lg ${
-                    user?.role === "CUSTOMER" ? "xl:hidden" : "sm:hidden"
+                    isBuyerRole(user?.role) ? "xl:hidden" : "sm:hidden"
                   }`}
                   title="Navigation"
                 >
@@ -362,7 +339,7 @@ export function PublicLayout() {
                       to="/projects"
                     />
                     {status === "authenticated" &&
-                    user?.role === "CUSTOMER" ? (
+                    isBuyerRole(user?.role) ? (
                       <>
                         <MobileMenuLink
                           icon={ClipboardList}
@@ -382,6 +359,11 @@ export function PublicLayout() {
                           onClick={() => setIsPrimaryMenuOpen(false)}
                           to="/wishlist"
                         />
+                      </>
+                    ) : null}
+                    {status === "authenticated" &&
+                    user?.role === "PROFESSIONAL" ? (
+                      <>
                         <MobileMenuLink
                           icon={UserCircle}
                           label="My Profile"

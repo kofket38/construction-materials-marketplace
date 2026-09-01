@@ -24,7 +24,7 @@ export function createRfqRouter(
   router.post(
     "/rfqs",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: createRfqBodySchema,
       params: emptyRfqObjectSchema,
@@ -36,7 +36,7 @@ export function createRfqRouter(
   router.get(
     "/rfqs/me",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyRfqObjectSchema,
       params: emptyRfqObjectSchema,
@@ -83,7 +83,7 @@ export function createRfqRouter(
   router.put(
     "/rfqs/:id",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: updateRfqBodySchema,
       params: rfqIdParamsSchema,
@@ -95,7 +95,7 @@ export function createRfqRouter(
   router.patch(
     "/rfqs/:id/cancel",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyRfqObjectSchema,
       params: rfqIdParamsSchema,
@@ -143,7 +143,7 @@ export function createRfqRouter(
   router.post(
     "/quotes/:id/reject",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyRfqObjectSchema,
       params: quoteIdParamsSchema,
@@ -155,7 +155,7 @@ export function createRfqRouter(
   router.post(
     "/quotes/:id/accept",
     requireAuthentication,
-    authorizeRoles("CUSTOMER"),
+    authorizeRoles("CUSTOMER", "PROFESSIONAL"),
     validateRequest({
       body: emptyRfqObjectSchema,
       params: quoteIdParamsSchema,

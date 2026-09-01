@@ -14,6 +14,7 @@ const sellerId = randomUUID();
 const customerId = randomUUID();
 const otherCustomerId = randomUUID();
 const adminId = randomUUID();
+const professionalId = randomUUID();
 
 describe("Wishlist API", () => {
   const tokenService = new JwtTokenService();
@@ -25,6 +26,7 @@ describe("Wishlist API", () => {
   let otherCustomerToken: string;
   let sellerToken: string;
   let adminToken: string;
+  let professionalToken: string;
 
   beforeEach(async () => {
     const products = new InMemoryProductRepository();
@@ -65,6 +67,11 @@ describe("Wishlist API", () => {
     });
     users.addUser({ id: sellerId, name: "Seller One", role: "SELLER" });
     users.addUser({ id: adminId, name: "Admin User", role: "ADMIN" });
+    users.addUser({
+      id: professionalId,
+      name: "Professional Buyer",
+      role: "PROFESSIONAL",
+    });
 
     app = createApp({
       userRepository: users,
@@ -78,6 +85,7 @@ describe("Wishlist API", () => {
     otherCustomerToken = createToken(otherCustomerId, "CUSTOMER");
     sellerToken = createToken(sellerId, "SELLER");
     adminToken = createToken(adminId, "ADMIN");
+    professionalToken = createToken(professionalId, "PROFESSIONAL");
   });
 
   it("allows a customer to add an existing product", async () => {
@@ -219,9 +227,94 @@ describe("Wishlist API", () => {
       .expect(400);
   });
 
+  // ── Professional buyer capability (M1) ──────────────────────────────────────
+  // PROFESSIONAL accounts are buyer-capable and share the customer wishlist.
+  describe("professional buyer capability", () => {
+    it("allows a professional to add a product to their wishlist", async () => {
+      const response = await addToWishlist(
+        professionalToken,
+        firstProduct.id,
+        201,
+      );
+
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          wishlistItem: {
+            customerId: professionalId,
+            productId: firstProduct.id,
+            product: { id: firstProduct.id, name: "Portland Cement" },
+          },
+        },
+      });
+    });
+
+    it("allows a professional to list and remove their own items", async () => {
+      await addToWishlist(professionalToken, firstProduct.id, 201);
+      await addToWishlist(professionalToken, secondProduct.id, 201);
+
+      const listing = await request(app)
+        .get("/api/wishlist")
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+      expect(
+        listing.body.data.wishlistItems.map(
+          (item: { productId: string }) => item.productId,
+        ),
+      ).toHaveLength(2);
+
+      await request(app)
+        .delete(`/api/wishlist/${firstProduct.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(200)
+        .expect({ success: true, data: null });
+    });
+
+    it("scopes professional and customer wishlists separately", async () => {
+      await addToWishlist(professionalToken, firstProduct.id, 201);
+      await addToWishlist(customerToken, secondProduct.id, 201);
+
+      const professionalListing = await request(app)
+        .get("/api/wishlist")
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .expect(200);
+      expect(professionalListing.body.data.wishlistItems).toHaveLength(1);
+      expect(
+        professionalListing.body.data.wishlistItems[0],
+      ).toMatchObject({ customerId: professionalId, productId: firstProduct.id });
+
+      // A professional deleting the customer's item must not succeed.
+      await request(app)
+        .delete(`/api/wishlist/${secondProduct.id}`)
+        .set("Authorization", `Bearer ${professionalToken}`)
+        .send({})
+        .expect(404);
+
+      const customerListing = await request(app)
+        .get("/api/wishlist")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .expect(200);
+      expect(customerListing.body.data.wishlistItems).toHaveLength(1);
+      expect(customerListing.body.data.wishlistItems[0]).toMatchObject({
+        customerId,
+        productId: secondProduct.id,
+      });
+    });
+
+    it("still rejects seller and admin accounts", async () => {
+      for (const token of [sellerToken, adminToken]) {
+        await request(app)
+          .get("/api/wishlist")
+          .set("Authorization", `Bearer ${token}`)
+          .expect(403);
+      }
+    });
+  });
+
   function createToken(
     userId: string,
-    role: "CUSTOMER" | "SELLER" | "ADMIN",
+    role: "CUSTOMER" | "SELLER" | "ADMIN" | "PROFESSIONAL",
   ): string {
     return tokenService.createAccessToken({ userId, role });
   }

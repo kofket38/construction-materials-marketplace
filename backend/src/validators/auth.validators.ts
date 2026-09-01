@@ -28,7 +28,7 @@ const passwordSchema = z
 
 const registrationRoleSchema = z.preprocess(
   (value) => (value === "BUYER" ? "CUSTOMER" : value),
-  z.enum(["CUSTOMER", "SELLER"]).default("CUSTOMER"),
+  z.enum(["CUSTOMER", "SELLER", "PROFESSIONAL"]).default("CUSTOMER"),
 );
 
 export const registerBodySchema = z

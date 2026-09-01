@@ -27,7 +27,7 @@ export const adminUsersQuerySchema = z
     page: pageSchema.optional(),
     limit: limitSchema.optional(),
     search: searchSchema.optional(),
-    role: z.enum(["CUSTOMER", "SELLER", "ADMIN"]).optional(),
+    role: z.enum(["CUSTOMER", "SELLER", "ADMIN", "PROFESSIONAL"]).optional(),
   })
   .strict();
 

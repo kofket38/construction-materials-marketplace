@@ -102,6 +102,40 @@ describe("authentication API", () => {
       });
     });
 
+    it("registers a PROFESSIONAL account and returns the PROFESSIONAL role", async () => {
+      const response = await request(app)
+        .post("/api/auth/register")
+        .send({ ...validRegistration, email: "pro@example.com", role: "PROFESSIONAL" })
+        .expect(201);
+
+      expect(response.body.data.user.role).toBe("PROFESSIONAL");
+    });
+
+    it("issues PROFESSIONAL access tokens that pass authentication", async () => {
+      const registration = await request(app)
+        .post("/api/auth/register")
+        .send({ ...validRegistration, email: "pro@example.com", role: "PROFESSIONAL" })
+        .expect(201);
+
+      const accessToken = registration.body.data.accessToken as string;
+
+      const me = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(me.body.data.user.role).toBe("PROFESSIONAL");
+    });
+
+    it("still registers SELLER accounts", async () => {
+      const response = await request(app)
+        .post("/api/auth/register")
+        .send({ ...validRegistration, email: "seller@example.com", role: "SELLER" })
+        .expect(201);
+
+      expect(response.body.data.user.role).toBe("SELLER");
+    });
+
     it("rejects invalid input and duplicate email addresses", async () => {
       const invalidResponse = await request(app)
         .post("/api/auth/register")

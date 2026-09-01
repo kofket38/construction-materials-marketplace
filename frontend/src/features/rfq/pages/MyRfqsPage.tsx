@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { getMyRfqs } from "@/features/rfq/api/rfq.api";
 import {
   formatRfqDate,
@@ -39,7 +40,7 @@ export function MyRfqsPage() {
 
   const rfqsQuery = useQuery({
     queryKey: ["rfqs", "mine", { page, status }],
-    enabled: authStatus === "authenticated" && user?.role === "CUSTOMER",
+    enabled: authStatus === "authenticated" && isBuyerRole(user?.role),
     queryFn: ({ signal }) =>
       getMyRfqs({ page, limit: PAGE_SIZE, ...(status ? { status } : {}) }, signal),
     placeholderData: keepPreviousData,
@@ -48,7 +49,7 @@ export function MyRfqsPage() {
   if (authStatus !== "authenticated" || !user) {
     return <Navigate replace state={{ returnTo: "/rfqs" }} to="/login" />;
   }
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return <Navigate replace to="/products" />;
   }
   if (rfqsQuery.isPending) {

@@ -1,5 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import type { ProfessionalProfileController } from "../controllers/professional-profile.controller.js";
+import { authorizeRoles } from "../middleware/authorize-role.js";
+import { tryAuthenticate } from "../middleware/optional-authentication.js";
 import { validateRequest } from "../middleware/validate-request.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
@@ -39,10 +41,12 @@ export function createProfessionalProfileRouter(
   );
 
   // ── POST /api/professional-profiles ─────────────────────────────────────────
-  // Authenticated users only (any role may create a professional profile).
+  // PROFESSIONAL accounts only (route and service gated). Ownership of the
+  // created profile is the authenticated user's own account.
   router.post(
     "/",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: createProfessionalProfileBodySchema,
       params: emptyProfessionalProfileObjectSchema,
@@ -52,11 +56,15 @@ export function createProfessionalProfileRouter(
   );
 
   // ── GET /api/professional-profiles/me ────────────────────────────────────────
-  // Returns the authenticated user's own profile (null if not yet created).
+  // PROFESSIONAL accounts only. Returns the authenticated professional's own
+  // profile (null if not yet created). Other roles cannot own a professional
+  // profile — PROFESSIONAL is registration-only — so they receive 403 rather
+  // than a meaningless null.
   // Must be registered BEFORE /:profileId to prevent "me" being treated as a UUID.
   router.get(
     "/me",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProfessionalProfileObjectSchema,
       params: emptyProfessionalProfileObjectSchema,
@@ -85,6 +93,7 @@ export function createProfessionalProfileRouter(
   router.patch(
     "/:profileId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: updateProfessionalProfileBodySchema,
       params: profileIdParamsSchema,
@@ -97,6 +106,7 @@ export function createProfessionalProfileRouter(
   router.delete(
     "/:profileId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProfessionalProfileObjectSchema,
       params: profileIdParamsSchema,
@@ -109,6 +119,7 @@ export function createProfessionalProfileRouter(
   router.put(
     "/:profileId/specialties",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: replaceSpecialtiesBodySchema,
       params: profileIdParamsSchema,
@@ -121,6 +132,7 @@ export function createProfessionalProfileRouter(
   router.post(
     "/:profileId/credentials",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: createCredentialBodySchema,
       params: profileIdParamsSchema,
@@ -133,6 +145,7 @@ export function createProfessionalProfileRouter(
   router.patch(
     "/:profileId/credentials/:credentialId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: updateCredentialBodySchema,
       params: profileIdParamsSchema.merge(credentialIdParamsSchema),
@@ -145,6 +158,7 @@ export function createProfessionalProfileRouter(
   router.delete(
     "/:profileId/credentials/:credentialId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProfessionalProfileObjectSchema,
       params: profileIdParamsSchema.merge(credentialIdParamsSchema),
@@ -172,6 +186,7 @@ export function createProfessionalProfileRouter(
   router.post(
     "/:profileId/portfolio",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: createPortfolioItemBodySchema,
       params: profileIdParamsSchema,
@@ -184,6 +199,7 @@ export function createProfessionalProfileRouter(
   router.patch(
     "/:profileId/portfolio/:itemId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: updatePortfolioItemBodySchema,
       params: profileIdParamsSchema.merge(portfolioItemIdParamsSchema),
@@ -196,6 +212,7 @@ export function createProfessionalProfileRouter(
   router.delete(
     "/:profileId/portfolio/:itemId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProfessionalProfileObjectSchema,
       params: profileIdParamsSchema.merge(portfolioItemIdParamsSchema),
@@ -205,21 +222,4 @@ export function createProfessionalProfileRouter(
   );
 
   return router;
-}
-
-/**
- * Wraps a mandatory authentication middleware so it becomes optional.
- * When a valid token is present, req.auth is populated as usual.
- * When the token is missing or invalid, the request continues unauthenticated
- * (req.auth remains undefined) rather than being rejected.
- */
-function tryAuthenticate(authenticate: RequestHandler): RequestHandler {
-  return (req, res, next) => {
-    authenticate(req, res, (err) => {
-      // Suppress authentication errors so public access still works.
-      // The controller handles authorization for private profiles.
-      void err;
-      next();
-    });
-  };
 }

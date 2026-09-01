@@ -24,6 +24,7 @@ import {
 import { PaymentProofUpload } from "@/features/checkout/components/PaymentProofUpload";
 import { readManualPaymentInstructions } from "@/features/checkout/lib/bank-transfer-storage";
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
@@ -46,7 +47,7 @@ export function BankTransferDetailsPage() {
     enabled:
       Boolean(orderId) &&
       authStatus === "authenticated" &&
-      user?.role === "CUSTOMER",
+      isBuyerRole(user?.role),
     queryFn: ({ signal }) => {
       if (!orderId) {
         throw new Error("An order ID is required.");
@@ -90,7 +91,7 @@ export function BankTransferDetailsPage() {
       />
     );
   }
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return <Navigate replace to="/products" />;
   }
   if (paymentQuery.isPending && !paymentDestination) {

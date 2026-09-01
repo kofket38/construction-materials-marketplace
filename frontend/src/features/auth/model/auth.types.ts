@@ -1,12 +1,18 @@
-export type UserRole = "CUSTOMER" | "SELLER" | "ADMIN";
+export type UserRole = "CUSTOMER" | "SELLER" | "ADMIN" | "PROFESSIONAL";
 
 /**
- * UI-only registration role. PROFESSIONAL is a product-level concept that
- * creates a CUSTOMER account and redirects to professional profile onboarding.
- * It must NEVER be sent to the backend — auth.api.ts maps it to "CUSTOMER"
- * before the API request.
+ * Registration roles offered by the sign-up UI. ADMIN is excluded — it can
+ * never be self-registered (the backend Zod enum rejects it with a 400).
  */
-export type RegistrationRole = "CUSTOMER" | "SELLER" | "PROFESSIONAL";
+export type RegistrationRole = Exclude<UserRole, "ADMIN">;
+
+/**
+ * Buyer-capable roles. PROFESSIONAL accounts retain full customer purchasing
+ * capabilities (orders, payments, reviews, wishlists, RFQs).
+ */
+export function isBuyerRole(role: UserRole | undefined): boolean {
+  return role === "CUSTOMER" || role === "PROFESSIONAL";
+}
 
 export interface AuthUser {
   id: string;
@@ -39,8 +45,8 @@ export interface RegisterInput {
   phone?: string;
   company?: string;
   /**
-   * The UI registration role. PROFESSIONAL maps to CUSTOMER on the wire.
-   * auth.api.ts performs the mapping — the backend never receives PROFESSIONAL.
+   * The registration role is sent to the backend as chosen. Since M1,
+   * PROFESSIONAL is a real backend role; only ADMIN is not registrable.
    */
   role: RegistrationRole;
 }

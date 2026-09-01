@@ -1,5 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import type { ProjectController } from "../controllers/project.controller.js";
+import { authorizeRoles } from "../middleware/authorize-role.js";
+import { tryAuthenticate } from "../middleware/optional-authentication.js";
 import { validateRequest } from "../middleware/validate-request.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
@@ -33,10 +35,11 @@ export function createProjectRouter(
   );
 
   // ── POST /api/projects ──────────────────────────────────────────────────────
-  // Authenticated users only (any role may own projects).
+  // PROFESSIONAL accounts only (route and service gated).
   router.post(
     "/",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: createProjectBodySchema,
       params: emptyProjectObjectSchema,
@@ -46,11 +49,15 @@ export function createProjectRouter(
   );
 
   // ── GET /api/projects/me ────────────────────────────────────────────────────
-  // Returns every project owned by the authenticated user in display order.
+  // PROFESSIONAL accounts only. Returns every project owned by the
+  // authenticated professional in display order. Other roles cannot own
+  // projects — PROFESSIONAL is registration-only — so they receive 403 rather
+  // than a meaningless empty list.
   // Must be registered BEFORE /:projectId to prevent "me" being treated as a UUID.
   router.get(
     "/me",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProjectObjectSchema,
       params: emptyProjectObjectSchema,
@@ -63,6 +70,7 @@ export function createProjectRouter(
   router.put(
     "/me/reorder",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: reorderProjectsBodySchema,
       params: emptyProjectObjectSchema,
@@ -91,6 +99,7 @@ export function createProjectRouter(
   router.patch(
     "/:projectId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: updateProjectBodySchema,
       params: projectIdParamsSchema,
@@ -103,6 +112,7 @@ export function createProjectRouter(
   router.patch(
     "/:projectId/status",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: changeProjectStatusBodySchema,
       params: projectIdParamsSchema,
@@ -115,6 +125,7 @@ export function createProjectRouter(
   router.delete(
     "/:projectId",
     requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
     validateRequest({
       body: emptyProjectObjectSchema,
       params: projectIdParamsSchema,
@@ -124,21 +135,4 @@ export function createProjectRouter(
   );
 
   return router;
-}
-
-/**
- * Wraps a mandatory authentication middleware so it becomes optional.
- * When a valid token is present, req.auth is populated as usual.
- * When the token is missing or invalid, the request continues unauthenticated
- * (req.auth remains undefined) rather than being rejected.
- */
-function tryAuthenticate(authenticate: RequestHandler): RequestHandler {
-  return (req, res, next) => {
-    authenticate(req, res, (err) => {
-      // Suppress authentication errors so public access still works.
-      // The service handles authorization for non-published projects.
-      void err;
-      next();
-    });
-  };
 }

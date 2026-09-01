@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
+import { isBuyerRole } from "@/features/auth/model/auth.types";
 import {
   calculateCartSubtotal,
   formatCartAmount,
@@ -45,7 +46,7 @@ export function CheckoutPage() {
   const hydrationStatus = useCartStore((state) => state.hydrationStatus);
   const clearCart = useCartStore((state) => state.clearCart);
   const items = useCartStore((state) =>
-    user?.role === "CUSTOMER"
+    user && isBuyerRole(user.role)
       ? (state.cartsByUserId[user.id] ?? emptyCartItems)
       : emptyCartItems,
   );
@@ -77,7 +78,7 @@ export function CheckoutPage() {
     ],
     enabled:
       authStatus === "authenticated" &&
-      user?.role === "CUSTOMER" &&
+      isBuyerRole(user?.role) &&
       items.length > 0,
     queryFn: ({ signal }) =>
       getCheckoutPaymentOptions(
@@ -91,7 +92,7 @@ export function CheckoutPage() {
     return <Navigate replace state={{ returnTo: "/checkout" }} to="/login" />;
   }
 
-  if (user.role !== "CUSTOMER") {
+  if (!isBuyerRole(user.role)) {
     return <Navigate replace to="/cart" />;
   }
 
