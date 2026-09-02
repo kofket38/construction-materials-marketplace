@@ -41,6 +41,12 @@ export const checkoutSchema = checkoutShippingSchema.extend({
   paymentMethod: z.enum(checkoutPaymentMethods, {
     error: "Select a payment method.",
   }),
+  /**
+   * Optional professional project this order is grouped under. An empty string
+   * means "not linked"; the field is only ever set by the professional-only
+   * attachment control and is stripped from the shipping payload on submit.
+   */
+  projectId: z.string(),
 });
 
 export type CheckoutPaymentMethod =

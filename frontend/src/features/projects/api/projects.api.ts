@@ -1,3 +1,5 @@
+import type { OrderStatus } from "@/features/orders/model/order";
+import type { RfqStatus } from "@/features/rfq/model/rfq";
 import type { ApiSuccessResponse } from "@/shared/api/api.types";
 import { apiClient } from "@/shared/api/http-client";
 
@@ -114,6 +116,42 @@ export interface CreateProjectInput {
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 
+// ── Procurement link types (owner-private) ────────────────────────────────────
+
+/**
+ * An RFQ attached to a project, as summarised by the owner procurement view.
+ * Dates arrive as ISO strings; the backend `Date` fields are JSON-serialised.
+ */
+export interface ProjectRfqSummary {
+  id: string;
+  title: string;
+  status: RfqStatus;
+  deliveryLocation: string;
+  itemCount: number;
+  quoteCount: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** An order attached to a project. */
+export interface ProjectOrderSummary {
+  id: string;
+  status: OrderStatus;
+  /** Fixed two-decimal string, matching the order total. */
+  totalAmount: string;
+  itemCount: number;
+  createdAt: string;
+}
+
+/**
+ * Everything the project owner sees about procurement linked to one project.
+ * Owner-private — it is never part of the public project detail payload.
+ */
+export interface ProjectProcurementSummary {
+  rfqs: ProjectRfqSummary[];
+  orders: ProjectOrderSummary[];
+}
+
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 type ProjectListData = { projects: Project[] };
@@ -190,6 +228,47 @@ export async function reorderProjects(projectIds: string[]): Promise<Project[]> 
     { projectIds },
   );
   return res.data.data.projects;
+}
+
+// ── Procurement link API calls ────────────────────────────────────────────────
+
+/**
+ * Owner-private view of the RFQs and orders attached to one project. Foreign
+ * and non-existent project IDs both return 404, so callers must not treat a
+ * 404 as proof the project is missing.
+ */
+export async function getProjectProcurement(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<ProjectProcurementSummary> {
+  const res = await apiClient.get<
+    ApiSuccessResponse<ProjectProcurementSummary>
+  >(`/projects/${encodeURIComponent(projectId)}/procurement`, { signal });
+  return res.data.data;
+}
+
+/**
+ * Clears the project link on one attached RFQ. The RFQ itself is untouched —
+ * this only releases it from the project so the owner is never permanently
+ * blocked from deleting the project by the ON DELETE RESTRICT foreign keys.
+ */
+export async function detachProjectRfq(
+  projectId: string,
+  rfqId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/projects/${encodeURIComponent(projectId)}/procurement/rfqs/${encodeURIComponent(rfqId)}`,
+  );
+}
+
+/** Clears the project link on one attached order. The order is untouched. */
+export async function detachProjectOrder(
+  projectId: string,
+  orderId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/projects/${encodeURIComponent(projectId)}/procurement/orders/${encodeURIComponent(orderId)}`,
+  );
 }
 
 // ── Public discovery API calls ────────────────────────────────────────────────

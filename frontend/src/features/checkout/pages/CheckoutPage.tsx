@@ -25,6 +25,7 @@ import {
   submitManualPayment,
 } from "@/features/checkout/api/payments.api";
 import { CheckoutForm } from "@/features/checkout/components/CheckoutForm";
+import { CheckoutProjectSection } from "@/features/checkout/components/CheckoutProjectSection";
 import { OrderReview } from "@/features/checkout/components/OrderReview";
 import { PaymentProviders } from "@/features/checkout/components/PaymentProviders";
 import { saveManualPaymentInstructions } from "@/features/checkout/lib/bank-transfer-storage";
@@ -58,6 +59,7 @@ export function CheckoutPage() {
       fullName: user?.name ?? "",
       notes: "",
       phone: user?.phone ?? "",
+      projectId: "",
     },
     resolver: zodResolver(checkoutSchema),
   });
@@ -121,7 +123,9 @@ export function CheckoutPage() {
 
   const subtotal = calculateCartSubtotal(items);
   const submitOrder = handleSubmit(async (values) => {
-    const { paymentMethod, ...shipping } = values;
+    // projectId is pulled out separately: everything left over is the shipping
+    // payload, which must not gain a procurement field.
+    const { paymentMethod, projectId, ...shipping } = values;
     const isManualPayment = paymentMethod !== "CASH_ON_DELIVERY";
 
     if (isManualPayment && !proofFile) {
@@ -132,7 +136,12 @@ export function CheckoutPage() {
     }
 
     try {
-      const result = await createOrder(items, shipping, paymentMethod);
+      const result = await createOrder(
+        items,
+        shipping,
+        paymentMethod,
+        projectId || undefined,
+      );
 
       if ("manualPaymentInstructions" in result) {
         saveManualPaymentInstructions(
@@ -208,6 +217,7 @@ export function CheckoutPage() {
         >
           <div className="min-w-0">
             <CheckoutForm />
+            <CheckoutProjectSection disabled={isSubmitting} />
             <OrderReview items={items} />
             <PaymentProviders
               amount={subtotal.toFixed(2)}

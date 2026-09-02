@@ -61,6 +61,7 @@ export async function createOrder(
   items: CartItem[],
   shipping: CheckoutShippingValues,
   paymentMethod: OrderPaymentMethod,
+  projectId?: string,
 ): Promise<CreateOrderResult> {
   const response = await apiClient.post<
     ApiSuccessResponse<CreateOrderResult>
@@ -72,6 +73,9 @@ export async function createOrder(
     })),
     shipping,
     paymentMethod,
+    // Omitted entirely when absent: the create body is strict, and only
+    // PROFESSIONAL accounts may send it.
+    ...(projectId ? { projectId } : {}),
   });
 
   return response.data.data;

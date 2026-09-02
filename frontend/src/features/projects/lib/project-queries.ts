@@ -9,6 +9,14 @@ export function ownerProjectKey(projectId: string) {
   return ["projects", "owner", projectId] as const;
 }
 
+/**
+ * Query key for the owner-private procurement view of one project. It lives in
+ * the same "projects" namespace so useInvalidateProjects refreshes it too.
+ */
+export function projectProcurementKey(projectId: string) {
+  return ["projects", "procurement", projectId] as const;
+}
+
 // ── Public discovery query keys ───────────────────────────────────────────────
 
 /**

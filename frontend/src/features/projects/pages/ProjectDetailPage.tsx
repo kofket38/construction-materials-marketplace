@@ -23,6 +23,7 @@ import {
   type UpdateProjectInput,
 } from "@/features/projects/api/projects.api";
 import { ProjectForm } from "@/features/projects/components/ProjectForm";
+import { ProjectProcurementSection } from "@/features/projects/components/ProjectProcurementSection";
 import { ProjectStatusActions, ProjectStatusBadge } from "@/features/projects/components/ProjectStatusControls";
 import { ownerProjectKey } from "@/features/projects/lib/project-queries";
 import {
@@ -144,6 +145,9 @@ export function ProjectDetailPage() {
 
         {/* Overview */}
         <ProjectOverviewSection project={project} />
+
+        {/* Attached RFQs and orders */}
+        <ProjectProcurementSection project={project} />
 
         {/* Edit details */}
         <EditSection key={project.updatedAt} project={project} />

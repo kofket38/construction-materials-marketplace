@@ -12,6 +12,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { isBuyerRole } from "@/features/auth/model/auth.types";
+import { ProjectProcurementSelect } from "@/features/projects/components/ProjectProcurementSelect";
 import { createRfq } from "@/features/rfq/api/rfq.api";
 import { RFQ_UNIT_LABELS, RFQ_UNITS, type RfqItemInput, type RfqUnit } from "@/features/rfq/model/rfq";
 import { getMarketplaceCategories } from "@/features/marketplace/api/marketplace.api";
@@ -42,6 +43,7 @@ export function CreateRfqPage() {
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [expiresAt, setExpiresAt] = useState(futureIso(14));
+  const [projectId, setProjectId] = useState("");
   const [items, setItems] = useState<RfqItemInput[]>([defaultItem()]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -93,6 +95,9 @@ export function CreateRfqPage() {
       deliveryLocation: deliveryLocation.trim(),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
       expiresAt: new Date(expiresAt + "T23:59:59Z").toISOString(),
+      // Omitted entirely when nothing is selected, so a standalone RFQ sends
+      // exactly the payload it always did.
+      ...(projectId ? { projectId } : {}),
       items: items.map((item) => ({
         categoryId: item.categoryId,
         materialName: item.materialName.trim(),
@@ -195,6 +200,15 @@ export function CreateRfqPage() {
             value={notes}
           />
         </FieldGroup>
+
+        {/* Project link — professionals only; renders nothing for customers. */}
+        <ProjectProcurementSelect
+          description="Grouping the request under a project keeps its quotes and any resulting order together in your project procurement view."
+          disabled={createMutation.isPending}
+          id="rfq-project"
+          onChange={setProjectId}
+          value={projectId}
+        />
 
         {/* Items */}
         <section>

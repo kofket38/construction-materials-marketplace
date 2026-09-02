@@ -119,6 +119,11 @@ export interface SupplierQuote {
 export interface RequestForQuote {
   id: string;
   customerId: string;
+  /**
+   * Professional project this request is grouped under, or null when it is
+   * standalone. Only PROFESSIONAL accounts can set it.
+   */
+  projectId: string | null;
   title: string;
   deliveryLocation: string;
   notes: string | null;
@@ -161,6 +166,12 @@ export interface CreateRfqInput {
   deliveryLocation: string;
   notes?: string;
   expiresAt: string;
+  /**
+   * Optional professional project to group this request under. Omit it to keep
+   * the request standalone; the backend rejects it for non-PROFESSIONAL
+   * accounts, so only send it when the user actually owns projects.
+   */
+  projectId?: string;
   items: RfqItemInput[];
 }
 

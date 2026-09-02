@@ -56,15 +56,18 @@ payments, reviews, wishlists, RFQs). M1 itself added no payment, messaging,
 notification, or delivery-charge functionality; the manual payment flow it
 reuses predates M1.
 
-**Included in M1: project procurement links (backend only).**
+**Included in M1: project procurement links.**
 
 A professional can attach their own RFQs and orders to one of their own
 projects, read an owner-private procurement view of everything attached to a
 project, and detach a single link. Attached procurement gates the project
 lifecycle: a project cannot be completed while unexpired OPEN RFQs or unsettled
 orders remain attached, and cannot be deleted while any link remains. The
-backend is complete, typechecked, and verified against live PostgreSQL. There
-is no frontend work for this feature yet.
+backend is complete, typechecked, and verified against live PostgreSQL. The
+frontend reaches all three capabilities: an optional project selector on RFQ
+creation and checkout, and a procurement section with detach actions on the
+owner's project detail page. Both attachment controls are professional-only, so
+customer flows are unchanged.
 
 ## 4. Completed Modules
 
@@ -176,7 +179,7 @@ is no frontend work for this feature yet.
     routes, and `isBuyerRole` as the frontend single source of truth.
   - Administrator dashboard buyer totals counting both `CUSTOMER` and
     `PROFESSIONAL` accounts.
-- Project procurement links (backend only) with:
+- Project procurement links (backend and frontend) with:
   - Optional `projectId` on RFQ creation, RFQ update, and checkout, resolved
     against the authenticated professional's own projects before any write
     begins. RFQ update is a full replacement, so omitting the field detaches.
@@ -189,6 +192,16 @@ is no frontend work for this feature yet.
   - Live PostgreSQL verification that the `ON DELETE RESTRICT` violation
     surfaces as a `409`, that detaching is project-scoped, and that the
     procurement summaries and lifecycle counts match the real queries.
+  - Frontend attachment on both entry points: an optional "Attach to project"
+    selector on RFQ creation and on checkout, rendered only for `PROFESSIONAL`
+    accounts. `CUSTOMER` requests are unchanged — the control is absent and no
+    `projectId` is sent.
+  - Frontend procurement section on the owner's project detail page listing the
+    attached RFQs and orders with loading, empty, and error states, plus
+    per-row detach actions with confirmation and per-row error reporting.
+  - No completion or deletion guard is reimplemented in the frontend. The
+    backend stays the only authority; its `409` messages are surfaced verbatim
+    by the existing lifecycle and delete controls.
 
 ## 5. Folder Structure
 
@@ -560,11 +573,13 @@ Deployment and configuration:
 No approved implementation work remains within the RFQ & Supplier Quotations
 module.
 
-The project procurement links increment is complete on the backend. What
-remains for it:
+The project procurement links increment is complete on the backend and the
+frontend. What remains for it is deferred rather than unfinished:
 
-- Frontend integration: attaching an RFQ or order to a project, the owner's
-  procurement view, and the detach actions have no UI.
+- The procurement view is unpaginated; see section 12.
+- There is no RFQ edit screen, so an attached RFQ can only be detached from the
+  project procurement section, not by re-saving the request. The backend update
+  endpoint treats an omitted `projectId` as a detach, but no UI reaches it.
 
 Features outside the currently implemented scope:
 
@@ -582,10 +597,11 @@ Features outside the currently implemented scope:
 ## 10. Next Exact Task To Continue
 
 **M1 Professional Identity is complete and committed, including the project
-procurement links increment.** The backend typechecks and passes the full suite
-against live PostgreSQL. Frontend work for procurement links has not started and
-is the natural follow-up. Do not begin payments, messaging, notifications, or
-another business module until the next requirements are provided and approved.
+procurement links increment on both the backend and the frontend.** The backend
+typechecks and passes the full suite against live PostgreSQL; the frontend
+typechecks, lints, and builds. No approved implementation work remains. Do not
+begin payments, messaging, notifications, or another business module until the
+next requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -738,10 +754,12 @@ Current limitations and deferred work:
   order in one unpaginated response. It is bounded in practice by how much
   procurement one professional attaches to a single project, but it should gain
   pagination before that count can grow large.
-- Project procurement links are backend-only. No frontend screen attaches an
-  RFQ or order to a project, reads the procurement view, or calls the detach
-  endpoints, so the completion and deletion guards are currently only
-  reachable through the API.
+- Attached procurement is reachable from the UI, but only from the project it is
+  attached to. The RFQ detail page and the order detail page do not show which
+  project they belong to, and there is no RFQ edit screen, so detaching is only
+  possible from the project procurement section.
+- The project procurement section lists every attached RFQ and order because the
+  endpoint behind it is unpaginated; it inherits that limit.
 - RFQ seller eligibility uses relational category coverage and may need
   denormalized targeting or specialized indexes at very large catalog scale.
 - Payments are manual and proof-based only. Automated gateway capture, provider
@@ -762,23 +780,43 @@ RFQ integration suite        PASS (10/10, inside the full suite)
 project procurement suite    PASS (10/10 live PostgreSQL, inside the full suite)
 ```
 
-Frontend verification is carried forward unchanged from the M1 Professional
-Identity baseline (2026-09-01, re-verified end to end after the local frontend
-API base URL was corrected); the procurement increment touched no frontend
-files:
+Frontend re-verified for the procurement frontend increment (2026-09-02):
 
 ```text
 frontend typecheck           PASS
-frontend lint                PASS
-frontend build               PASS (bakes http://localhost:3055/api locally)
+frontend lint                PASS (eslint . --max-warnings 0)
+frontend build               PASS (tsc -b && vite build, 1930 modules)
+```
+
+The procurement frontend increment changed no backend file. The four HTTP
+suites that define the contract it consumes were re-run standalone to confirm
+that (these use in-memory repositories, so they need no database):
+
+```text
+project-procurement.test.ts  ┐
+rfqs.test.ts                 ├ PASS (195 tests, 4 files, 8.77s)
+orders.test.ts               │
+projects.test.ts             ┘
+```
+
+The marketplace smoke test was not re-run for this increment: it drives the
+public marketplace, while every changed screen (RFQ creation, checkout, project
+detail) is behind buyer or professional authentication, so it would exercise
+none of them. The frontend baseline below is carried forward from the M1
+Professional Identity baseline (2026-09-01, re-verified end to end after the
+local frontend API base URL was corrected):
+
+```text
 frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
 ```
 
 The full backend suite also covers the rate-limit and admin dashboard tests and
 the order and inventory-synchronization integration suites; those are not
-tracked as separate baseline lines. The RFQ and project procurement suites are
-called out above only because they are the slowest and most
-environment-sensitive part of the run — they are not run separately.
+tracked as separate baseline lines. The two suites called out in the backend
+block above are the live-PostgreSQL integration files
+(`prisma-rfq.integration.test.ts`, `prisma-project-procurement.integration.test.ts`);
+they are the slowest and most environment-sensitive part of the run and are
+reported inside the full suite rather than run on their own.
 
 The frontend marketplace smoke test (`node frontend/scripts/smoke-marketplace.mjs`,
 run from the repository root) now passes against the local backend on port 3055.
