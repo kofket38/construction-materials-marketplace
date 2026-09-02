@@ -1,15 +1,18 @@
 # Project State
 
-Last updated: 2026-09-01
+Last updated: 2026-09-02
 
 ## 1. Project Overview
 
 Construction Materials Marketplace is a TypeScript/Express backend for a
-multi-role marketplace. It supports customer purchasing, seller catalog and
-business management, customer wishlists, verified-purchase product reviews,
-RFQs and supplier quotations, professional identity (profiles, portfolios,
-projects, and a public directory), and administrator marketplace monitoring and
-moderation.
+multi-role marketplace. It supports customer purchasing, manual proof-based
+order payments, seller catalog and business management, seller inventory and
+fulfilment, customer wishlists, verified-purchase product reviews, RFQs and
+supplier quotations, professional identity (profiles, portfolios, projects, and
+a public directory), and administrator marketplace monitoring and moderation.
+
+A React/TypeScript frontend client consumes this API and is deployed alongside
+it; see section 8 for both stacks.
 
 The API uses a layered architecture:
 
@@ -49,8 +52,9 @@ accounts register publicly, manage exactly one professional profile with
 specialties and credentials, maintain portfolio items and professional
 projects, and appear in the public professional directory and project
 discovery. Professionals keep the full customer buying capability set (orders,
-payments, reviews, wishlists, RFQs). Payments, messaging, notifications, and
-delivery charges are not included.
+payments, reviews, wishlists, RFQs). M1 itself added no payment, messaging,
+notification, or delivery-charge functionality; the manual payment flow it
+reuses predates M1.
 
 **Included in M1: project procurement links (backend only).**
 
@@ -70,6 +74,26 @@ is no frontend work for this feature yet.
 - Customer order creation, ownership access, cancellation, and admin status
   updates.
 - Transactional stock reservation/restoration and order-price snapshots.
+- Manual, proof-based order payments with:
+  - Checkout payment options resolved from the seller's configured manual
+    payment destinations, restricted to single-seller carts.
+  - Multipart payment-proof upload capped at 5 MB, validated by MIME type and
+    by image magic-byte signature, with at most one payment per order and
+    storage rollback when the database write fails.
+  - Payment proofs stored as objects (Supabase Storage in deployment) and
+    served only through an authenticated endpoint that rejects path traversal
+    and non-participants.
+  - Seller verification or rejection, allowed only while the order is
+    `PENDING_PAYMENT_VERIFICATION` and its payment is `PENDING_VERIFICATION`.
+  - Buyer-visible payment detail per order.
+  - No automated gateway, webhook, refund, or payout handling.
+- Seller inventory offers with per-seller, per-product price, quantity, city,
+  region, and delivery availability; seller-only CRUD and uniqueness per
+  `(sellerId, productId)`.
+- Order fulfilment with seller order detail, seller status transitions,
+  buyer-initiated completion of a `DELIVERED` order (idempotent when already
+  `COMPLETED`), and append-only inventory transactions for shipments and
+  cancellations.
 - Seller dashboard summary, seller-product management, seller-order views, and
   analytics.
 - Public product discovery with:
@@ -171,6 +195,7 @@ is no frontend work for this feature yet.
 ```text
 CMM/
   PROJECT_STATE.md
+  render.yaml               Render deployment definition (backend + frontend)
   backend/
     prisma/
       schema.prisma
@@ -180,7 +205,7 @@ CMM/
       server.ts              HTTP startup and graceful shutdown
       config/                Environment, logging, security configuration
       controllers/           HTTP request/response handling
-      middleware/            Auth, roles, validation, rate limits, errors
+      middleware/            Auth, roles, validation, rate limits, uploads, errors
       prisma/                Prisma client and generated client
       repositories/          Contracts and Prisma implementations
       routes/                Route composition
@@ -188,24 +213,37 @@ CMM/
       types/                 Shared TypeScript/Express types
       utils/                 Passwords, token hashing, API errors, async helper
       validators/            Zod input/query schemas
-    tests/
+    tests/                   35 Vitest files; HTTP suites use Supertest
       helpers/               In-memory repository test doubles
-      admin-dashboard.test.ts
-      auth.test.ts
-      categories.test.ts
-      orders.test.ts
-      prisma-admin-dashboard.repository.test.ts
-      prisma-rfq.repository.test.ts
-      prisma-review.repository.test.ts
-      prisma-wishlist.repository.test.ts
-      products.test.ts
-      reviews.test.ts
-      rfqs.test.ts
-      seller-dashboard.test.ts
-      wishlist.test.ts
     README.md
     package.json
+  frontend/
+    src/
+      main.tsx               React entry point
+      app/
+        App.tsx              Application shell
+        api/                 Axios auth wiring
+        providers/           Provider composition and React Query client
+        router/              Route table and role guards
+      features/              admin, auth, cart, checkout, marketplace, orders,
+                             payments, products, professional-profile,
+                             projects, rfq, seller
+      pages/                 Cross-feature pages (auth, catalog, cart, wishlist)
+      shared/
+        api/                 HTTP client, error mapping, asset URL resolution
+        config/              Vite environment access
+        forms/               Shared React Hook Form configuration
+        layouts/             Public, root, and dashboard layouts
+        ui/                  Shared status/presentation components
+      styles/                Tailwind entry stylesheet
+    scripts/                 Node smoke and capture scripts
+    package.json
 ```
+
+Feature folders draw from a consistent set of subfolders, using only the ones
+they need: `api/` for the typed endpoint client, `model/` for request/response
+types, `lib/` for query keys and display helpers, `components/` for reusable
+pieces, and `pages/` for routed screens.
 
 ## 6. Database Schema
 
@@ -214,12 +252,16 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | Model | Purpose |
 | --- | --- |
 | `User` | Customer, professional, seller, or administrator account; stores active/disabled state and a hashed refresh token. |
-| `SellerProfile` | One-to-one seller profile containing shop name, phone, and address. |
+| `SellerProfile` | One-to-one seller profile containing shop name, phone, address, and the optional manual payment destinations (Telebirr, CBE Birr, bank accounts, e-Birr) offered at checkout. |
+| `Brand` | Optional product brand with a unique name, description, and image. |
 | `Category` | Administrator-managed product category. |
 | `Product` | Seller listing with category, decimal price, stock quantity, primary-image projection, and timestamps. |
 | `ProductImage` | Managed product image URL with primary-image state and creation time. |
-| `Order` | Customer order with status and total amount. |
+| `SellerInventory` | Per-seller, per-product offer with price, quantity, city/region, and delivery availability; unique per `(sellerId, productId)`. |
+| `Order` | Customer order with status, payment method, and total amount. |
+| `Payment` | One manual payment per order: method, provider name, stored proof reference, verification status, and verification time. |
 | `OrderItem` | Product/quantity/price snapshot belonging to an order. |
+| `InventoryTransaction` | Append-only stock movement for an order shipment or cancellation, unique per `(orderId, productId, type)`. |
 | `Review` | Customer rating and optional comment for a purchased product. |
 | `WishlistItem` | Customer-saved product with creation time for ordered retrieval. |
 | `RequestForQuote` | Customer request containing procurement context, lifecycle status, expiry, and an awarded quotation reference. |
@@ -227,6 +269,8 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `SupplierQuote` | Seller response with validity, terms, total amount, lifecycle status, and an optional generated order. |
 | `SupplierQuoteItem` | Seller product, offered quantity, and quoted-price snapshot for an RFQ item. |
 | `ProfessionalProfile` | One-to-one professional identity with headline, bio, specialties, and credentials; mutations are professional-only. |
+| `ProfessionalSpecialty` | Named specialty on a professional profile, unique per `(profileId, name)`. |
+| `ProfessionalCredential` | Education, certification, training, award, or other credential on a professional profile. |
 | `PortfolioItem` | Portfolio entry belonging to a professional profile; managed only by the owning professional. |
 | `Project` | Professional project belonging to a professional profile with ordering support; managed only by the owning professional. Optionally acts as a procurement container for the owner's RFQs and orders. |
 
@@ -242,6 +286,10 @@ Relations:
   order items.
 - A `ProductImage` belongs to one product and is deleted with that product.
 - An `Order` belongs to one customer and has many order items.
+- An `Order` has at most one `Payment` (`orderId` is unique) and many inventory
+  transactions; both are cascade-deleted with the order.
+- A `SellerInventory` row belongs to one seller and one product and is unique
+  per `(sellerId, productId)`.
 - `OrderItem` is unique per `(orderId, productId)`.
 - A `Review` belongs to one product and one customer.
 - `Review` is unique per `(customerId, productId)`, and its rating is
@@ -266,12 +314,31 @@ Relations:
 Enums:
 
 - `Role`: `CUSTOMER`, `SELLER`, `PROFESSIONAL`, `ADMIN`
-- `OrderStatus`: `PENDING`, `CONFIRMED`, `SHIPPED`, `DELIVERED`, `CANCELLED`
+- `OrderStatus`: `PENDING_PAYMENT`, `PENDING_PAYMENT_VERIFICATION`,
+  `PAYMENT_VERIFIED`, `PAYMENT_REJECTED`, `PENDING_CONFIRMATION`, `PROCESSING`,
+  `READY_FOR_DELIVERY`, `OUT_FOR_DELIVERY`, `REJECTED`, `PENDING`, `CONFIRMED`,
+  `SHIPPED`, `DELIVERED`, `COMPLETED`, `CANCELLED`. `PENDING`, `CONFIRMED`,
+  `SHIPPED`, and `DELIVERED` are retained for backward compatibility with
+  pre-checkout orders and the RFQ acceptance path.
+- `PaymentMethod`: `CASH_ON_DELIVERY`, `TELEBIRR`, `CBE_BIRR`, `AWASH_BIRR`,
+  `BANK_TRANSFER`, `CBE_BANK`, `AWASH_BANK`, `DASHEN_BANK`, `E_BIRR`
+- `PaymentStatus`: `PENDING_VERIFICATION`, `VERIFIED`, `REJECTED`
 - `RfqStatus`: `OPEN`, `AWARDED`, `CANCELLED`, `EXPIRED`
 - `SupplierQuoteStatus`: `SUBMITTED`, `ACCEPTED`, `REJECTED`, `WITHDRAWN`,
   `CLOSED`
 - `RfqUnit`: `BAG`, `KG`, `TONNE`, `LITRE`, `METRE`, `SQUARE_METRE`,
   `CUBIC_METRE`, `PIECE`, `ROLL`, `PALLET`, `LOAD`, `OTHER`
+- `ProductApprovalStatus`: `PENDING`, `APPROVED`, `REJECTED`
+- `ProductImageType`: `OFFICIAL`, `DEFAULT`, `SELLER_UPLOAD`
+- `InventoryTransactionType`: `ORDER_SHIPMENT`, `ORDER_CANCELLATION`
+- `ProfileVisibility`: `PUBLIC`, `PRIVATE`
+- `CredentialType`: `EDUCATION`, `CERTIFICATION`, `TRAINING`, `AWARD`, `OTHER`
+- `ProjectStatus`: `DRAFT`, `PUBLISHED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`
+
+The project lifecycle guard treats `COMPLETED`, `CANCELLED`, `REJECTED`, and
+`PAYMENT_REJECTED` as settled order statuses (`SETTLED_ORDER_STATUSES` in
+`backend/src/repositories/project.repository.ts`); every other status counts as
+active procurement.
 
 Applied migrations:
 
@@ -328,6 +395,14 @@ project lifecycle guard's active-procurement counts.
 
 ## 7. API Endpoints Created
 
+The application serves 99 endpoints: 98 registered across the 14 routers under
+`backend/src/routes/` plus the unmounted `/health` probe. All of them are listed
+below.
+
+In the access column, "Customer" means the buyer role set — `CUSTOMER` and
+`PROFESSIONAL` — because professional accounts keep full buyer capability
+(`authorizeRoles("CUSTOMER", "PROFESSIONAL")`).
+
 | Method | Endpoint | Access |
 | --- | --- | --- |
 | `GET` | `/health` | Public |
@@ -343,6 +418,9 @@ project lifecycle guard's active-procurement counts.
 | `DELETE` | `/api/categories/:id` | Admin |
 | `POST` | `/api/products` | Seller |
 | `GET` | `/api/products` | Public product discovery |
+| `GET` | `/api/products/marketplace/cities` | Public |
+| `GET` | `/api/products/marketplace/sellers` | Public |
+| `GET` | `/api/products/stores/:sellerId` | Public |
 | `GET` | `/api/products/:id` | Public |
 | `PUT` | `/api/products/:id` | Owning seller |
 | `DELETE` | `/api/products/:id` | Owning seller |
@@ -370,15 +448,32 @@ project lifecycle guard's active-procurement counts.
 | `POST` | `/api/quotes/:id/accept` | RFQ owner |
 | `GET` | `/api/admin/rfqs` | Admin |
 | `POST` | `/api/orders` | Customer |
+| `GET` | `/api/orders` | Authenticated; alias of `/api/orders/me` |
 | `GET` | `/api/orders/me` | Authenticated |
 | `GET` | `/api/orders/:id` | Order owner or admin |
 | `PATCH` | `/api/orders/:id/status` | Admin |
+| `POST` | `/api/orders/:id/complete` | Order owner |
 | `DELETE` | `/api/orders/:id` | Order owner or admin |
+| `POST` | `/api/payments/options` | Customer |
+| `POST` | `/api/payments/manual` | Customer; multipart proof upload |
+| `GET` | `/api/payments/proof/:filename` | Authenticated; order participant or admin |
+| `GET` | `/api/payments/:orderId` | Order owner |
 | `GET` | `/api/seller/dashboard` | Seller |
 | `GET` | `/api/seller/products` | Seller |
 | `GET` | `/api/seller/orders` | Seller |
+| `GET` | `/api/seller/orders/:orderId` | Seller |
+| `PATCH` | `/api/seller/orders/:orderId/payment` | Seller; verifies or rejects a manual payment |
+| `PATCH` | `/api/seller/orders/:orderId/status` | Seller |
 | `GET` | `/api/seller/analytics` | Seller |
+| `GET` | `/api/seller/inventory` | Seller |
+| `POST` | `/api/seller/inventory` | Seller |
+| `PATCH` | `/api/seller/inventory/:id` | Seller |
+| `DELETE` | `/api/seller/inventory/:id` | Seller |
+| `GET` | `/api/seller/profile` | Seller |
+| `PUT` | `/api/seller/profile` | Seller |
+| `PATCH` | `/api/seller/profile` | Seller |
 | `GET` | `/api/admin/dashboard` | Admin |
+| `GET` | `/api/admin/orders` | Admin |
 | `GET` | `/api/admin/users` | Admin |
 | `PATCH` | `/api/admin/users/:id/status` | Admin |
 | `GET` | `/api/admin/sellers` | Admin |
@@ -419,6 +514,8 @@ stock, sortBy, sortOrder
 
 ## 8. Technologies Used
 
+Backend:
+
 - Node.js 24+ and npm 11+
 - TypeScript with ESM modules
 - Express 5
@@ -428,8 +525,35 @@ stock, sortBy, sortOrder
 - JSON Web Tokens and bcrypt
 - cookie-parser, CORS, Helmet, express-rate-limit
 - Pino structured logging
+- Multer 2 for payment-proof uploads and `@supabase/storage-js` for
+  proof object storage
 - Vitest and Supertest for HTTP integration tests
 - tsx for development-time TypeScript execution
+
+Frontend:
+
+- React 19 with TypeScript, built by Vite 7
+- React Router 7 for routing and role-guarded routes
+- TanStack React Query 5 for server-state fetching, caching, and mutations
+- Axios for the HTTP client layer
+- React Hook Form 7 with `@hookform/resolvers` and Zod 4 schemas for forms
+- Zustand 5 for local auth/session state
+- Tailwind CSS 4 via `@tailwindcss/vite`
+- lucide-react icons
+- ESLint 9 with `typescript-eslint` (`--max-warnings 0`)
+- No frontend unit-test runner is configured. Frontend verification is
+  typecheck, lint, production build, and the Node marketplace smoke script
+  (`frontend/scripts/smoke-marketplace.mjs`).
+
+Deployment and configuration:
+
+- Supabase-hosted PostgreSQL, accessed through the connection pooler with
+  `DATABASE_URL` plus `DIRECT_URL` for migrations
+- Render deployment described by `render.yaml`, which injects
+  `VITE_API_BASE_URL` into the frontend build (`sync: false`)
+- Local development uses `backend/.env` (`PORT=3055`) and `frontend/.env`
+  (`VITE_API_BASE_URL=http://localhost:3055/api`); both files are gitignored
+- CI pipelines and production observability are still not configured.
 
 ## 9. Remaining Tasks
 
@@ -444,11 +568,16 @@ remains for it:
 
 Features outside the currently implemented scope:
 
-- Payment processing and payment status/reconciliation.
+- Automated payment-gateway capture, provider webhooks, refunds, and seller
+  payouts or settlement. Manual proof-based payment submission, seller
+  verification/rejection, and payment status tracking are implemented — see
+  section 4 — so only the automated side of payments remains unscoped.
 - Buyer/seller chat or messaging.
 - Notifications.
-- A frontend client, deployment/CI configuration, and operational monitoring
-  have not been defined in the current scope.
+- Delivery charges.
+- CI pipelines and production observability. The frontend client and the
+  Render/Supabase deployment configuration are implemented and in use; see
+  section 8.
 
 ## 10. Next Exact Task To Continue
 
@@ -577,7 +706,7 @@ another business module until the next requirements are provided and approved.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-09-01. The
+No known failing tests or confirmed functional bugs as of 2026-09-02. The
 product-discovery batch transaction now sets an explicit transaction-start
 budget (`maxWait`) after live smoke verification surfaced Prisma `P2028`
 "unable to start a transaction" failures under Supabase latency.
@@ -615,8 +744,10 @@ Current limitations and deferred work:
   reachable through the API.
 - RFQ seller eligibility uses relational category coverage and may need
   denormalized targeting or specialized indexes at very large catalog scale.
-- Payments, messaging, notifications, delivery charges, frontend delivery,
-  CI/CD, and production observability remain unscoped and unimplemented.
+- Payments are manual and proof-based only. Automated gateway capture, provider
+  webhooks, refunds, and seller payouts/settlement are not implemented.
+- Messaging, notifications, delivery charges, CI pipelines, and production
+  observability remain unscoped and unimplemented.
 
 ## Verification Baseline
 
