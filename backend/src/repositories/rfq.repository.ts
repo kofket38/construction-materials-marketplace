@@ -95,6 +95,11 @@ export interface SupplierQuoteEntity {
 export interface RequestForQuoteEntity {
   id: string;
   customerId: string;
+  /**
+   * Owning professional's project, when the buyer attached this RFQ to one.
+   * Null for every standalone RFQ, which is the default.
+   */
+  projectId: string | null;
   title: string;
   deliveryLocation: string;
   notes: string | null;
@@ -143,6 +148,13 @@ export interface CreateRfqItemInput {
 
 export interface CreateRfqInput {
   customerId: string;
+  /**
+   * Project to attach this RFQ to, already resolved and ownership-checked by
+   * the service. Absent or null means standalone. Update writes carry it too:
+   * the RFQ update endpoint replaces the whole request, so an absent projectId
+   * detaches the RFQ from its project.
+   */
+  projectId?: string | null;
   title: string;
   deliveryLocation: string;
   notes?: string;

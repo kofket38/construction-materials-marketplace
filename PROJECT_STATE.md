@@ -52,6 +52,16 @@ discovery. Professionals keep the full customer buying capability set (orders,
 payments, reviews, wishlists, RFQs). Payments, messaging, notifications, and
 delivery charges are not included.
 
+**Included in M1: project procurement links (backend only).**
+
+A professional can attach their own RFQs and orders to one of their own
+projects, read an owner-private procurement view of everything attached to a
+project, and detach a single link. Attached procurement gates the project
+lifecycle: a project cannot be completed while unexpired OPEN RFQs or unsettled
+orders remain attached, and cannot be deleted while any link remains. The
+backend is complete, typechecked, and verified against live PostgreSQL. There
+is no frontend work for this feature yet.
+
 ## 4. Completed Modules
 
 - Authentication and role-based access control.
@@ -142,6 +152,19 @@ delivery charges are not included.
     routes, and `isBuyerRole` as the frontend single source of truth.
   - Administrator dashboard buyer totals counting both `CUSTOMER` and
     `PROFESSIONAL` accounts.
+- Project procurement links (backend only) with:
+  - Optional `projectId` on RFQ creation, RFQ update, and checkout, resolved
+    against the authenticated professional's own projects before any write
+    begins. RFQ update is a full replacement, so omitting the field detaches.
+  - Owner-private procurement view listing the RFQs and orders attached to one
+    project, newest first, with item, quote, and total summaries.
+  - Explicit detach endpoints for one linked RFQ or one linked order, scoped by
+    project and link identifier together.
+  - Project completion blocked while OPEN (unexpired) RFQs or unsettled orders
+    remain attached, and project deletion blocked while any link remains.
+  - Live PostgreSQL verification that the `ON DELETE RESTRICT` violation
+    surfaces as a `409`, that detaching is project-scoped, and that the
+    procurement summaries and lifecycle counts match the real queries.
 
 ## 5. Folder Structure
 
@@ -205,7 +228,7 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `SupplierQuoteItem` | Seller product, offered quantity, and quoted-price snapshot for an RFQ item. |
 | `ProfessionalProfile` | One-to-one professional identity with headline, bio, specialties, and credentials; mutations are professional-only. |
 | `PortfolioItem` | Portfolio entry belonging to a professional profile; managed only by the owning professional. |
-| `Project` | Professional project belonging to a professional profile with ordering support; managed only by the owning professional. |
+| `Project` | Professional project belonging to a professional profile with ordering support; managed only by the owning professional. Optionally acts as a procurement container for the owner's RFQs and orders. |
 
 Relations:
 
@@ -234,6 +257,11 @@ Relations:
   quantities, units, and prices remain preserved as historical snapshots.
 - An accepted supplier quote links to one generated order, and database
   constraints permit at most one accepted quote per RFQ.
+- A `RequestForQuote` and an `Order` may each belong to at most one `Project`
+  (`projectId`, nullable). Both foreign keys are `ON DELETE RESTRICT`, so a
+  project that still has procurement history cannot be deleted until its links
+  are explicitly detached. Detaching clears only the link; the RFQ or order
+  itself is preserved.
 
 Enums:
 
@@ -275,6 +303,7 @@ Applied migrations:
 26. `20260827000000_professional_projects`
 27. `20260829120000_professional_role`
 28. `20260829130000_professional_role_backfill`
+29. `20260901000000_project_procurement_links`
 
 Product discovery indexes include B-tree indexes for seller, category, price,
 quantity, and creation time. PostgreSQL `pg_trgm` GIN indexes accelerate
@@ -292,7 +321,10 @@ per RFQ. Stabilization adds a composite seller/category product index plus
 database-enforced quotation-line RFQ ownership, quote-total consistency, and
 accepted-quote/awarded-RFQ agreement. Constraint closure validates both source
 and destination totals when lines move and prevents either side of an accepted
-award from changing independently.
+award from changing independently. Project procurement links add
+`(projectId, createdAt)` composite indexes to `request_for_quotes` and
+`orders`, which serve both the newest-first procurement read path and the
+project lifecycle guard's active-procurement counts.
 
 ## 7. API Endpoints Created
 
@@ -352,6 +384,31 @@ award from changing independently.
 | `GET` | `/api/admin/sellers` | Admin |
 | `GET` | `/api/admin/products` | Admin |
 | `DELETE` | `/api/admin/products/:id` | Admin |
+| `GET` | `/api/professional-profiles` | Public directory of public profiles |
+| `POST` | `/api/professional-profiles` | Professional |
+| `GET` | `/api/professional-profiles/me` | Professional |
+| `GET` | `/api/professional-profiles/:profileId` | Public when profile is public; otherwise owner |
+| `PATCH` | `/api/professional-profiles/:profileId` | Owning professional |
+| `DELETE` | `/api/professional-profiles/:profileId` | Owning professional |
+| `PUT` | `/api/professional-profiles/:profileId/specialties` | Owning professional |
+| `POST` | `/api/professional-profiles/:profileId/credentials` | Owning professional |
+| `PATCH` | `/api/professional-profiles/:profileId/credentials/:credentialId` | Owning professional |
+| `DELETE` | `/api/professional-profiles/:profileId/credentials/:credentialId` | Owning professional |
+| `GET` | `/api/professional-profiles/:profileId/portfolio` | Public when profile is public; otherwise owner |
+| `POST` | `/api/professional-profiles/:profileId/portfolio` | Owning professional |
+| `PATCH` | `/api/professional-profiles/:profileId/portfolio/:itemId` | Owning professional |
+| `DELETE` | `/api/professional-profiles/:profileId/portfolio/:itemId` | Owning professional |
+| `GET` | `/api/projects` | Public discovery of published projects |
+| `POST` | `/api/projects` | Professional |
+| `GET` | `/api/projects/me` | Professional |
+| `PUT` | `/api/projects/me/reorder` | Professional |
+| `GET` | `/api/projects/:projectId` | Public when published; owner in any status |
+| `PATCH` | `/api/projects/:projectId` | Owning professional |
+| `PATCH` | `/api/projects/:projectId/status` | Owning professional |
+| `GET` | `/api/projects/:projectId/procurement` | Owning professional |
+| `DELETE` | `/api/projects/:projectId/procurement/rfqs/:rfqId` | Owning professional |
+| `DELETE` | `/api/projects/:projectId/procurement/orders/:orderId` | Owning professional |
+| `DELETE` | `/api/projects/:projectId` | Owning professional |
 
 `GET /api/products` query parameters:
 
@@ -379,6 +436,12 @@ stock, sortBy, sortOrder
 No approved implementation work remains within the RFQ & Supplier Quotations
 module.
 
+The project procurement links increment is complete on the backend. What
+remains for it:
+
+- Frontend integration: attaching an RFQ or order to a project, the owner's
+  procurement view, and the detach actions have no UI.
+
 Features outside the currently implemented scope:
 
 - Payment processing and payment status/reconciliation.
@@ -389,9 +452,11 @@ Features outside the currently implemented scope:
 
 ## 10. Next Exact Task To Continue
 
-**M1 Professional Identity is complete; commit and close the milestone.**
-Do not begin payments, messaging, notifications, or another business module
-until the next requirements are provided and approved.
+**M1 Professional Identity is complete and committed, including the project
+procurement links increment.** The backend typechecks and passes the full suite
+against live PostgreSQL. Frontend work for procurement links has not started and
+is the natural follow-up. Do not begin payments, messaging, notifications, or
+another business module until the next requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -482,6 +547,33 @@ until the next requirements are provided and approved.
 - Administrative product deletion is blocked when historical order items
   reference the product.
 - Category deletion is blocked when products reference that category.
+- Project procurement links are `ON DELETE RESTRICT` with an explicit detach
+  endpoint per link type, rather than `SET NULL` on project deletion. Silently
+  unlinking procurement history would let one delete rewrite records the owner
+  never looked at; RESTRICT forces the owner to see and clear each link.
+- Detach queries put the project identifier and the link identifier in the same
+  predicate (`updateMany({ where: { id, projectId } })`), so proving ownership
+  of one project can never rewrite another project's links.
+- A missing project and another owner's project are reported identically
+  (`404`) on every procurement path, so the endpoints cannot be used to probe
+  which project identifiers exist.
+- Project resolution happens before the repository's write transaction opens,
+  so an invalid or foreign project identifier never costs a stock-reserving
+  write.
+- `ProjectService` satisfies a narrow `ProcurementProjectLinker` port that the
+  RFQ and order services depend on, so those services can resolve a project
+  without gaining access to project CRUD.
+- The completion guard counts unexpired OPEN RFQs and unsettled orders only.
+  An OPEN RFQ past its expiry is domain-expired and is excluded, so a stale row
+  nobody has read cannot block project completion forever. `CANCELLED` projects
+  are deliberately not guarded; only completion is.
+- The list of settled order statuses is a single shared constant used by both
+  the PostgreSQL and in-memory project repositories, so the guard cannot drift
+  between them.
+- The procurement view is owner-private and is never merged into public project
+  detail, so publishing a project does not publish its purchasing history.
+- An order created by accepting a quote inherits the RFQ's project, so awarded
+  procurement stays attached to the project the request was raised for.
 
 ## 12. Known Bugs Or TODOs
 
@@ -512,6 +604,15 @@ Current limitations and deferred work:
   not implemented.
 - RFQ expiration is applied lazily when RFQ endpoints are accessed; there is
   no background scheduler that updates untouched expired rows immediately.
+- The owner-private project procurement view
+  (`GET /api/projects/:projectId/procurement`) returns every attached RFQ and
+  order in one unpaginated response. It is bounded in practice by how much
+  procurement one professional attaches to a single project, but it should gain
+  pagination before that count can grow large.
+- Project procurement links are backend-only. No frontend screen attaches an
+  RFQ or order to a project, reads the procurement view, or calls the detach
+  endpoints, so the completion and deletion guards are currently only
+  reachable through the API.
 - RFQ seller eligibility uses relational category coverage and may need
   denormalized targeting or specialized indexes at very large catalog scale.
 - Payments, messaging, notifications, delivery charges, frontend delivery,
@@ -519,24 +620,34 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Most recent M1 Professional Identity verification completed successfully
-(2026-09-01, re-verified end to end after the local frontend API base URL was
-corrected):
+Backend re-verified end to end for the project procurement links increment
+(2026-09-02):
 
 ```text
 backend typecheck            PASS
+backend test suite           PASS (877 tests, 35 files, 669.81s, live PostgreSQL)
+prisma migrate status        PASS (29 migrations applied, schema up to date)
+RFQ integration suite        PASS (10/10, inside the full suite)
+project procurement suite    PASS (10/10 live PostgreSQL, inside the full suite)
+```
+
+Frontend verification is carried forward unchanged from the M1 Professional
+Identity baseline (2026-09-01, re-verified end to end after the local frontend
+API base URL was corrected); the procurement increment touched no frontend
+files:
+
+```text
 frontend typecheck           PASS
 frontend lint                PASS
 frontend build               PASS (bakes http://localhost:3055/api locally)
-backend test suite           PASS (804 tests, 33 files, 510s, live PostgreSQL)
-prisma migrate status        PASS (28 migrations applied, schema up to date)
-RFQ integration suite        PASS (10/10, inside the full suite)
 frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
 ```
 
-The full backend suite covers the RFQ live-PostgreSQL integration, rate-limit,
-and admin dashboard tests; they are no longer tracked as separate baseline
-lines.
+The full backend suite also covers the rate-limit and admin dashboard tests and
+the order and inventory-synchronization integration suites; those are not
+tracked as separate baseline lines. The RFQ and project procurement suites are
+called out above only because they are the slowest and most
+environment-sensitive part of the run — they are not run separately.
 
 The frontend marketplace smoke test (`node frontend/scripts/smoke-marketplace.mjs`,
 run from the repository root) now passes against the local backend on port 3055.

@@ -1,13 +1,18 @@
 import type { AuthenticatedUser } from "../types/auth.js";
 import {
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "../utils/api-error.js";
-import { ProjectReorderOwnershipError } from "../repositories/project.errors.js";
+import {
+  ProjectHasProcurementError,
+  ProjectReorderOwnershipError,
+} from "../repositories/project.errors.js";
 import type {
   CreateProjectInput,
   ProjectEntity,
+  ProjectProcurementSummary,
   ProjectRepository,
   ProjectStatus,
   PublicProjectDetail,
@@ -166,7 +171,23 @@ export class ProjectService {
   ): Promise<void> {
     this.requireProfessional(actor);
 
-    const deleted = await this.projects.delete(projectId, actor.userId);
+    let deleted: boolean;
+
+    try {
+      deleted = await this.projects.delete(projectId, actor.userId);
+    } catch (error) {
+      // The procurement links are ON DELETE RESTRICT: an RFQ or order must
+      // never lose the project it was raised for. Detaching or settling the
+      // procurement is the owner's call, so this is reported rather than
+      // resolved automatically.
+      if (error instanceof ProjectHasProcurementError) {
+        throw new ConflictError(
+          "This project has requests for quote or orders attached to it. Detach them before deleting the project.",
+        );
+      }
+
+      throw error;
+    }
 
     if (!deleted) {
       throw new NotFoundError("Project not found.");
@@ -229,6 +250,120 @@ export class ProjectService {
     return project;
   }
 
+  // ── Linked procurement (owner-private) ────────────────────────────────────
+
+  /**
+   * Lists the RFQs and orders attached to one of the authenticated
+   * professional's own projects.
+   *
+   * This data is owner-private and is deliberately NOT merged into the public
+   * project detail payload: procurement reveals what a professional is buying,
+   * from where, and for how much. Anonymous and non-owner callers get the same
+   * 404 a missing project produces, so linkage existence never leaks.
+   */
+  async getProjectProcurement(
+    actor: AuthenticatedUser,
+    projectId: string,
+  ): Promise<ProjectProcurementSummary> {
+    this.requireProfessional(actor);
+
+    // Ownership gate. Throws NotFoundError for both foreign and missing IDs.
+    await this.getMyProject(actor, projectId);
+
+    return this.projects.findProcurement(projectId);
+  }
+
+  /**
+   * Clears the project link on one RFQ attached to the caller's project.
+   *
+   * This is the counterpart to the ON DELETE RESTRICT foreign keys: a project
+   * cannot be deleted while procurement points at it, and the RFQ update
+   * endpoint only accepts OPEN, quote-free requests, so without an explicit
+   * detach an owner could be permanently unable to delete a project. The RFQ
+   * itself is untouched — only the project link is cleared.
+   */
+  async detachProjectRfq(
+    actor: AuthenticatedUser,
+    projectId: string,
+    rfqId: string,
+  ): Promise<void> {
+    this.requireProfessional(actor);
+
+    // Ownership gate. Throws NotFoundError for both foreign and missing IDs.
+    await this.getMyProject(actor, projectId);
+
+    if (!(await this.projects.detachRfq(projectId, rfqId))) {
+      throw new NotFoundError(
+        "No request for quote with that ID is attached to this project.",
+      );
+    }
+  }
+
+  /**
+   * Clears the project link on one order attached to the caller's project.
+   * Orders have no update endpoint, so this is the only way to release a
+   * project that order history points at. The order itself is untouched.
+   */
+  async detachProjectOrder(
+    actor: AuthenticatedUser,
+    projectId: string,
+    orderId: string,
+  ): Promise<void> {
+    this.requireProfessional(actor);
+
+    await this.getMyProject(actor, projectId);
+
+    if (!(await this.projects.detachOrder(projectId, orderId))) {
+      throw new NotFoundError(
+        "No order with that ID is attached to this project.",
+      );
+    }
+  }
+
+  /**
+   * Resolves an optional procurement project reference supplied by an RFQ or
+   * order write. Returns null when no project was requested, so standalone
+   * procurement keeps its existing behaviour untouched.
+   *
+   * Callers are the RFQ and order services; the check runs BEFORE they open
+   * their (serializable) write transactions, so no project read is added
+   * inside a latency-sensitive transaction window.
+   */
+  async resolveProcurementProject(
+    actor: AuthenticatedUser,
+    projectId: string | undefined,
+  ): Promise<string | null> {
+    if (projectId === undefined) {
+      return null;
+    }
+
+    // Only PROFESSIONAL accounts can own projects, so only they can attach
+    // one. CUSTOMER buyers share the purchasing routes, which is exactly why
+    // this cannot be inferred from the routes' buyer guard.
+    if (actor.role !== "PROFESSIONAL") {
+      throw new ForbiddenError(
+        "Only professional accounts can attach procurement to a project.",
+      );
+    }
+
+    const project = await this.projects.findById(projectId);
+
+    // Foreign and missing project IDs are indistinguishable, matching every
+    // other project lookup, so ownership cannot be probed through this field.
+    if (!project || project.ownerId !== actor.userId) {
+      throw new NotFoundError("Project not found.");
+    }
+
+    // Terminal projects no longer accept new procurement.
+    if (project.status === "COMPLETED" || project.status === "CANCELLED") {
+      throw new ConflictError(
+        `A ${project.status.toLowerCase()} project cannot accept new procurement.`,
+      );
+    }
+
+    return project.id;
+  }
+
   // ── Lifecycle transitions ─────────────────────────────────────────────────
 
   /**
@@ -260,6 +395,14 @@ export class ProjectService {
       );
     }
 
+    // Completion asserts the work is finished, so it is blocked while linked
+    // procurement is still in flight. CANCELLED is deliberately NOT guarded:
+    // abandoning a project is exactly when open RFQs and orders are expected,
+    // and the RFQ/order records keep their own independent lifecycles.
+    if (nextStatus === "COMPLETED") {
+      await this.requireSettledProcurement(projectId);
+    }
+
     const data: UpdateProjectInput = { status: nextStatus };
 
     if (nextStatus === "PUBLISHED" && project.publishedAt === null) {
@@ -280,6 +423,32 @@ export class ProjectService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Blocks project completion while linked procurement is unfinished, and
+   * names what is outstanding so the professional knows what to clear.
+   */
+  private async requireSettledProcurement(projectId: string): Promise<void> {
+    const { openRfqs, activeOrders } =
+      await this.projects.countActiveProcurement(projectId);
+
+    if (openRfqs === 0 && activeOrders === 0) {
+      return;
+    }
+
+    const outstanding = [
+      openRfqs > 0
+        ? `${openRfqs} open ${openRfqs === 1 ? "request" : "requests"} for quote`
+        : null,
+      activeOrders > 0
+        ? `${activeOrders} unfinished ${activeOrders === 1 ? "order" : "orders"}`
+        : null,
+    ].filter((part): part is string => part !== null);
+
+    throw new ConflictError(
+      `This project still has ${outstanding.join(" and ")}. Close them before marking the project completed.`,
+    );
+  }
 
   /**
    * Project mutations and own-project reads are restricted to PROFESSIONAL

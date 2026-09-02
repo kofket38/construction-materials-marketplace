@@ -54,6 +54,11 @@ export interface OrderItemEntity {
 export interface OrderEntity {
   id: string;
   customerId: string;
+  /**
+   * Owning professional's project, when the buyer attached this order to one.
+   * Null for every standalone order, which is the default.
+   */
+  projectId: string | null;
   status: OrderStatus;
   paymentMethod?: PaymentMethod;
   totalAmount: string;
@@ -76,6 +81,12 @@ export interface CreateOrderItemInput {
 
 export interface CreateOrderInput {
   customerId: string;
+  /**
+   * Project to attach this order to, already resolved and ownership-checked by
+   * the service. Absent or null means standalone, which is every
+   * non-professional order.
+   */
+  projectId?: string | null;
   items: CreateOrderItemInput[];
   paymentMethod: PaymentMethod;
   shipping: {

@@ -43,6 +43,10 @@ import type {
   OrderEntity,
   OrderItemEntity,
 } from "../../src/repositories/order.repository.js";
+import type {
+  ProjectOrderSummary,
+  ProjectRfqSummary,
+} from "../../src/repositories/project.repository.js";
 
 interface CategorySeed {
   id: string;
@@ -130,10 +134,95 @@ export class InMemoryRfqRepository implements RfqRepository {
     return [...this.orders.values()];
   }
 
+  /**
+   * ProcurementRfqSource: lets InMemoryProjectRepository report the RFQs
+   * attached to a project, the way the PostgreSQL repository reads them
+   * through the requestForQuote.projectId foreign key. Ordering is applied by
+   * the project repository, matching the Prisma query.
+   *
+   * An OPEN request past its expiry is reported as EXPIRED even before the
+   * lazy sweep rewrites it, mirroring effectiveRfqStatus() in the Prisma
+   * project repository.
+   */
+  listProjectRfqs(projectId: string): ProjectRfqSummary[] {
+    const now = Date.now();
+    return [...this.rfqs.values()]
+      .filter((rfq) => rfq.projectId === projectId)
+      .map((rfq) => ({
+        id: rfq.id,
+        title: rfq.title,
+        status:
+          rfq.status === "OPEN" && rfq.expiresAt.getTime() <= now
+            ? ("EXPIRED" as const)
+            : rfq.status,
+        deliveryLocation: rfq.deliveryLocation,
+        itemCount: rfq.items.length,
+        quoteCount: rfq.quotes.length,
+        expiresAt: rfq.expiresAt,
+        createdAt: rfq.createdAt,
+      }));
+  }
+
+  /**
+   * ProcurementOrderSource: quote-acceptance orders are created inside this
+   * repository (the way the Prisma acceptance transaction writes them), so a
+   * project's order list has to read them from here as well as from the order
+   * repository. Tests wire both sources through useProcurementSources().
+   */
+  listProjectOrders(projectId: string): ProjectOrderSummary[] {
+    return [...this.orders.values()]
+      .filter((order) => order.projectId === projectId)
+      .map((order) => ({
+        id: order.id,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        itemCount: order.items.length,
+        createdAt: order.createdAt,
+      }));
+  }
+
+  /**
+   * ProcurementRfqSource: clears the project link the way the Prisma
+   * repository's updateMany does. Both identifiers must match, so an RFQ
+   * attached to a different project (or to none) reports false and the
+   * service turns that into a 404.
+   */
+  detachProjectRfq(projectId: string, rfqId: string): boolean {
+    const rfq = this.rfqs.get(rfqId);
+
+    if (!rfq || rfq.projectId !== projectId) {
+      return false;
+    }
+
+    rfq.projectId = null;
+    return true;
+  }
+
+  /** ProcurementOrderSource: same rule for a quote-acceptance order. */
+  detachProjectOrder(projectId: string, orderId: string): boolean {
+    const order = this.orders.get(orderId);
+
+    if (!order || order.projectId !== projectId) {
+      return false;
+    }
+
+    order.projectId = null;
+    return true;
+  }
+
   setRfqExpiresAt(rfqId: string, expiresAt: Date): void {
     const rfq = this.rfqs.get(rfqId);
     if (rfq) {
       rfq.expiresAt = expiresAt;
+    }
+  }
+
+  /** Backdates a request so ordering assertions do not depend on clock
+   * resolution, the way distinct createdAt values appear in PostgreSQL. */
+  setRfqCreatedAt(rfqId: string, createdAt: Date): void {
+    const rfq = this.rfqs.get(rfqId);
+    if (rfq) {
+      rfq.createdAt = createdAt;
     }
   }
 
@@ -187,6 +276,7 @@ export class InMemoryRfqRepository implements RfqRepository {
     const rfq: RequestForQuoteEntity = {
       id: rfqId,
       customerId: input.customerId,
+      projectId: input.projectId ?? null,
       title: input.title,
       deliveryLocation: input.deliveryLocation,
       notes: input.notes ?? null,
@@ -432,6 +522,9 @@ export class InMemoryRfqRepository implements RfqRepository {
     const order: OrderEntity = {
       id: orderId,
       customerId,
+      // The award inherits the request's project link, mirroring the Prisma
+      // acceptance transaction.
+      projectId: rfq.projectId,
       status: "PENDING",
       totalAmount: quote.totalAmount,
       customer: {

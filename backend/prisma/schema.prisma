@@ -252,6 +252,12 @@ model Project {
   // ── Relations ─────────────────────────────────────────────────────────────
   owner User @relation("OwnerProjects", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
+  // Optional procurement container: a professional may attach their own RFQs
+  // and orders to one of their projects. Both sides are nullable, so
+  // procurement created without a project keeps working unchanged.
+  rfqs   RequestForQuote[] @relation("ProjectRfqs")
+  orders Order[]           @relation("ProjectOrders")
+
   @@index([ownerId, displayOrder])
   @@index([status, publishedAt])
   @@map("projects")
@@ -445,6 +451,9 @@ model SellerInventory {
 model Order {
   id               String         @id @default(uuid()) @db.Uuid
   customerId       String         @db.Uuid
+  // Optional procurement container. Nullable so every pre-existing order
+  // remains valid; Restrict keeps a project with order history undeletable.
+  projectId        String?        @db.Uuid
   status           OrderStatus    @default(PENDING)
   paymentMethod    PaymentMethod  @default(CASH_ON_DELIVERY)
   totalAmount      Decimal        @db.Decimal(14, 2)
@@ -454,6 +463,7 @@ model Order {
   shippingAddress  String         @default("Not provided")
   shippingNotes    String?
   customer         User           @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  project          Project?       @relation("ProjectOrders", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   items            OrderItem[]
   payment          Payment?
   sourceQuote      SupplierQuote?
@@ -463,6 +473,9 @@ model Order {
 
   @@index([customerId, createdAt])
   @@index([status])
+  // Serves the project procurement read path (filter by project, newest
+  // first) and the lifecycle guard's active-order count.
+  @@index([projectId, createdAt])
   @@map("orders")
 }
 
@@ -553,6 +566,9 @@ model WishlistItem {
 model RequestForQuote {
   id               String          @id @default(uuid()) @db.Uuid
   customerId       String          @db.Uuid
+  // Optional procurement container. Nullable so every pre-existing RFQ
+  // remains valid; Restrict keeps a project with RFQ history undeletable.
+  projectId        String?         @db.Uuid
   title            String
   deliveryLocation String
   notes            String?
@@ -560,6 +576,7 @@ model RequestForQuote {
   expiresAt        DateTime
   awardedQuoteId   String?         @unique @db.Uuid
   customer         User            @relation("CustomerRfqs", fields: [customerId], references: [id], onDelete: Restrict)
+  project          Project?        @relation("ProjectRfqs", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   items            RfqItem[]
   quotes           SupplierQuote[] @relation("RfqQuotes")
   awardedQuote     SupplierQuote?  @relation("AwardedRfqQuote", fields: [awardedQuoteId], references: [id], onDelete: SetNull)
@@ -569,6 +586,9 @@ model RequestForQuote {
   @@index([customerId, createdAt])
   @@index([status, expiresAt])
   @@index([createdAt])
+  // Serves the project procurement read path (filter by project, newest
+  // first) and the lifecycle guard's open-RFQ count.
+  @@index([projectId, createdAt])
   @@map("request_for_quotes")
 }
 

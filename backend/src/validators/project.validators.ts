@@ -197,6 +197,25 @@ export const projectIdParamsSchema = z
   })
   .strict();
 
+/**
+ * Params for the procurement detach routes. Both identifiers are required:
+ * the link is only ever cleared for a row that is currently attached to the
+ * named project, so a foreign RFQ or order cannot be touched by ID alone.
+ */
+export const projectRfqLinkParamsSchema = z
+  .object({
+    projectId: z.string().uuid("Project ID must be a valid UUID."),
+    rfqId: z.string().uuid("RFQ ID must be a valid UUID."),
+  })
+  .strict();
+
+export const projectOrderLinkParamsSchema = z
+  .object({
+    projectId: z.string().uuid("Project ID must be a valid UUID."),
+    orderId: z.string().uuid("Order ID must be a valid UUID."),
+  })
+  .strict();
+
 export const emptyProjectObjectSchema = z.object({}).strict();
 
 // ── Inferred types ────────────────────────────────────────────────────────────
@@ -211,3 +230,7 @@ export type ListPublishedProjectsQueryParams = z.infer<
   typeof listPublishedProjectsQuerySchema
 >;
 export type ProjectIdParams = z.infer<typeof projectIdParamsSchema>;
+export type ProjectRfqLinkParams = z.infer<typeof projectRfqLinkParamsSchema>;
+export type ProjectOrderLinkParams = z.infer<
+  typeof projectOrderLinkParamsSchema
+>;

@@ -34,6 +34,7 @@ import type {
   SupplierQuoteEntity,
 } from "../repositories/rfq.repository.js";
 import type { AuthenticatedUser } from "../types/auth.js";
+import type { ProcurementProjectLinker } from "./procurement-project.port.js";
 import {
   BadRequestError,
   ConflictError,
@@ -53,7 +54,10 @@ const MIN_RFQ_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const MAX_RFQ_LIFETIME_MS = 90 * 24 * 60 * 60 * 1000;
 
 export class RfqService {
-  constructor(private readonly rfqs: RfqRepository) {}
+  constructor(
+    private readonly rfqs: RfqRepository,
+    private readonly projectLinker: ProcurementProjectLinker,
+  ) {}
 
   async create(
     actor: AuthenticatedUser,
@@ -61,10 +65,17 @@ export class RfqService {
   ): Promise<RequestForQuoteEntity> {
     this.requireCustomer(actor);
     const expiresAt = this.parseRfqExpiry(input.expiresAt);
+    // Resolved before the repository transaction opens so an invalid project
+    // never costs a write attempt.
+    const projectId = await this.projectLinker.resolveProcurementProject(
+      actor,
+      input.projectId,
+    );
 
     try {
       return await this.rfqs.create({
         customerId: actor.userId,
+        projectId,
         title: input.title,
         deliveryLocation: input.deliveryLocation,
         ...(input.notes !== undefined ? { notes: input.notes } : {}),
@@ -151,12 +162,19 @@ export class RfqService {
   ): Promise<RequestForQuoteEntity> {
     this.requireCustomer(actor);
     const expiresAt = this.parseRfqExpiry(input.expiresAt);
+    // The update endpoint replaces the whole request, so an omitted projectId
+    // detaches the RFQ from its project.
+    const projectId = await this.projectLinker.resolveProcurementProject(
+      actor,
+      input.projectId,
+    );
 
     try {
       return await this.rfqs.update(id, actor.userId, {
         title: input.title,
         deliveryLocation: input.deliveryLocation,
         ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        projectId,
         expiresAt,
         items: mapRfqItems(input.items),
       });

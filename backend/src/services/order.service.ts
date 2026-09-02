@@ -21,6 +21,7 @@ import type {
 } from "../types/payment.js";
 import { isManualPaymentMethod } from "../types/payment.js";
 import type { SellerPaymentRepository } from "../repositories/seller-payment.repository.js";
+import type { ProcurementProjectLinker } from "./procurement-project.port.js";
 import {
   BadRequestError,
   ConflictError,
@@ -37,6 +38,7 @@ export class OrderService {
   constructor(
     private readonly orders: OrderRepository,
     private readonly sellerPayments: SellerPaymentRepository,
+    private readonly projectLinker: ProcurementProjectLinker,
   ) {}
 
   async create(
@@ -44,6 +46,12 @@ export class OrderService {
     input: CreateOrderBody,
   ): Promise<CreateOrderResult> {
     this.requireCustomer(actor);
+    // Resolved before the repository transaction opens so an invalid project
+    // never costs a stock-reserving write attempt.
+    const projectId = await this.projectLinker.resolveProcurementProject(
+      actor,
+      input.projectId,
+    );
     const paymentDestination = isManualPaymentMethod(input.paymentMethod)
       ? await this.requirePaymentDestination(
           input.items.map((item) => item.productId),
@@ -54,6 +62,7 @@ export class OrderService {
     try {
       const order = await this.orders.create({
         customerId: actor.userId,
+        projectId,
         items: input.items,
         paymentMethod: input.paymentMethod,
         shipping: {

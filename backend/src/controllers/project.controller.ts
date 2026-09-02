@@ -6,6 +6,8 @@ import type {
   CreateProjectBody,
   ListPublishedProjectsQueryParams,
   ProjectIdParams,
+  ProjectOrderLinkParams,
+  ProjectRfqLinkParams,
   ReorderProjectsBody,
   UpdateProjectBody,
 } from "../validators/project.validators.js";
@@ -115,6 +117,61 @@ export class ProjectController {
   delete = async (req: Request, res: Response): Promise<void> => {
     const { projectId } = req.params as ProjectIdParams;
     await this.service.deleteProject(this.requireActor(req), projectId);
+
+    res.status(200).json({ success: true, data: null });
+  };
+
+  // ── Linked procurement (owner-private) ─────────────────────────────────────
+
+  /**
+   * GET /api/projects/:projectId/procurement
+   *
+   * Owner-only. Lists the RFQs and orders the professional attached to this
+   * project. Non-owners receive the same 404 a missing project produces, so
+   * this never doubles as a project-existence probe.
+   */
+  getProcurement = async (req: Request, res: Response): Promise<void> => {
+    const { projectId } = req.params as ProjectIdParams;
+    const procurement = await this.service.getProjectProcurement(
+      this.requireActor(req),
+      projectId,
+    );
+
+    res.status(200).json({ success: true, data: procurement });
+  };
+
+  /**
+   * DELETE /api/projects/:projectId/procurement/rfqs/:rfqId
+   *
+   * Owner-only. Clears the project link on one attached RFQ without touching
+   * the RFQ itself. Required because the procurement foreign keys are ON
+   * DELETE RESTRICT: an owner has to be able to release the link before the
+   * project can be deleted.
+   */
+  detachRfq = async (req: Request, res: Response): Promise<void> => {
+    const { projectId, rfqId } = req.params as ProjectRfqLinkParams;
+    await this.service.detachProjectRfq(
+      this.requireActor(req),
+      projectId,
+      rfqId,
+    );
+
+    res.status(200).json({ success: true, data: null });
+  };
+
+  /**
+   * DELETE /api/projects/:projectId/procurement/orders/:orderId
+   *
+   * Owner-only. Clears the project link on one attached order without touching
+   * the order itself.
+   */
+  detachOrder = async (req: Request, res: Response): Promise<void> => {
+    const { projectId, orderId } = req.params as ProjectOrderLinkParams;
+    await this.service.detachProjectOrder(
+      this.requireActor(req),
+      projectId,
+      orderId,
+    );
 
     res.status(200).json({ success: true, data: null });
   };

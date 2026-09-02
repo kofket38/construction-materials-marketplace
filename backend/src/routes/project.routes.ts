@@ -10,6 +10,8 @@ import {
   emptyProjectObjectSchema,
   listPublishedProjectsQuerySchema,
   projectIdParamsSchema,
+  projectOrderLinkParamsSchema,
+  projectRfqLinkParamsSchema,
   reorderProjectsBodySchema,
   updateProjectBodySchema,
 } from "../validators/project.validators.js";
@@ -119,6 +121,55 @@ export function createProjectRouter(
       query: emptyProjectObjectSchema,
     }),
     asyncHandler(controller.changeStatus),
+  );
+
+  // ── GET /api/projects/:projectId/procurement ────────────────────────────────
+  // Owner-only view of the RFQs and orders attached to the project. The route
+  // guard stops non-professionals early; ownership is enforced in the service,
+  // which reports a foreign or missing project identically (404).
+  router.get(
+    "/:projectId/procurement",
+    requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
+    validateRequest({
+      body: emptyProjectObjectSchema,
+      params: projectIdParamsSchema,
+      query: emptyProjectObjectSchema,
+    }),
+    asyncHandler(controller.getProcurement),
+  );
+
+  // ── DELETE /api/projects/:projectId/procurement/rfqs/:rfqId ─────────────────
+  // Owner-only. Clears the project link on one attached RFQ; the RFQ itself is
+  // untouched. Registered before DELETE /:projectId, and required because the
+  // procurement foreign keys are ON DELETE RESTRICT: the RFQ update endpoint
+  // only accepts OPEN, quote-free requests, so without this an owner could be
+  // permanently unable to delete the project.
+  router.delete(
+    "/:projectId/procurement/rfqs/:rfqId",
+    requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
+    validateRequest({
+      body: emptyProjectObjectSchema,
+      params: projectRfqLinkParamsSchema,
+      query: emptyProjectObjectSchema,
+    }),
+    asyncHandler(controller.detachRfq),
+  );
+
+  // ── DELETE /api/projects/:projectId/procurement/orders/:orderId ─────────────
+  // Owner-only. Orders have no update endpoint, so this is the only way to
+  // release a project that order history points at.
+  router.delete(
+    "/:projectId/procurement/orders/:orderId",
+    requireAuthentication,
+    authorizeRoles("PROFESSIONAL"),
+    validateRequest({
+      body: emptyProjectObjectSchema,
+      params: projectOrderLinkParamsSchema,
+      query: emptyProjectObjectSchema,
+    }),
+    asyncHandler(controller.detachOrder),
   );
 
   // ── DELETE /api/projects/:projectId ─────────────────────────────────────────

@@ -253,9 +253,16 @@ export function createApp(dependencies: AppDependencies = {}): Express {
 
   const categoryController = new CategoryController(categoryService);
 
+  // Constructed before the purchasing services: both take it as the narrow
+  // ProcurementProjectLinker port used to attach RFQs and orders to a project.
+  const projectService = new ProjectService(projectRepository);
+
+  const projectController = new ProjectController(projectService);
+
   const orderService = new OrderService(
     orderRepository,
     sellerPaymentRepository,
+    projectService,
   );
 
   const orderController = new OrderController(orderService);
@@ -291,7 +298,7 @@ export function createApp(dependencies: AppDependencies = {}): Express {
 
   const reviewController = new ReviewController(reviewService);
 
-  const rfqService = new RfqService(rfqRepository);
+  const rfqService = new RfqService(rfqRepository, projectService);
 
   const rfqController = new RfqController(rfqService);
 
@@ -326,10 +333,6 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const professionalProfileController = new ProfessionalProfileController(
     professionalProfileService,
   );
-
-  const projectService = new ProjectService(projectRepository);
-
-  const projectController = new ProjectController(projectService);
 
   const wishlistService = new WishlistService(wishlistRepository);
 

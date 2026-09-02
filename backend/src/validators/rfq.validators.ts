@@ -99,6 +99,11 @@ const rfqFieldsSchema = z.object({
   notes: z.string().trim().min(1).max(5000).optional(),
   expiresAt: z.string().datetime({ offset: true }),
   items: z.array(rfqItemSchema).min(1).max(20),
+  // Optional procurement container. Only PROFESSIONAL buyers own projects, so
+  // the service rejects the field for other roles rather than the schema.
+  // Omitting it on update detaches the RFQ, matching the endpoint's
+  // full-replacement semantics.
+  projectId: z.string().uuid().optional(),
 });
 
 export const createRfqBodySchema = rfqFieldsSchema.strict();

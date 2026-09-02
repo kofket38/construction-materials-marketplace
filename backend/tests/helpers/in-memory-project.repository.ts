@@ -1,8 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { ProjectReorderOwnershipError } from "../../src/repositories/project.errors.js";
+import {
+  ProjectHasProcurementError,
+  ProjectReorderOwnershipError,
+} from "../../src/repositories/project.errors.js";
+import { SETTLED_ORDER_STATUSES } from "../../src/repositories/project.repository.js";
 import type {
   CreateProjectInput,
   ProjectEntity,
+  ProjectOrderSummary,
+  ProjectProcurementLoad,
+  ProjectProcurementSummary,
+  ProjectRfqSummary,
   ProjectStatus,
   PublicProjectDetail,
   PublicProjectItem,
@@ -11,6 +19,24 @@ import type {
   UpdateProjectInput,
 } from "../../src/repositories/project.repository.js";
 import type { ProjectRepository } from "../../src/repositories/project.repository.js";
+
+/**
+ * The in-memory project repository owns no procurement data — RFQs and orders
+ * live in their own in-memory repositories. Tests wire those in through
+ * useProcurementSources() so a project's procurement view reflects whatever the
+ * RFQ/order repositories actually recorded, exactly like the PostgreSQL joins.
+ */
+export interface ProcurementRfqSource {
+  listProjectRfqs(projectId: string): ProjectRfqSummary[];
+  /** Clears the link on an RFQ currently attached to this project. */
+  detachProjectRfq(projectId: string, rfqId: string): boolean;
+}
+
+export interface ProcurementOrderSource {
+  listProjectOrders(projectId: string): ProjectOrderSummary[];
+  /** Clears the link on an order currently attached to this project. */
+  detachProjectOrder(projectId: string, orderId: string): boolean;
+}
 
 function containsInsensitive(
   haystack: string | null,
@@ -52,8 +78,34 @@ export class InMemoryProjectRepository implements ProjectRepository {
   private readonly projects = new Map<string, ProjectEntity>();
   // Secondary index: ownerId → projectIds
   private readonly byOwner = new Map<string, string[]>();
+  private rfqSource: ProcurementRfqSource | null = null;
+  private orderSources: readonly ProcurementOrderSource[] = [];
 
   // ── Seed helpers ────────────────────────────────────────────────────────────
+
+  /**
+   * Attach the RFQ and/or order repositories used by the same app instance so
+   * findProcurement()/countActiveProcurement() can see their data. Unwired
+   * sources simply contribute nothing, so suites that never link procurement
+   * behave as before.
+   *
+   * More than one order source may be wired: direct orders live in the order
+   * repository while quote-acceptance orders are written by the RFQ
+   * repository, and PostgreSQL sees both through the same orders.projectId
+   * column.
+   */
+  useProcurementSources(sources: {
+    rfqs?: ProcurementRfqSource;
+    orders?: ProcurementOrderSource | readonly ProcurementOrderSource[];
+  }): void {
+    this.rfqSource = sources.rfqs ?? null;
+    this.orderSources =
+      sources.orders === undefined
+        ? []
+        : Array.isArray(sources.orders)
+          ? [...sources.orders]
+          : [sources.orders as ProcurementOrderSource];
+  }
 
   /**
    * Directly insert a complete project, bypassing business rules.
@@ -184,6 +236,13 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const project = this.projects.get(projectId);
     if (!project || project.ownerId !== ownerId) return false;
 
+    // Mirrors the ON DELETE RESTRICT procurement foreign keys: PostgreSQL
+    // refuses the delete while an RFQ or order still references the project.
+    const { rfqs, orders } = await this.findProcurement(projectId);
+    if (rfqs.length > 0 || orders.length > 0) {
+      throw new ProjectHasProcurementError();
+    }
+
     this.projects.delete(projectId);
     const owned = this.byOwner.get(ownerId)!;
     owned.splice(owned.indexOf(projectId), 1);
@@ -303,6 +362,57 @@ export class InMemoryProjectRepository implements ProjectRepository {
     };
   }
 
+  async findProcurement(
+    projectId: string,
+  ): Promise<ProjectProcurementSummary> {
+    const rfqs = this.rfqSource?.listProjectRfqs(projectId) ?? [];
+    const orders = this.orderSources.flatMap((source) =>
+      source.listProjectOrders(projectId),
+    );
+
+    // Mirror the Prisma ordering: newest first, ID tie-breaker.
+    return {
+      rfqs: [...rfqs].sort(newestFirst),
+      orders: [...orders].sort(newestFirst),
+    };
+  }
+
+  async countActiveProcurement(
+    projectId: string,
+  ): Promise<ProjectProcurementLoad> {
+    const { rfqs, orders } = await this.findProcurement(projectId);
+
+    return {
+      // findProcurement already reports an OPEN-but-expired RFQ as EXPIRED,
+      // matching the Prisma repository's expiresAt filter.
+      openRfqs: rfqs.filter((rfq) => rfq.status === "OPEN").length,
+      activeOrders: orders.filter(
+        (order) =>
+          !SETTLED_ORDER_STATUSES.some((status) => status === order.status),
+      ).length,
+    };
+  }
+
+  async detachRfq(projectId: string, rfqId: string): Promise<boolean> {
+    // Both identifiers are required, mirroring the Prisma updateMany
+    // predicate: an RFQ attached elsewhere (or to nothing) matches nothing.
+    return this.rfqSource?.detachProjectRfq(projectId, rfqId) ?? false;
+  }
+
+  async detachOrder(projectId: string, orderId: string): Promise<boolean> {
+    // Every wired source is consulted: a direct order lives in the order
+    // repository while a quote-acceptance order lives in the RFQ repository,
+    // and PostgreSQL clears either one through the same orders.projectId
+    // column.
+    for (const source of this.orderSources) {
+      if (source.detachProjectOrder(projectId, orderId)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // ── Internal helpers ────────────────────────────────────────────────────────
 
   private findByOwnerIdSync(ownerId: string): ProjectEntity[] {
@@ -311,4 +421,14 @@ export class InMemoryProjectRepository implements ProjectRepository {
       .map((id) => this.projects.get(id))
       .filter((p): p is ProjectEntity => p !== undefined);
   }
+}
+
+function newestFirst(
+  left: { id: string; createdAt: Date },
+  right: { id: string; createdAt: Date },
+): number {
+  return (
+    right.createdAt.getTime() - left.createdAt.getTime() ||
+    (left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+  );
 }

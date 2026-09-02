@@ -1,12 +1,23 @@
 import {
   ProjectStatus as PrismaProjectStatus,
+  RfqStatus as PrismaRfqStatus,
   Prisma,
   type PrismaClient,
 } from "../prisma/generated/client.js";
-import { ProjectReorderOwnershipError } from "./project.errors.js";
+import {
+  ProjectHasProcurementError,
+  ProjectReorderOwnershipError,
+} from "./project.errors.js";
+import type { OrderStatus } from "./order.repository.js";
+import type { RfqStatus } from "./rfq.repository.js";
+import { SETTLED_ORDER_STATUSES } from "./project.repository.js";
 import type {
   CreateProjectInput,
   ProjectEntity,
+  ProjectOrderSummary,
+  ProjectProcurementLoad,
+  ProjectProcurementSummary,
+  ProjectRfqSummary,
   ProjectStatus,
   PublicOwnerDetailInfo,
   PublicOwnerInfo,
@@ -114,6 +125,30 @@ const publicProjectDetailSelect = {
       },
     },
   },
+} as const;
+
+/**
+ * Owner-private procurement selects. Only summary columns are read — no
+ * quote pricing, no shipping details, no seller identities — because this
+ * view exists to list and link, not to replace the RFQ/order detail
+ * endpoints that apply their own authorization.
+ */
+const projectRfqSummarySelect = {
+  id: true,
+  title: true,
+  status: true,
+  deliveryLocation: true,
+  expiresAt: true,
+  createdAt: true,
+  _count: { select: { items: true, quotes: true } },
+} as const;
+
+const projectOrderSummarySelect = {
+  id: true,
+  status: true,
+  totalAmount: true,
+  createdAt: true,
+  _count: { select: { items: true } },
 } as const;
 
 /**
@@ -286,8 +321,21 @@ function mapPublicDetail(row: PublicDetailRow): PublicProjectDetail {
   };
 }
 
-// ── Error detection ───────────────────────────────────────────────────────────
+// ── Procurement summary helpers ───────────────────────────────────────────────
 
+/**
+ * Presents an OPEN-but-past-expiry RFQ as EXPIRED. The RFQ repository flips
+ * the stored status lazily on its next read (expireOpenRfqs), so a
+ * procurement summary read before that sweep would otherwise report a stale
+ * OPEN. The in-memory repository mirrors this rule.
+ */
+function effectiveRfqStatus(status: RfqStatus, expiresAt: Date): RfqStatus {
+  return status === "OPEN" && expiresAt.getTime() <= Date.now()
+    ? "EXPIRED"
+    : status;
+}
+
+// ── Error detection ───────────────────────────────────────────────────────────
 function hasPrismaCode(error: unknown, code: string): boolean {
   return error instanceof Error && "code" in error && error.code === code;
 }
@@ -418,6 +466,12 @@ export class PrismaProjectRepository implements ProjectRepository {
         return false;
       }
 
+      // The procurement foreign keys are ON DELETE RESTRICT, so PostgreSQL
+      // refuses the delete while an RFQ or order still points at the project.
+      if (hasPrismaCode(error, "P2003")) {
+        throw new ProjectHasProcurementError();
+      }
+
       throw error;
     }
   }
@@ -507,5 +561,95 @@ export class PrismaProjectRepository implements ProjectRepository {
     });
 
     return row ? mapPublicDetail(row) : null;
+  }
+
+  async findProcurement(
+    projectId: string,
+  ): Promise<ProjectProcurementSummary> {
+    // Both lists are keyed on projectId and ordered newest first, which is
+    // exactly the shape of the (projectId, createdAt) indexes added for this
+    // read path. Read-only, so no transaction is needed.
+    const [rfqRows, orderRows] = await Promise.all([
+      this.client.requestForQuote.findMany({
+        where: { projectId },
+        select: projectRfqSummarySelect,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      }),
+      this.client.order.findMany({
+        where: { projectId },
+        select: projectOrderSummarySelect,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      }),
+    ]);
+
+    return {
+      rfqs: rfqRows.map(
+        (row): ProjectRfqSummary => ({
+          id: row.id,
+          title: row.title,
+          status: effectiveRfqStatus(row.status as RfqStatus, row.expiresAt),
+          deliveryLocation: row.deliveryLocation,
+          itemCount: row._count.items,
+          quoteCount: row._count.quotes,
+          expiresAt: row.expiresAt,
+          createdAt: row.createdAt,
+        }),
+      ),
+      orders: orderRows.map(
+        (row): ProjectOrderSummary => ({
+          id: row.id,
+          status: row.status as OrderStatus,
+          totalAmount: row.totalAmount.toFixed(2),
+          itemCount: row._count.items,
+          createdAt: row.createdAt,
+        }),
+      ),
+    };
+  }
+
+  async countActiveProcurement(
+    projectId: string,
+  ): Promise<ProjectProcurementLoad> {
+    const [openRfqs, activeOrders] = await Promise.all([
+      this.client.requestForQuote.count({
+        where: {
+          projectId,
+          status: PrismaRfqStatus.OPEN,
+          // An OPEN RFQ past its expiry is domain-expired; the RFQ repository
+          // flips it lazily on its next read. Excluding it here keeps a stale
+          // row from blocking project completion forever.
+          expiresAt: { gt: new Date() },
+        },
+      }),
+      this.client.order.count({
+        where: {
+          projectId,
+          status: { notIn: [...SETTLED_ORDER_STATUSES] },
+        },
+      }),
+    ]);
+
+    return { openRfqs, activeOrders };
+  }
+
+  async detachRfq(projectId: string, rfqId: string): Promise<boolean> {
+    // updateMany with both keys in the predicate: an RFQ attached to a
+    // different project (or to none) matches nothing, so a project owner can
+    // only ever clear links that belong to the project they proved they own.
+    const { count } = await this.client.requestForQuote.updateMany({
+      where: { id: rfqId, projectId },
+      data: { projectId: null },
+    });
+
+    return count > 0;
+  }
+
+  async detachOrder(projectId: string, orderId: string): Promise<boolean> {
+    const { count } = await this.client.order.updateMany({
+      where: { id: orderId, projectId },
+      data: { projectId: null },
+    });
+
+    return count > 0;
   }
 }

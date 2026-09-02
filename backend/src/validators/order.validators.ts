@@ -60,6 +60,9 @@ export const createOrderBodySchema = z
       "DASHEN_BANK",
       "E_BIRR",
     ]),
+    // Optional procurement container. Only PROFESSIONAL buyers own projects,
+    // so the service rejects the field for other roles rather than the schema.
+    projectId: z.string().uuid().optional(),
   })
   .strict()
   .superRefine((input, context) => {

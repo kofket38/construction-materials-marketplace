@@ -1,6 +1,9 @@
 import type { PrismaClient } from "../src/prisma/generated/client.js";
 import { Prisma } from "../src/prisma/generated/client.js";
-import { ProjectReorderOwnershipError } from "../src/repositories/project.errors.js";
+import {
+  ProjectHasProcurementError,
+  ProjectReorderOwnershipError,
+} from "../src/repositories/project.errors.js";
 import { PrismaProjectRepository } from "../src/repositories/prisma-project.repository.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,6 +50,16 @@ function createMock() {
       count: vi.fn(),
     },
     $transaction: vi.fn(),
+    requestForQuote: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    order: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      updateMany: vi.fn(),
+    },
   };
 
   // Support both the array form ([count, findMany]) used by searchPublished
@@ -288,6 +301,14 @@ describe("PrismaProjectRepository", () => {
     expect(await repo.delete(projectId, ownerId)).toBe(false);
   });
 
+  it("translates a restricted procurement foreign key (P2003) into a domain error", async () => {
+    mock.project.delete.mockRejectedValue(prismaError("P2003"));
+
+    await expect(repo.delete(projectId, ownerId)).rejects.toBeInstanceOf(
+      ProjectHasProcurementError,
+    );
+  });
+
   // ── reorder ─────────────────────────────────────────────────────────────────
 
   it("validates ownership inside the transaction before writing", async () => {
@@ -487,4 +508,209 @@ describe("PrismaProjectRepository", () => {
 
     expect(row.images).toEqual(["https://example.com/site-photo.jpg"]);
   });
+
+  // ── findProcurement ─────────────────────────────────────────────────────────
+
+  describe("findProcurement", () => {
+    beforeEach(() => {
+      mock.requestForQuote.findMany.mockResolvedValue([]);
+      mock.order.findMany.mockResolvedValue([]);
+    });
+
+    it("reads both lists scoped to the project, newest first", async () => {
+      await repo.findProcurement(projectId);
+
+      expect(mock.requestForQuote.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { projectId },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        }),
+      );
+      expect(mock.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { projectId },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        }),
+      );
+    });
+
+    it("maps summaries without pricing, shipping, or seller identities", async () => {
+      mock.requestForQuote.findMany.mockResolvedValue([rfqRow()]);
+      mock.order.findMany.mockResolvedValue([orderRow()]);
+
+      const procurement = await repo.findProcurement(projectId);
+
+      expect(procurement.rfqs).toEqual([
+        {
+          id: "00000000-0000-4000-8000-00000000000a",
+          title: "Bulk cement",
+          status: "OPEN",
+          deliveryLocation: "Industrial Area",
+          itemCount: 2,
+          quoteCount: 3,
+          expiresAt: futureDate,
+          createdAt: new Date("2026-08-30T10:00:00.000Z"),
+        },
+      ]);
+      expect(procurement.orders).toEqual([
+        {
+          id: "00000000-0000-4000-8000-00000000000b",
+          status: "PENDING_CONFIRMATION",
+          totalAmount: "1200.50",
+          itemCount: 2,
+          createdAt: new Date("2026-08-30T11:00:00.000Z"),
+        },
+      ]);
+    });
+
+    it("presents an OPEN request past its expiry as EXPIRED", async () => {
+      mock.requestForQuote.findMany.mockResolvedValue([
+        rfqRow({ expiresAt: new Date(Date.now() - 1_000) }),
+      ]);
+
+      const procurement = await repo.findProcurement(projectId);
+
+      expect(procurement.rfqs[0]!.status).toBe("EXPIRED");
+    });
+
+    it("leaves a settled request status untouched", async () => {
+      mock.requestForQuote.findMany.mockResolvedValue([
+        rfqRow({
+          status: "AWARDED",
+          expiresAt: new Date(Date.now() - 1_000),
+        }),
+      ]);
+
+      const procurement = await repo.findProcurement(projectId);
+
+      expect(procurement.rfqs[0]!.status).toBe("AWARDED");
+    });
+  });
+
+  // ── countActiveProcurement ──────────────────────────────────────────────────
+
+  describe("countActiveProcurement", () => {
+    beforeEach(() => {
+      mock.requestForQuote.count.mockResolvedValue(0);
+      mock.order.count.mockResolvedValue(0);
+    });
+
+    it("counts only OPEN requests that have not passed their expiry", async () => {
+      await repo.countActiveProcurement(projectId);
+
+      const where = (
+        mock.requestForQuote.count.mock.calls[0]![0] as {
+          where: {
+            projectId: string;
+            status: string;
+            expiresAt: { gt: Date };
+          };
+        }
+      ).where;
+      expect(where.projectId).toBe(projectId);
+      expect(where.status).toBe("OPEN");
+      expect(where.expiresAt.gt.getTime()).toBeLessThanOrEqual(Date.now());
+    });
+
+    it("counts orders that have not reached a settled status", async () => {
+      await repo.countActiveProcurement(projectId);
+
+      expect(mock.order.count).toHaveBeenCalledWith({
+        where: {
+          projectId,
+          status: {
+            notIn: [
+              "COMPLETED",
+              "CANCELLED",
+              "REJECTED",
+              "PAYMENT_REJECTED",
+            ],
+          },
+        },
+      });
+    });
+
+    it("returns both counts", async () => {
+      mock.requestForQuote.count.mockResolvedValue(2);
+      mock.order.count.mockResolvedValue(1);
+
+      await expect(repo.countActiveProcurement(projectId)).resolves.toEqual({
+        openRfqs: 2,
+        activeOrders: 1,
+      });
+    });
+  });
+
+  // ── detachRfq / detachOrder ─────────────────────────────────────────────────
+
+  describe("detachRfq", () => {
+    const rfqId = "00000000-0000-4000-8000-00000000000a";
+
+    it("clears the link scoped to both identifiers", async () => {
+      mock.requestForQuote.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(repo.detachRfq(projectId, rfqId)).resolves.toBe(true);
+
+      // Both keys in the predicate: an RFQ attached to another project cannot
+      // be touched by ID alone.
+      expect(mock.requestForQuote.updateMany).toHaveBeenCalledWith({
+        where: { id: rfqId, projectId },
+        data: { projectId: null },
+      });
+    });
+
+    it("reports false when no attached request matched", async () => {
+      mock.requestForQuote.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(repo.detachRfq(projectId, rfqId)).resolves.toBe(false);
+    });
+  });
+
+  describe("detachOrder", () => {
+    const orderId = "00000000-0000-4000-8000-00000000000b";
+
+    it("clears the link scoped to both identifiers", async () => {
+      mock.order.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(repo.detachOrder(projectId, orderId)).resolves.toBe(true);
+      expect(mock.order.updateMany).toHaveBeenCalledWith({
+        where: { id: orderId, projectId },
+        data: { projectId: null },
+      });
+    });
+
+    it("reports false when no attached order matched", async () => {
+      mock.order.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(repo.detachOrder(projectId, orderId)).resolves.toBe(false);
+    });
+  });
 });
+
+// ── Procurement row factories ─────────────────────────────────────────────────
+
+const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+function rfqRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "00000000-0000-4000-8000-00000000000a",
+    title: "Bulk cement",
+    status: "OPEN",
+    deliveryLocation: "Industrial Area",
+    expiresAt: futureDate,
+    createdAt: new Date("2026-08-30T10:00:00.000Z"),
+    _count: { items: 2, quotes: 3 },
+    ...overrides,
+  };
+}
+
+function orderRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "00000000-0000-4000-8000-00000000000b",
+    status: "PENDING_CONFIRMATION",
+    totalAmount: new Prisma.Decimal("1200.5"),
+    createdAt: new Date("2026-08-30T11:00:00.000Z"),
+    _count: { items: 2 },
+    ...overrides,
+  };
+}

@@ -18,6 +18,7 @@ import type {
   OrderRepository,
   OrderStatus,
 } from "../../src/repositories/order.repository.js";
+import type { ProjectOrderSummary } from "../../src/repositories/project.repository.js";
 
 interface ProductSeed extends OrderProductSummary {
   price: string;
@@ -153,6 +154,7 @@ export class InMemoryOrderRepository implements OrderRepository {
     const order: OrderEntity = {
       id: orderId,
       customerId: input.customerId,
+      projectId: input.projectId ?? null,
       status: input.status,
       paymentMethod: input.paymentMethod,
       totalAmount: (totalCents / 100).toFixed(2),
@@ -186,6 +188,41 @@ export class InMemoryOrderRepository implements OrderRepository {
 
     this.orders.set(order.id, order);
     return order;
+  }
+
+  /**
+   * ProcurementOrderSource: lets InMemoryProjectRepository report the orders
+   * attached to a project, the way the PostgreSQL repository reads them
+   * through the orders.projectId foreign key. Ordering is applied by the
+   * project repository, matching the Prisma query.
+   */
+  listProjectOrders(projectId: string): ProjectOrderSummary[] {
+    return [...this.orders.values()]
+      .filter((order) => order.projectId === projectId)
+      .map((order) => ({
+        id: order.id,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        itemCount: order.items.length,
+        createdAt: order.createdAt,
+      }));
+  }
+
+  /**
+   * ProcurementOrderSource: clears the project link the way the Prisma
+   * repository's updateMany does. Both identifiers must match, so an order
+   * attached to a different project (or to none) reports false and the
+   * service turns that into a 404.
+   */
+  detachProjectOrder(projectId: string, orderId: string): boolean {
+    const order = this.orders.get(orderId);
+
+    if (!order || order.projectId !== projectId) {
+      return false;
+    }
+
+    order.projectId = null;
+    return true;
   }
 
   async findById(id: string): Promise<OrderEntity | null> {

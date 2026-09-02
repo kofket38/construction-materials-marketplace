@@ -203,6 +203,7 @@ export class PrismaRfqRepository implements RfqRepository {
         const rfq = await transaction.requestForQuote.create({
           data: {
             customerId: input.customerId,
+            projectId: input.projectId ?? null,
             title: input.title,
             deliveryLocation: input.deliveryLocation,
             ...(input.notes !== undefined ? { notes: input.notes } : {}),
@@ -367,6 +368,10 @@ export class PrismaRfqRepository implements RfqRepository {
             title: input.title,
             deliveryLocation: input.deliveryLocation,
             notes: input.notes ?? null,
+            // The update endpoint replaces the whole request, so an omitted
+            // project detaches the RFQ rather than silently keeping the old
+            // link.
+            projectId: input.projectId ?? null,
             expiresAt: input.expiresAt,
             items: {
               create: items.map(toRfqItemCreateData),
@@ -712,6 +717,9 @@ export class PrismaRfqRepository implements RfqRepository {
         const order = await transaction.order.create({
           data: {
             customerId,
+            // The award inherits the request's project link, so a quoted
+            // order lands in the same project as the RFQ that produced it.
+            projectId: quote.rfq.projectId,
             totalAmount,
             items: { create: orderItems },
           },
@@ -1122,6 +1130,7 @@ function mapRfq(rfq: RfqWithRelations): RequestForQuoteEntity {
   return {
     id: rfq.id,
     customerId: rfq.customerId,
+    projectId: rfq.projectId,
     title: rfq.title,
     deliveryLocation: rfq.deliveryLocation,
     notes: rfq.notes,
@@ -1199,6 +1208,7 @@ function mapOrder(order: OrderWithRelations): OrderEntity {
   return {
     id: order.id,
     customerId: order.customerId,
+    projectId: order.projectId,
     status: order.status as OrderStatus,
     totalAmount: order.totalAmount.toFixed(2),
     customer: order.customer,

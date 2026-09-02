@@ -297,6 +297,8 @@ export type ProjectWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  rfqs?: Prisma.RequestForQuoteListRelationFilter
+  orders?: Prisma.OrderListRelationFilter
 }
 
 export type ProjectOrderByWithRelationInput = {
@@ -316,6 +318,8 @@ export type ProjectOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   owner?: Prisma.UserOrderByWithRelationInput
+  rfqs?: Prisma.RequestForQuoteOrderByRelationAggregateInput
+  orders?: Prisma.OrderOrderByRelationAggregateInput
 }
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -338,6 +342,8 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  rfqs?: Prisma.RequestForQuoteListRelationFilter
+  orders?: Prisma.OrderListRelationFilter
 }, "id">
 
 export type ProjectOrderByWithAggregationInput = {
@@ -400,6 +406,8 @@ export type ProjectCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutProjectsInput
+  rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutProjectInput
+  orders?: Prisma.OrderCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateInput = {
@@ -418,6 +426,8 @@ export type ProjectUncheckedCreateInput = {
   publishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutProjectInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUpdateInput = {
@@ -436,6 +446,8 @@ export type ProjectUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
+  rfqs?: Prisma.RequestForQuoteUpdateManyWithoutProjectNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateInput = {
@@ -454,6 +466,8 @@ export type ProjectUncheckedUpdateInput = {
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutProjectNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyInput = {
@@ -581,6 +595,11 @@ export type ProjectOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ProjectNullableScalarRelationFilter = {
+  is?: Prisma.ProjectWhereInput | null
+  isNot?: Prisma.ProjectWhereInput | null
+}
+
 export type ProjectCreateimagesInput = {
   set: string[]
 }
@@ -644,6 +663,38 @@ export type ProjectUncheckedUpdateManyWithoutOwnerNestedInput = {
   deleteMany?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
 }
 
+export type ProjectCreateNestedOneWithoutOrdersInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutOrdersInput, Prisma.ProjectUncheckedCreateWithoutOrdersInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutOrdersInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneWithoutOrdersNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutOrdersInput, Prisma.ProjectUncheckedCreateWithoutOrdersInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutOrdersInput
+  upsert?: Prisma.ProjectUpsertWithoutOrdersInput
+  disconnect?: Prisma.ProjectWhereInput | boolean
+  delete?: Prisma.ProjectWhereInput | boolean
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutOrdersInput, Prisma.ProjectUpdateWithoutOrdersInput>, Prisma.ProjectUncheckedUpdateWithoutOrdersInput>
+}
+
+export type ProjectCreateNestedOneWithoutRfqsInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutRfqsInput, Prisma.ProjectUncheckedCreateWithoutRfqsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutRfqsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneWithoutRfqsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutRfqsInput, Prisma.ProjectUncheckedCreateWithoutRfqsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutRfqsInput
+  upsert?: Prisma.ProjectUpsertWithoutRfqsInput
+  disconnect?: Prisma.ProjectWhereInput | boolean
+  delete?: Prisma.ProjectWhereInput | boolean
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutRfqsInput, Prisma.ProjectUpdateWithoutRfqsInput>, Prisma.ProjectUncheckedUpdateWithoutRfqsInput>
+}
+
 export type ProjectCreateWithoutOwnerInput = {
   id?: string
   title: string
@@ -659,6 +710,8 @@ export type ProjectCreateWithoutOwnerInput = {
   publishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutProjectInput
+  orders?: Prisma.OrderCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutOwnerInput = {
@@ -676,6 +729,8 @@ export type ProjectUncheckedCreateWithoutOwnerInput = {
   publishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutProjectInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutOwnerInput = {
@@ -725,6 +780,190 @@ export type ProjectScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
 }
 
+export type ProjectCreateWithoutOrdersInput = {
+  id?: string
+  title: string
+  description?: string | null
+  projectType?: string | null
+  location?: string | null
+  budget?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  images?: Prisma.ProjectCreateimagesInput | string[]
+  displayOrder?: number
+  status?: $Enums.ProjectStatus
+  publishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutProjectsInput
+  rfqs?: Prisma.RequestForQuoteCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutOrdersInput = {
+  id?: string
+  ownerId: string
+  title: string
+  description?: string | null
+  projectType?: string | null
+  location?: string | null
+  budget?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  images?: Prisma.ProjectCreateimagesInput | string[]
+  displayOrder?: number
+  status?: $Enums.ProjectStatus
+  publishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutOrdersInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutOrdersInput, Prisma.ProjectUncheckedCreateWithoutOrdersInput>
+}
+
+export type ProjectUpsertWithoutOrdersInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutOrdersInput, Prisma.ProjectUncheckedUpdateWithoutOrdersInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutOrdersInput, Prisma.ProjectUncheckedCreateWithoutOrdersInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutOrdersInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutOrdersInput, Prisma.ProjectUncheckedUpdateWithoutOrdersInput>
+}
+
+export type ProjectUpdateWithoutOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  images?: Prisma.ProjectUpdateimagesInput | string[]
+  displayOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
+  rfqs?: Prisma.RequestForQuoteUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  images?: Prisma.ProjectUpdateimagesInput | string[]
+  displayOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectCreateWithoutRfqsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  projectType?: string | null
+  location?: string | null
+  budget?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  images?: Prisma.ProjectCreateimagesInput | string[]
+  displayOrder?: number
+  status?: $Enums.ProjectStatus
+  publishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutProjectsInput
+  orders?: Prisma.OrderCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutRfqsInput = {
+  id?: string
+  ownerId: string
+  title: string
+  description?: string | null
+  projectType?: string | null
+  location?: string | null
+  budget?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  images?: Prisma.ProjectCreateimagesInput | string[]
+  displayOrder?: number
+  status?: $Enums.ProjectStatus
+  publishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutRfqsInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutRfqsInput, Prisma.ProjectUncheckedCreateWithoutRfqsInput>
+}
+
+export type ProjectUpsertWithoutRfqsInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutRfqsInput, Prisma.ProjectUncheckedUpdateWithoutRfqsInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutRfqsInput, Prisma.ProjectUncheckedCreateWithoutRfqsInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutRfqsInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutRfqsInput, Prisma.ProjectUncheckedUpdateWithoutRfqsInput>
+}
+
+export type ProjectUpdateWithoutRfqsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  images?: Prisma.ProjectUpdateimagesInput | string[]
+  displayOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutRfqsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  images?: Prisma.ProjectUpdateimagesInput | string[]
+  displayOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutProjectNestedInput
+}
+
 export type ProjectCreateManyOwnerInput = {
   id?: string
   title: string
@@ -757,6 +996,8 @@ export type ProjectUpdateWithoutOwnerInput = {
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rfqs?: Prisma.RequestForQuoteUpdateManyWithoutProjectNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutOwnerInput = {
@@ -774,6 +1015,8 @@ export type ProjectUncheckedUpdateWithoutOwnerInput = {
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rfqs?: Prisma.RequestForQuoteUncheckedUpdateManyWithoutProjectNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
@@ -794,6 +1037,44 @@ export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
 }
 
 
+/**
+ * Count Type ProjectCountOutputType
+ */
+
+export type ProjectCountOutputType = {
+  rfqs: number
+  orders: number
+}
+
+export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  rfqs?: boolean | ProjectCountOutputTypeCountRfqsArgs
+  orders?: boolean | ProjectCountOutputTypeCountOrdersArgs
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectCountOutputType
+   */
+  select?: Prisma.ProjectCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountRfqsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RequestForQuoteWhereInput
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OrderWhereInput
+}
+
 
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -812,6 +1093,9 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  rfqs?: boolean | Prisma.Project$rfqsArgs<ExtArgs>
+  orders?: boolean | Prisma.Project$ordersArgs<ExtArgs>
+  _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["project"]>
 
 export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -873,6 +1157,9 @@ export type ProjectSelectScalar = {
 export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "title" | "description" | "projectType" | "location" | "budget" | "startDate" | "endDate" | "images" | "displayOrder" | "status" | "publishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  rfqs?: boolean | Prisma.Project$rfqsArgs<ExtArgs>
+  orders?: boolean | Prisma.Project$ordersArgs<ExtArgs>
+  _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProjectIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -885,6 +1172,8 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "Project"
   objects: {
     owner: Prisma.$UserPayload<ExtArgs>
+    rfqs: Prisma.$RequestForQuotePayload<ExtArgs>[]
+    orders: Prisma.$OrderPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1297,6 +1586,8 @@ readonly fields: ProjectFieldRefs;
 export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  rfqs<T extends Prisma.Project$rfqsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$rfqsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RequestForQuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  orders<T extends Prisma.Project$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1739,6 +2030,54 @@ export type ProjectDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Projects to delete.
    */
   limit?: number
+}
+
+/**
+ * Project.rfqs
+ */
+export type Project$rfqsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RequestForQuote
+   */
+  select?: Prisma.RequestForQuoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RequestForQuote
+   */
+  omit?: Prisma.RequestForQuoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RequestForQuoteInclude<ExtArgs> | null
+  where?: Prisma.RequestForQuoteWhereInput
+  orderBy?: Prisma.RequestForQuoteOrderByWithRelationInput | Prisma.RequestForQuoteOrderByWithRelationInput[]
+  cursor?: Prisma.RequestForQuoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RequestForQuoteScalarFieldEnum | Prisma.RequestForQuoteScalarFieldEnum[]
+}
+
+/**
+ * Project.orders
+ */
+export type Project$ordersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Order
+   */
+  select?: Prisma.OrderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Order
+   */
+  omit?: Prisma.OrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OrderInclude<ExtArgs> | null
+  where?: Prisma.OrderWhereInput
+  orderBy?: Prisma.OrderOrderByWithRelationInput | Prisma.OrderOrderByWithRelationInput[]
+  cursor?: Prisma.OrderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OrderScalarFieldEnum | Prisma.OrderScalarFieldEnum[]
 }
 
 /**

@@ -291,6 +291,7 @@ export type SellerInventoryScalarFieldEnum = (typeof SellerInventoryScalarFieldE
 export const OrderScalarFieldEnum = {
   id: 'id',
   customerId: 'customerId',
+  projectId: 'projectId',
   status: 'status',
   paymentMethod: 'paymentMethod',
   totalAmount: 'totalAmount',
@@ -373,6 +374,7 @@ export type WishlistItemScalarFieldEnum = (typeof WishlistItemScalarFieldEnum)[k
 export const RequestForQuoteScalarFieldEnum = {
   id: 'id',
   customerId: 'customerId',
+  projectId: 'projectId',
   title: 'title',
   deliveryLocation: 'deliveryLocation',
   notes: 'notes',

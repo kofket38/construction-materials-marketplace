@@ -61,6 +61,7 @@ function mapOrder(order: OrderWithRelations): OrderEntity {
   return {
     id: order.id,
     customerId: order.customerId,
+    projectId: order.projectId,
     status: order.status as OrderStatus,
     paymentMethod: order.paymentMethod,
     totalAmount: order.totalAmount.toFixed(2),
@@ -153,6 +154,7 @@ export class PrismaOrderRepository implements OrderRepository {
         const order = await transaction.order.create({
           data: {
             customerId: input.customerId,
+            projectId: input.projectId ?? null,
             status: input.status,
             paymentMethod: input.paymentMethod,
             totalAmount,

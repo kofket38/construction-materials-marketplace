@@ -1,3 +1,6 @@
+import type { OrderStatus } from "./order.repository.js";
+import type { RfqStatus } from "./rfq.repository.js";
+
 // ── Status type mirrors the Prisma enum ───────────────────────────────────────
 export type ProjectStatus =
   | "DRAFT"
@@ -137,6 +140,75 @@ export interface PublishedProjectResult {
   hasPreviousPage: boolean;
 }
 
+// ── Linked procurement (owner-private) ────────────────────────────────────────
+
+/**
+ * Summary of an RFQ attached to a project. Deliberately a summary, not the
+ * full RequestForQuoteEntity: this view only needs enough to render a list and
+ * link through to the existing RFQ detail page, which already applies its own
+ * authorization.
+ */
+export interface ProjectRfqSummary {
+  id: string;
+  title: string;
+  status: RfqStatus;
+  deliveryLocation: string;
+  itemCount: number;
+  quoteCount: number;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+/** Summary of an order attached to a project. */
+export interface ProjectOrderSummary {
+  id: string;
+  status: OrderStatus;
+  /** Fixed two-decimal string, matching OrderEntity.totalAmount. */
+  totalAmount: string;
+  itemCount: number;
+  createdAt: Date;
+}
+
+/**
+ * Everything a project owner sees about procurement linked to one of their
+ * projects. This shape is owner-private and never merged into the public
+ * project detail payload.
+ */
+export interface ProjectProcurementSummary {
+  rfqs: ProjectRfqSummary[];
+  orders: ProjectOrderSummary[];
+}
+
+/**
+ * Counts of unfinished procurement attached to a project. Used by the
+ * lifecycle guard that blocks completion while obligations remain.
+ */
+export interface ProjectProcurementLoad {
+  /** RFQs still soliciting quotes (RfqStatus OPEN). */
+  openRfqs: number;
+  /** Orders that have not reached a settled status. */
+  activeOrders: number;
+}
+
+/**
+ * Order statuses that count as settled for the project lifecycle guard. Both
+ * the Prisma and in-memory project repositories read this list, so the guard
+ * cannot drift between them.
+ *
+ * COMPLETED and CANCELLED are the marketplace's terminal states —
+ * OrderService.allowedAdminTransitions returns no onward transitions for
+ * exactly those two. REJECTED and PAYMENT_REJECTED are included as well: they
+ * only ever transition to CANCELLED, and a buyer cannot cancel them
+ * themselves, so treating them as active would let a dead order block project
+ * completion until an administrator intervened.
+ */
+export const SETTLED_ORDER_STATUSES = [
+  "COMPLETED",
+  "CANCELLED",
+  "REJECTED",
+  "PAYMENT_REJECTED",
+] as const satisfies readonly OrderStatus[];
+
 // ── Repository interface ──────────────────────────────────────────────────────
 
 export interface ProjectRepository {
@@ -209,4 +281,36 @@ export interface ProjectRepository {
    * The caller (service) is responsible for the 404 error.
    */
   findPublicById(projectId: string): Promise<PublicProjectDetail | null>;
+
+  /**
+   * List the RFQs and orders attached to a project, newest first. The query is
+   * keyed on projectId only — the caller (service) is responsible for proving
+   * the requester owns the project before calling this.
+   */
+  findProcurement(projectId: string): Promise<ProjectProcurementSummary>;
+
+  /**
+   * Count the project's unfinished procurement: RFQs still OPEN and orders
+   * that have not reached a terminal status. Used by the lifecycle guard.
+   */
+  countActiveProcurement(projectId: string): Promise<ProjectProcurementLoad>;
+
+  /**
+   * Clear the project link on one RFQ. Scoped to rows currently attached to
+   * this project, so a foreign or already-detached RFQ changes nothing and
+   * reports false — the caller (service) turns that into a 404.
+   *
+   * Detaching is deliberately independent of the RFQ's own lifecycle: the RFQ
+   * update endpoint only accepts OPEN, quote-free requests, so without this
+   * the owner could never clear the link left by an awarded or quoted request
+   * and could never delete the project.
+   */
+  detachRfq(projectId: string, rfqId: string): Promise<boolean>;
+
+  /**
+   * Clear the project link on one order. Orders have no update endpoint at
+   * all, so this is the only way an owner can release a project their order
+   * history points at.
+   */
+  detachOrder(projectId: string, orderId: string): Promise<boolean>;
 }
