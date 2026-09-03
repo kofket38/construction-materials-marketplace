@@ -21,6 +21,7 @@ import {
   useForm,
   type SubmitHandler,
   type UseFormRegister,
+  type UseFormWatch,
   type FieldErrors,
 } from "react-hook-form";
 import { Link } from "react-router-dom";
@@ -44,6 +45,7 @@ import type {
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
 import { PortfolioManagerSection } from "@/features/professional-profile/components/PortfolioManager";
+import { ProfessionalAvatar } from "@/features/professional-profile/components/ProfessionalAvatar";
 import { defaultFormOptions, zodResolver } from "@/shared/forms/form-config";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
@@ -52,6 +54,12 @@ const profileSchema = z.object({
   displayName: z.string().trim().min(1, "Display name is required.").max(200),
   headline: z.string().trim().max(300).optional(),
   bio: z.string().trim().max(2000).optional(),
+  // Mirrors the backend avatarUrl contract: a valid URL of at most 500
+  // characters, or empty to clear the stored avatar (sent as null).
+  avatarUrl: z.string().trim().max(500).optional().refine(
+    (v) => !v || z.string().url().safeParse(v).success,
+    "Must be a valid URL.",
+  ),
   profession: z.string().trim().max(200).optional(),
   // Stored as a string in the input; converted to number in the submit handler
   yearsExperience: z.string().optional(),
@@ -207,6 +215,7 @@ function CreateProfileSection({ onCreated }: { onCreated: () => void }) {
       displayName: "",
       headline: "",
       bio: "",
+      avatarUrl: "",
       profession: "",
       company: "",
       city: "",
@@ -225,6 +234,7 @@ function CreateProfileSection({ onCreated }: { onCreated: () => void }) {
     handleSubmit,
     register,
     setError,
+    watch,
   } = form;
 
   const createMutation = useMutation({
@@ -245,6 +255,7 @@ function CreateProfileSection({ onCreated }: { onCreated: () => void }) {
       displayName: values.displayName,
       headline: values.headline || null,
       bio: values.bio || null,
+      avatarUrl: values.avatarUrl || null,
       profession: values.profession || null,
       yearsExperience: values.yearsExperience
         ? Number(values.yearsExperience)
@@ -277,6 +288,7 @@ function CreateProfileSection({ onCreated }: { onCreated: () => void }) {
         register={register}
         rootError={errors.root?.message}
         submitLabel="Create profile"
+        watch={watch}
       />
     </>
   );
@@ -306,6 +318,7 @@ function EditProfileSection({
     register,
     reset,
     setError,
+    watch,
   } = form;
 
   useEffect(() => {
@@ -318,6 +331,9 @@ function EditProfileSection({
         displayName: values.displayName,
         headline: values.headline || null,
         bio: values.bio || null,
+        // Empty input clears the stored avatar; the backend only leaves it
+        // untouched when the key is absent from the request body entirely.
+        avatarUrl: values.avatarUrl || null,
         profession: values.profession || null,
         yearsExperience: values.yearsExperience
           ? Number(values.yearsExperience)
@@ -377,6 +393,7 @@ function EditProfileSection({
         register={register}
         rootError={errors.root?.message}
         submitLabel="Save changes"
+        watch={watch}
       />
 
       <SpecialtiesSection
@@ -1024,6 +1041,7 @@ function ProfileForm({
   register,
   rootError,
   submitLabel,
+  watch,
 }: {
   errors: FieldErrors<ProfileFormValues>;
   isDirty?: boolean;
@@ -1032,7 +1050,18 @@ function ProfileForm({
   register: UseFormRegister<ProfileFormValues>;
   rootError?: string;
   submitLabel: string;
+  watch: UseFormWatch<ProfileFormValues>;
 }) {
+  const avatarUrlValue = watch("avatarUrl")?.trim() ?? "";
+  const displayNameValue = watch("displayName")?.trim() ?? "";
+  // Preview only a syntactically valid URL so a half-typed value never requests
+  // a broken image. ProfessionalAvatar latches its own failure state, so the
+  // key remounts it per URL and lets a corrected URL render again.
+  const avatarPreviewSrc =
+    avatarUrlValue && z.string().url().safeParse(avatarUrlValue).success
+      ? avatarUrlValue
+      : null;
+
   return (
     <form className="mt-6 space-y-8" noValidate onSubmit={onSubmit}>
       {/* Identity */}
@@ -1089,6 +1118,35 @@ function ProfileForm({
                 rows={4}
                 {...register("bio")}
               />
+            </Field>
+          </div>
+
+          <div className="sm:col-span-2">
+            <Field
+              id="avatarUrl"
+              label="Profile image URL"
+              hint="Link to a hosted image. Leave empty to remove it and show your initials instead."
+              error={errors.avatarUrl?.message}
+            >
+              <div className="flex items-center gap-4">
+                <span className="block size-16 shrink-0 overflow-hidden rounded-full border border-zinc-200">
+                  <ProfessionalAvatar
+                    initialsClassName="text-xl"
+                    key={avatarPreviewSrc ?? "initials"}
+                    name={displayNameValue}
+                    src={avatarPreviewSrc}
+                  />
+                </span>
+                <input
+                  className={inputClass(Boolean(errors.avatarUrl))}
+                  disabled={isSubmitting}
+                  id="avatarUrl"
+                  maxLength={500}
+                  placeholder="https://example.com/your-photo.jpg"
+                  type="url"
+                  {...register("avatarUrl")}
+                />
+              </div>
             </Field>
           </div>
 
@@ -1317,6 +1375,7 @@ function profileToFormValues(p: ProfessionalProfile): ProfileFormValues {
     displayName: p.displayName,
     headline: p.headline ?? "",
     bio: p.bio ?? "",
+    avatarUrl: p.avatarUrl ?? "",
     profession: p.profession ?? "",
     yearsExperience: p.yearsExperience != null ? String(p.yearsExperience) : "",
     company: p.company ?? "",

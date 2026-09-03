@@ -33,6 +33,7 @@ import {
   listProfessionalPortfolio,
 } from "@/features/professional-profile/api/professional-profile.api";
 import type { ProfessionalProfile } from "@/features/professional-profile/api/professional-profile.api";
+import { ProfessionalAvatar } from "@/features/professional-profile/components/ProfessionalAvatar";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
 
@@ -179,7 +180,6 @@ function ProfileSummaryCard({
   completion: CompletionResult;
   profile: ProfessionalProfile;
 }) {
-  const initials = getInitials(profile.displayName);
   const location = [profile.city, profile.country]
     .filter(Boolean)
     .join(", ");
@@ -188,8 +188,12 @@ function ProfileSummaryCard({
     <div className="rounded-md border border-zinc-200 bg-white shadow-sm">
       {/* Avatar + name */}
       <div className="flex flex-col items-center px-5 pb-5 pt-6 text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-emerald-700 text-xl font-bold text-white shadow-sm">
-          {initials}
+        <span className="block size-16 shrink-0 overflow-hidden rounded-full shadow-sm">
+          <ProfessionalAvatar
+            initialsClassName="text-xl"
+            name={profile.displayName}
+            src={profile.avatarUrl}
+          />
         </span>
         <h2 className="mt-3 text-lg font-semibold text-zinc-950">
           {profile.displayName}
@@ -767,15 +771,4 @@ function computeCompletion(profile: ProfessionalProfile): CompletionResult {
   const percent = Math.round((done / items.length) * 100);
 
   return { percent, items };
-}
-
-// ── Initials helper ───────────────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }

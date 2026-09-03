@@ -40,12 +40,14 @@ applicable.
 | Phase 3 | Complete | Seller dashboard/business management, advanced product discovery, and product image management. |
 | Phase 4 | Complete and stabilized | Administrator oversight, verified-purchase product reviews and ratings, customer product wishlists, and RFQ and supplier quotations. |
 | M1 | Complete | Professional Identity: PROFESSIONAL as a real backend role, professional profiles, portfolio items, professional projects, public professional directory, public project discovery, professional registration, and full buyer capabilities for professional accounts. |
+| M1.5 | Complete | Professional Avatar Management: a profile-image URL field with live preview on professional profile create and edit, empty input clearing the stored avatar, and the professional dashboard rendering the stored avatar with an initials fallback. |
 
 ## 3. Current Phase
 
 **Milestone M1 — Professional Identity is complete and verified.**
 
-The most recently completed work is **M1 Professional Identity**.
+The most recently completed work is **M1.5 Professional Avatar Management**,
+a small frontend increment on top of M1; see the end of this section.
 
 M1 introduces `PROFESSIONAL` as a first-class backend role. Professional
 accounts register publicly, manage exactly one professional profile with
@@ -68,6 +70,18 @@ frontend reaches all three capabilities: an optional project selector on RFQ
 creation and checkout, and a procurement section with detach actions on the
 owner's project detail page. Both attachment controls are professional-only, so
 customer flows are unchanged.
+
+**Follow-on increment M1.5: professional avatar management.**
+
+`ProfessionalProfile.avatarUrl` has existed since the M1 profile
+migration, and the public profile, public directory, and project surfaces
+already rendered it, but nothing in the UI could set it and the owner's
+own dashboard ignored it. M1.5 closes that gap on the frontend only: the
+profile form has a validated profile-image URL field with a live preview
+on both create and edit, an empty value is sent as `null` to clear the
+stored avatar, and the professional dashboard renders the shared
+`ProfessionalAvatar` with initials as the fallback. No schema, migration,
+endpoint, validator, service, or role change was required.
 
 ## 4. Completed Modules
 
@@ -179,6 +193,20 @@ customer flows are unchanged.
     routes, and `isBuyerRole` as the frontend single source of truth.
   - Administrator dashboard buyer totals counting both `CUSTOMER` and
     `PROFESSIONAL` accounts.
+- Professional avatar management (M1.5) with:
+  - The optional `avatarUrl` on a professional profile settable from the
+    profile form on both create and edit, sent as `null` when the input is
+    empty so an existing avatar is cleared rather than left untouched.
+  - A live preview beside the field that renders only a syntactically
+    valid URL, so a half-typed value never requests a broken image.
+  - The professional dashboard rendering the stored avatar through the
+    shared `ProfessionalAvatar` component with an initials fallback; the
+    public profile, directory, and project surfaces already did.
+  - Backend behavior unchanged: the existing `VarChar(500)` column, strict
+    URL validator, and owner-only create/update endpoints already accepted
+    the field. Coverage was extended instead — create, PATCH, clear,
+    replace, round-trip on every read, length bounds, and no-clobber when
+    specialties or credentials change.
 - Project procurement links (backend and frontend) with:
   - Optional `projectId` on RFQ creation, RFQ update, and checkout, resolved
     against the authenticated professional's own projects before any write
@@ -281,7 +309,7 @@ PostgreSQL is accessed through Prisma 7. The current schema contains:
 | `RfqItem` | Requested material/category/quantity snapshot belonging to an RFQ. |
 | `SupplierQuote` | Seller response with validity, terms, total amount, lifecycle status, and an optional generated order. |
 | `SupplierQuoteItem` | Seller product, offered quantity, and quoted-price snapshot for an RFQ item. |
-| `ProfessionalProfile` | One-to-one professional identity with headline, bio, specialties, and credentials; mutations are professional-only. |
+| `ProfessionalProfile` | One-to-one professional identity with headline, bio, optional avatar URL (`VarChar(500)`), specialties, and credentials; mutations are professional-only. |
 | `ProfessionalSpecialty` | Named specialty on a professional profile, unique per `(profileId, name)`. |
 | `ProfessionalCredential` | Education, certification, training, award, or other credential on a professional profile. |
 | `PortfolioItem` | Portfolio entry belonging to a professional profile; managed only by the owning professional. |
@@ -597,11 +625,20 @@ Features outside the currently implemented scope:
 ## 10. Next Exact Task To Continue
 
 **M1 Professional Identity is complete and committed, including the project
-procurement links increment on both the backend and the frontend.** The backend
-typechecks and passes the full suite against live PostgreSQL; the frontend
-typechecks, lints, and builds. No approved implementation work remains. Do not
-begin payments, messaging, notifications, or another business module until the
-next requirements are provided and approved.
+procurement links increment on both the backend and the frontend, and the
+M1.5 professional avatar management increment.** The backend typechecks and
+passes the full suite against live PostgreSQL; the frontend typechecks,
+lints, and builds.
+
+One item needs confirmation rather than implementation: M1.5 was never
+written down as a specification. Its scope was reconstructed from the
+implemented state — the avatar was the only professional-identity field the
+backend accepted but no UI could set. If "M1.5" was intended to cover more
+than avatar management, those requirements still need to be provided.
+
+Beyond that, no approved implementation work remains. Do not begin payments,
+messaging, notifications, or another business module until the next
+requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -722,7 +759,7 @@ next requirements are provided and approved.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-09-02. The
+No known failing tests or confirmed functional bugs as of 2026-09-03. The
 product-discovery batch transaction now sets an explicit transaction-start
 budget (`maxWait`) after live smoke verification surfaced Prisma `P2028`
 "unable to start a transaction" failures under Supabase latency.
@@ -747,6 +784,10 @@ Current limitations and deferred work:
 - Product media management stores validated external image URLs only. Binary
   upload, resizing, object storage, and remote-file lifecycle management are
   not implemented.
+- Professional avatars are external image URLs only, on the same basis as
+  product media: no upload, cropping, resizing, or object storage. A URL that
+  fails to load falls back to initials at render time, and reachability is
+  never validated on save.
 - RFQ expiration is applied lazily when RFQ endpoints are accessed; there is
   no background scheduler that updates untouched expired rows immediately.
 - The owner-private project procurement view
@@ -769,18 +810,19 @@ Current limitations and deferred work:
 
 ## Verification Baseline
 
-Backend re-verified end to end for the project procurement links increment
-(2026-09-02):
+Backend re-verified end to end for the M1.5 professional avatar increment
+(2026-09-03):
 
 ```text
 backend typecheck            PASS
-backend test suite           PASS (877 tests, 35 files, 669.81s, live PostgreSQL)
+backend test suite           PASS (890 tests, 35 files, 574.64s, live PostgreSQL)
 prisma migrate status        PASS (29 migrations applied, schema up to date)
+professional profile suite   PASS (115/115, 13 avatar tests, inside the full suite)
 RFQ integration suite        PASS (10/10, inside the full suite)
 project procurement suite    PASS (10/10 live PostgreSQL, inside the full suite)
 ```
 
-Frontend re-verified for the procurement frontend increment (2026-09-02):
+Frontend re-verified for the M1.5 professional avatar increment (2026-09-03):
 
 ```text
 frontend typecheck           PASS
@@ -799,12 +841,13 @@ orders.test.ts               │
 projects.test.ts             ┘
 ```
 
-The marketplace smoke test was not re-run for this increment: it drives the
-public marketplace, while every changed screen (RFQ creation, checkout, project
-detail) is behind buyer or professional authentication, so it would exercise
-none of them. The frontend baseline below is carried forward from the M1
-Professional Identity baseline (2026-09-01, re-verified end to end after the
-local frontend API base URL was corrected):
+The marketplace smoke test was not re-run for the procurement increment or for
+M1.5: it drives the public marketplace, while every changed screen (RFQ
+creation, checkout, project detail, and for M1.5 the profile form and the
+professional dashboard) is behind buyer or professional authentication, so it
+would exercise none of them. The frontend baseline below is carried forward
+from the M1 Professional Identity baseline (2026-09-01, re-verified end to end
+after the local frontend API base URL was corrected):
 
 ```text
 frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
@@ -836,6 +879,14 @@ transaction-expiry and dropped-connection errors purely from network latency;
 the same file passes when latency is normal. Treat isolated failures of that
 file as environmental until reproduced twice.
 
+A broad failure can be environmental too. A first full-suite attempt on
+2026-09-03 failed 46 tests across 5 files with `Can't reach database server at
+aws-1-eu-west-1.pooler.supabase.com`, including the `rate-limit.test.ts` tests,
+which drive `/health` and see `503` whenever its database probe fails. Nothing
+was changed: `prisma migrate status` confirmed the database was reachable again
+and the immediate re-run passed 890/890. Confirm connectivity before treating a
+database-wide failure as a regression.
+
 RFQ HTTP tests cover customer and seller lifecycles, authentication, role and
 ownership enforcement, customer and quotation isolation, strict validation,
 seller eligibility, quote rejection and withdrawal, expiration, atomic quote
@@ -849,4 +900,8 @@ competing concurrent acceptance, row locking, uniqueness, quote-line movement,
 award-state transitions, and strengthened cross-table constraints. Professional
 identity is covered by profile, portfolio, project, directory, discovery, and
 registration tests, including professional-only mutation enforcement and
-professional buyer-capability tests across orders and RFQs.
+professional buyer-capability tests across orders and RFQs. Avatar handling is
+covered by 13 tests spanning create, PATCH, explicit clear, replacement,
+round-trip on `/me`, the public profile and the directory, both length bounds,
+malformed input on both write paths, and no-clobber when specialties or
+credentials change.

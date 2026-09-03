@@ -367,6 +367,186 @@ describe("Professional Profiles API", () => {
     });
   });
 
+  // ── Avatar URL (M1.5) ────────────────────────────────────────────────────────
+
+  describe("avatar URL handling", () => {
+    const avatarUrl = "https://cdn.example.com/avatars/abebe.jpg";
+
+    it("persists a valid avatar URL on create and returns it", async () => {
+      const res = await post("/api/professional-profiles", tokenA, {
+        ...validCreateBody,
+        avatarUrl,
+      }).expect(201);
+
+      expect(res.body.data.profile.avatarUrl).toBe(avatarUrl);
+      expect(profiles.values()[0]?.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("stores null when avatarUrl is omitted on create", async () => {
+      const res = await post(
+        "/api/professional-profiles",
+        tokenA,
+        validCreateBody,
+      ).expect(201);
+
+      expect(res.body.data.profile.avatarUrl).toBeNull();
+    });
+
+    it("accepts an explicit null avatarUrl on create", async () => {
+      // The profile form always sends the key — an empty input becomes null —
+      // so explicit null, not omission, is the path the real client takes.
+      const res = await post("/api/professional-profiles", tokenA, {
+        ...validCreateBody,
+        avatarUrl: null,
+      }).expect(201);
+
+      expect(res.body.data.profile.avatarUrl).toBeNull();
+      expect(profiles.values()[0]?.avatarUrl).toBeNull();
+    });
+
+    it("returns 400 for a malformed avatar URL on create", async () => {
+      const res = await post("/api/professional-profiles", tokenA, {
+        ...validCreateBody,
+        avatarUrl: "not-a-url",
+      }).expect(400);
+
+      expect(res.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: "body.avatarUrl" }),
+        ]),
+      );
+    });
+
+    it("returns 400 for an avatar URL longer than 500 characters", async () => {
+      const res = await post("/api/professional-profiles", tokenA, {
+        ...validCreateBody,
+        avatarUrl: `https://cdn.example.com/${"a".repeat(500)}.jpg`,
+      }).expect(400);
+
+      expect(res.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: "body.avatarUrl" }),
+        ]),
+      );
+    });
+
+    it("accepts an avatar URL of exactly 500 characters", async () => {
+      const prefix = "https://cdn.example.com/";
+      const atLimit = `${prefix}${"a".repeat(500 - prefix.length - 4)}.jpg`;
+      expect(atLimit).toHaveLength(500);
+
+      const res = await post("/api/professional-profiles", tokenA, {
+        ...validCreateBody,
+        avatarUrl: atLimit,
+      }).expect(201);
+
+      expect(res.body.data.profile.avatarUrl).toBe(atLimit);
+      expect(profiles.values()[0]?.avatarUrl).toBe(atLimit);
+    });
+
+    it("sets an avatar URL through PATCH and round-trips it on every read", async () => {
+      const profile = profiles.addProfile(userAId);
+
+      const patched = await patch(
+        `/api/professional-profiles/${profile.id}`,
+        tokenA,
+        { avatarUrl },
+      ).expect(200);
+      expect(patched.body.data.profile.avatarUrl).toBe(avatarUrl);
+
+      const own = await get("/api/professional-profiles/me", tokenA).expect(200);
+      expect(own.body.data.profile.avatarUrl).toBe(avatarUrl);
+
+      const publicDetail = await request(app)
+        .get(`/api/professional-profiles/${profile.id}`)
+        .expect(200);
+      expect(publicDetail.body.data.profile.avatarUrl).toBe(avatarUrl);
+
+      const directory = await request(app)
+        .get("/api/professional-profiles")
+        .expect(200);
+      expect(directory.body.data.professionals[0]?.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("replaces an existing avatar URL with a new one", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+      const replacement = "https://cdn.example.com/avatars/updated.png";
+
+      const res = await patch(
+        `/api/professional-profiles/${profile.id}`,
+        tokenA,
+        { avatarUrl: replacement },
+      ).expect(200);
+
+      expect(res.body.data.profile.avatarUrl).toBe(replacement);
+      expect(profiles.values()[0]?.avatarUrl).toBe(replacement);
+    });
+
+    it("clears a stored avatar when avatarUrl is explicitly null", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+
+      const res = await patch(
+        `/api/professional-profiles/${profile.id}`,
+        tokenA,
+        { avatarUrl: null },
+      ).expect(200);
+
+      expect(res.body.data.profile.avatarUrl).toBeNull();
+      expect(profiles.values()[0]?.avatarUrl).toBeNull();
+    });
+
+    it("rejects a malformed avatar URL on PATCH and leaves the stored value intact", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+
+      await patch(`/api/professional-profiles/${profile.id}`, tokenA, {
+        avatarUrl: "not-a-url",
+      }).expect(400);
+
+      expect(profiles.values()[0]?.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("preserves a stored avatar when the update omits avatarUrl", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+
+      const res = await patch(
+        `/api/professional-profiles/${profile.id}`,
+        tokenA,
+        { city: "Dire Dawa", headline: "Updated headline" },
+      ).expect(200);
+
+      expect(res.body.data.profile.city).toBe("Dire Dawa");
+      expect(res.body.data.profile.headline).toBe("Updated headline");
+      expect(res.body.data.profile.avatarUrl).toBe(avatarUrl);
+      expect(profiles.values()[0]?.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("keeps the avatar when specialties are replaced", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+
+      const res = await request(app)
+        .put(`/api/professional-profiles/${profile.id}/specialties`)
+        .set("Authorization", `Bearer ${tokenA}`)
+        .send({ names: ["Foundation Design"] })
+        .expect(200);
+
+      expect(res.body.data.profile.specialties).toHaveLength(1);
+      expect(res.body.data.profile.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("keeps the avatar when a credential is added", async () => {
+      const profile = profiles.addProfile(userAId, { avatarUrl });
+
+      const res = await post(
+        `/api/professional-profiles/${profile.id}/credentials`,
+        tokenA,
+        validCredentialBody,
+      ).expect(201);
+
+      expect(res.body.data.profile.credentials).toHaveLength(1);
+      expect(res.body.data.profile.avatarUrl).toBe(avatarUrl);
+    });
+  });
+
   // ── DELETE /api/professional-profiles/:profileId ──────────────────────────────
 
   describe("DELETE /api/professional-profiles/:profileId", () => {
