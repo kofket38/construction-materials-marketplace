@@ -19,7 +19,7 @@ import {
 } from "@/features/products/api/product-actions.api";
 import { effectivePrice, effectiveQuantity } from "@/features/cart/model/cart";
 import { formatProductPrice } from "@/features/products/lib/product-display";
-import { resolveLocalProductImage } from "@/features/products/lib/product-images";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { isBuyerRole } from "@/features/auth/model/auth.types";
 import { getApiErrorMessage } from "@/shared/api/http-error";
@@ -63,7 +63,7 @@ export function WishlistPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Account</p>
+          <p className="text-sm font-semibold text-brand-ink">Account</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
             My Wishlist
           </h1>
@@ -83,7 +83,7 @@ export function WishlistPage() {
         <div className="flex min-h-64 items-center justify-center">
           <LoaderCircle
             aria-hidden="true"
-            className="size-6 animate-spin text-emerald-700"
+            className="size-6 animate-spin text-brand-ink"
           />
         </div>
       ) : wishlistQuery.isError ? (
@@ -168,7 +168,6 @@ function WishlistCard({
   onRemove: () => void;
 }) {
   const product = item.product;
-  const localImage = resolveLocalProductImage(product);
   const displayPrice = effectivePrice(product);
   const displayQuantity = effectiveQuantity(product);
   const isInStock = displayQuantity > 0;
@@ -181,30 +180,25 @@ function WishlistCard({
     >
       <Link
         aria-label={`View ${product.name}`}
-        className="group block overflow-hidden rounded-t-md bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700"
+        className="group flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-t-md bg-sunken focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ring"
         to={`/products/${product.id}`}
       >
-        {localImage.src ? (
-          <img
-            alt={product.name}
-            className="aspect-[4/3] w-full object-contain p-4 transition-transform duration-300 group-hover:scale-[1.02]"
-            loading="lazy"
-            src={localImage.src}
-          />
-        ) : (
-          <div className="flex aspect-[4/3] w-full items-center justify-center text-zinc-400">
-            <Heart aria-hidden="true" className="size-10" strokeWidth={1.2} />
-          </div>
-        )}
+        <ProductImage
+          categoryName={product.category.name}
+          className="transition-transform duration-300 group-hover:scale-[1.02]"
+          imageUrl={product.imageUrl}
+          name={product.name}
+          size="md"
+        />
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-semibold uppercase text-emerald-700">
+        <p className="text-xs font-semibold uppercase text-brand-ink">
           {product.category.name}
         </p>
         <h2 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-zinc-950">
           <Link
-            className="hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to={`/products/${product.id}`}
           >
             {product.name}
@@ -222,7 +216,7 @@ function WishlistCard({
               </p>
               <p
                 className={`mt-0.5 text-xs font-semibold ${
-                  isInStock ? "text-emerald-700" : "text-red-700"
+                  isInStock ? "text-success" : "text-danger"
                 }`}
               >
                 {isInStock

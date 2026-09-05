@@ -130,7 +130,7 @@ export function SellerOrdersPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Seller workspace
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -158,7 +158,7 @@ export function SellerOrdersPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search customer name or email"
             type="search"
@@ -168,7 +168,7 @@ export function SellerOrdersPage() {
         <label>
           <span className="sr-only">Filter by order status</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(event) => {
               setStatus(
                 event.target.value as SellerOrdersQuery["status"] | "",

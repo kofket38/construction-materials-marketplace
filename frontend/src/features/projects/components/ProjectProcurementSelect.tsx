@@ -77,7 +77,7 @@ export function ProjectProcurementSelect({
           >
             <LoaderCircle
               aria-hidden="true"
-              className="size-4 animate-spin text-emerald-700"
+              className="size-4 animate-spin text-brand-ink"
             />
             Loading your projects...
           </p>
@@ -151,7 +151,7 @@ function AttachableProjectSelect({
         <FolderPlus aria-hidden="true" className="size-4 shrink-0 text-zinc-400" />
         No open project to attach this to.
         <Link
-          className="font-semibold text-emerald-700 underline hover:text-emerald-800"
+          className="font-semibold text-brand-ink underline hover:text-brand-ink"
           to="/professional/projects/new"
         >
           Create a project
@@ -162,7 +162,7 @@ function AttachableProjectSelect({
 
   return (
     <select
-      className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+      className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
       disabled={disabled}
       id={id}
       onChange={(event) => onChange(event.target.value)}

@@ -24,7 +24,7 @@ export function formatAdminDateTime(value: string | Date): string {
 
 export function statusBadgeClass(status: "ACTIVE" | "DISABLED"): string {
   return status === "ACTIVE"
-    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    ? "border-success-line bg-success-soft text-success"
     : "border-red-200 bg-red-50 text-red-700";
 }
 

@@ -4,10 +4,10 @@ export function FoundationPage() {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <section className="max-w-2xl">
-        <span className="inline-flex size-11 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700">
+        <span className="inline-flex size-11 items-center justify-center rounded-lg border border-brand-line bg-brand-soft text-brand-ink">
           <CheckCircle2 aria-hidden="true" className="size-6" />
         </span>
-        <p className="mt-6 text-sm font-semibold text-emerald-700">
+        <p className="mt-6 text-sm font-semibold text-brand-ink">
           Frontend foundation
         </p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">

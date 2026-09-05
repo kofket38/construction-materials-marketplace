@@ -45,7 +45,7 @@ export function ConfirmCartActionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4 py-8"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/45 px-4 py-8"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !isPending) {
           onCancel();
@@ -60,7 +60,7 @@ export function ConfirmCartActionDialog({
         role="alertdialog"
       >
         <div className="flex items-start justify-between gap-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-red-50 text-red-700">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-danger-soft text-danger">
             <AlertTriangle aria-hidden="true" className="size-5" />
           </span>
           <button
@@ -97,7 +97,7 @@ export function ConfirmCartActionDialog({
             Cancel
           </button>
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-danger-solid px-4 py-2 text-sm font-semibold text-on-solid transition-colors hover:bg-danger-solid-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-solid disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isPending}
             onClick={onConfirm}
             type="button"

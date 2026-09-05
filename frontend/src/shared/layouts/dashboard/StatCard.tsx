@@ -6,7 +6,7 @@ export interface StatCardProps {
   /** Optional descriptive line beneath the value, e.g. "+12% this month" */
   description?: string;
   icon?: LucideIcon;
-  /** Tailwind colour classes for the icon container, e.g. "bg-emerald-50 text-emerald-700" */
+  /** Tailwind colour classes for the icon container, e.g. "bg-brand-soft text-brand-ink" */
   iconTone?: string;
   /** Render a pulsing skeleton instead of real content */
   loading?: boolean;

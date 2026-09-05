@@ -39,7 +39,7 @@ export interface DashboardSidebarProps {
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
     isActive
-      ? "bg-emerald-50 text-emerald-800"
+      ? "bg-brand-soft text-brand-ink"
       : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
   }`;
 
@@ -65,17 +65,17 @@ function SidebarContent({
       {/* Brand + workspace header */}
       <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4">
         <Link
-          className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
+          className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-ring"
           to="/"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-emerald-700 text-white">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand text-on-brand">
             <Building2 aria-hidden="true" className="size-4" />
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-zinc-950">
               {workspaceTitle}
             </p>
-            <p className="text-xs font-medium text-emerald-700">
+            <p className="text-xs font-medium text-brand-ink">
               {workspaceRole}
             </p>
           </div>
@@ -184,7 +184,7 @@ export function DashboardSidebar({
           {/* Backdrop */}
           <div
             aria-hidden="true"
-            className="fixed inset-0 bg-zinc-950/40"
+            className="fixed inset-0 bg-scrim/40"
             onClick={onMobileClose}
           />
           {/* Drawer */}

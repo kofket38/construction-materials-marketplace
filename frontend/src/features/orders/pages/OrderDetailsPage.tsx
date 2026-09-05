@@ -12,7 +12,6 @@ import {
   Hash,
   LoaderCircle,
   MapPin,
-  PackageOpen,
   ReceiptText,
   RefreshCw,
 } from "lucide-react";
@@ -49,7 +48,9 @@ import type {
   CustomerOrder,
   CustomerOrderItem,
 } from "@/features/orders/model/order";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
+import { AttachedProjectLink } from "@/features/projects/components/AttachedProjectLink";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { useProofObjectUrl } from "@/features/payments/hooks/use-proof-object-url";
 import { AuthenticatedProofImage } from "@/features/payments/components/AuthenticatedProofImage";
@@ -182,7 +183,7 @@ export function OrderDetailsPage() {
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-6">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Order tracking
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -239,7 +240,7 @@ export function OrderDetailsPage() {
             <div className="flex items-center gap-3">
               <ReceiptText
                 aria-hidden="true"
-                className="size-5 text-emerald-700"
+                className="size-5 text-brand-ink"
               />
               <h2 className="text-lg font-semibold text-zinc-950">
                 Order Summary
@@ -283,6 +284,14 @@ export function OrderDetailsPage() {
               <BadgeSummaryRow label="Order status">
                 <OrderStatusBadge status={order.status} />
               </BadgeSummaryRow>
+              {/* Only the owning professional receives a project summary, so
+                  this row is absent for standalone orders and for anyone else
+                  allowed to read the order. */}
+              {order.project ? (
+                <BadgeSummaryRow label="Project">
+                  <AttachedProjectLink project={order.project} />
+                </BadgeSummaryRow>
+              ) : null}
             </dl>
 
             <div className="mt-5 flex items-end justify-between gap-4">
@@ -304,11 +313,11 @@ export function OrderDetailsPage() {
           </section>
 
           {order.status === "DELIVERED" ? (
-            <section className="rounded-md border border-emerald-200 bg-emerald-50 p-5">
+            <section className="rounded-md border border-brand-line bg-brand-soft p-5">
               <div className="flex items-center gap-3">
                 <CheckCircle2
                   aria-hidden="true"
-                  className="size-5 text-emerald-700"
+                  className="size-5 text-brand-ink"
                 />
                 <h2 className="text-lg font-semibold text-zinc-950">
                   Confirm Receipt
@@ -344,7 +353,7 @@ export function OrderDetailsPage() {
                       Not yet
                     </button>
                     <button
-                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:cursor-wait disabled:opacity-60"
                       disabled={completeMutation.isPending}
                       onClick={() => completeMutation.mutate()}
                       type="button"
@@ -370,7 +379,7 @@ export function OrderDetailsPage() {
                     The seller marked this order as delivered.
                   </p>
                   <button
-                    className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+                    className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
                     onClick={() => setIsConfirmingCompletion(true)}
                     type="button"
                   >
@@ -411,7 +420,7 @@ function OrderSection({
   return (
     <section aria-labelledby={headingId}>
       <div className="flex items-center gap-3">
-        <Icon aria-hidden="true" className="size-5 text-emerald-700" />
+        <Icon aria-hidden="true" className="size-5 text-brand-ink" />
         <h2
           className="text-xl font-semibold text-zinc-950"
           id={headingId}
@@ -431,16 +440,13 @@ function OrderItemRow({ item }: { item: CustomerOrderItem }) {
 
   return (
     <div className="grid grid-cols-[4rem_minmax(0,1fr)] gap-4 py-5 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(8rem,auto)] sm:items-center">
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-md bg-zinc-100 text-zinc-400">
-        {item.product.imageUrl ? (
-          <img
-            alt={item.product.name}
-            className="size-full object-cover"
-            src={item.product.imageUrl}
-          />
-        ) : (
-          <PackageOpen aria-hidden="true" className="size-6" />
-        )}
+      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-md bg-sunken">
+        <ProductImage
+          fit="cover"
+          imageUrl={item.product.imageUrl}
+          name={item.product.name}
+          size="sm"
+        />
       </div>
       <div className="min-w-0">
         <h3 className="font-semibold text-zinc-950">
@@ -574,7 +580,7 @@ function PaymentSection({
         </div>
         {order.status === "PENDING_PAYMENT" ? (
           <Link
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
             to={`/orders/${encodeURIComponent(order.id)}/payment`}
           >
             <FileImage aria-hidden="true" className="size-4" />
@@ -615,7 +621,7 @@ function PaymentSection({
         </dl>
         {proofObjectUrl ? (
           <a
-            className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             download={proofFilename}
             href={proofObjectUrl}
           >

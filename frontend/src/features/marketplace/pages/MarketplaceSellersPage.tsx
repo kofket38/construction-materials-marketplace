@@ -43,7 +43,7 @@ export function MarketplaceSellersPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Verified marketplace suppliers
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -54,11 +54,11 @@ export function MarketplaceSellersPage() {
           </p>
         </div>
         <button
-          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
           onClick={openCitySelector}
           type="button"
         >
-          <MapPin aria-hidden="true" className="size-4 text-emerald-700" />
+          <MapPin aria-hidden="true" className="size-4 text-brand-ink" />
           {selectedCity ? "Change city" : "Select city"}
         </button>
       </div>
@@ -67,7 +67,7 @@ export function MarketplaceSellersPage() {
         <DirectoryStatus>
           <MapPin
             aria-hidden="true"
-            className="size-9 text-emerald-700"
+            className="size-9 text-brand-ink"
             strokeWidth={1.6}
           />
           <div className="text-center">
@@ -90,7 +90,7 @@ export function MarketplaceSellersPage() {
         <DirectoryStatus>
           <LoaderCircle
             aria-hidden="true"
-            className="size-6 animate-spin text-emerald-700"
+            className="size-6 animate-spin text-brand-ink"
           />
           Loading suppliers...
         </DirectoryStatus>
@@ -124,7 +124,7 @@ export function MarketplaceSellersPage() {
         <DirectoryStatus>
           <PackageSearch
             aria-hidden="true"
-            className="size-9 text-emerald-700"
+            className="size-9 text-brand-ink"
             strokeWidth={1.6}
           />
           <div className="text-center">
@@ -150,7 +150,7 @@ export function MarketplaceSellersPage() {
                 key={seller.id}
               >
                 <div className="flex items-start gap-4">
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-lg font-bold text-emerald-800">
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-brand-soft text-lg font-bold text-brand-ink">
                     {getStoreInitials(storeName)}
                   </span>
                   <div className="min-w-0">

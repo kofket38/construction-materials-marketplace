@@ -94,7 +94,7 @@ export function ReviewSummary({
           />
         </div>
       ) : isCustomer && hasReviewed ? (
-        <div className="flex items-center gap-2 border-b border-zinc-200 py-5 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 border-b border-zinc-200 py-5 text-sm text-brand-ink">
           <BadgeCheck aria-hidden="true" className="size-4 shrink-0" />
           You have already reviewed this product.
         </div>
@@ -122,7 +122,7 @@ export function ReviewSummary({
                 {errorMessage}
               </p>
               <button
-                className="mt-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                className="mt-3 text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
                 onClick={onRetry}
                 type="button"
               >
@@ -146,7 +146,7 @@ export function ReviewSummary({
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       aria-hidden="true"
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-semibold text-emerald-800"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-ink"
                     >
                       {getInitials(review.customer.name)}
                     </span>
@@ -201,7 +201,7 @@ function ReviewForm({
 
   if (submitted && reviewMutation.isSuccess) {
     return (
-      <div className="flex items-center gap-2 text-sm text-emerald-700">
+      <div className="flex items-center gap-2 text-sm text-brand-ink">
         <BadgeCheck aria-hidden="true" className="size-4 shrink-0" />
         Your review has been submitted. Thank you!
       </div>
@@ -250,7 +250,7 @@ function ReviewForm({
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 aria-label={`${star} star${star > 1 ? "s" : ""}`}
-                className="rounded p-0.5 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-700 disabled:opacity-60"
+                className="rounded p-0.5 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-ring disabled:opacity-60"
                 disabled={reviewMutation.isPending}
                 key={star}
                 onClick={() => setRating(star)}
@@ -288,7 +288,7 @@ function ReviewForm({
             <span className="font-normal text-zinc-500">(optional)</span>
           </label>
           <textarea
-            className="mt-1.5 min-h-24 w-full max-w-xl resize-none rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+            className="mt-1.5 min-h-24 w-full max-w-xl resize-none rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
             disabled={reviewMutation.isPending}
             id="review-comment"
             maxLength={5000}
@@ -316,7 +316,7 @@ function ReviewForm({
 
         {/* Submit */}
         <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
           disabled={reviewMutation.isPending || rating === 0}
           type="submit"
         >

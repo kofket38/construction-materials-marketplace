@@ -101,7 +101,7 @@ export function ProjectDetailPage() {
       {/* Header */}
       <div className="border-b border-zinc-200 pb-6">
         <Link
-          className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-ink hover:text-brand-ink"
           to="/professional/projects"
         >
           ← My Projects
@@ -319,7 +319,7 @@ function EditSection({ project }: { project: Project }) {
 
   return (
     <button
-      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:w-auto"
+      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring sm:w-auto"
       onClick={() => setEditing(true)}
       type="button"
     >

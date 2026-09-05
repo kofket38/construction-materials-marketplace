@@ -128,7 +128,7 @@ function PageHeader({ projectCount }: { projectCount?: number }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
       <div>
-        <p className="text-sm font-semibold text-emerald-700">
+        <p className="text-sm font-semibold text-brand-ink">
           Professional workspace
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-zinc-950 sm:text-3xl">
@@ -142,7 +142,7 @@ function PageHeader({ projectCount }: { projectCount?: number }) {
         ) : null}
       </div>
       <Link
-        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         to="/professional/projects/new"
       >
         <Plus aria-hidden="true" className="size-4" />
@@ -232,7 +232,7 @@ function ProjectCard({
               Order {project.displayOrder}
             </span>
             {project.projectType ? (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="rounded-full border border-brand-line bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-ink">
                 {project.projectType}
               </span>
             ) : null}
@@ -246,7 +246,7 @@ function ProjectCard({
 
           <h2 className="mt-2 font-semibold text-zinc-950">
             <Link
-              className="hover:text-emerald-800 hover:underline"
+              className="hover:text-brand-ink hover:underline"
               to={`/professional/projects/${project.id}`}
             >
               {project.title}

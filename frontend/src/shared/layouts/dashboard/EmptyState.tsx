@@ -29,14 +29,14 @@ export function EmptyState({
       {action ? (
         action.href ? (
           <a
-            className="mt-5 inline-flex min-h-9 items-center justify-center rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="mt-5 inline-flex min-h-9 items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             href={action.href}
           >
             {action.label}
           </a>
         ) : (
           <button
-            className="mt-5 inline-flex min-h-9 items-center justify-center rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="mt-5 inline-flex min-h-9 items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             onClick={action.onClick}
             type="button"
           >

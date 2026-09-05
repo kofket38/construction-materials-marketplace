@@ -119,6 +119,21 @@ export type UpdateProjectInput = Partial<CreateProjectInput>;
 // ── Procurement link types (owner-private) ────────────────────────────────────
 
 /**
+ * The project an RFQ or order is attached to, as named on the buyer's own
+ * detail read of that purchase.
+ *
+ * The backend fills this in for the project owner only: sellers quoting a
+ * request and administrators reviewing one read null, exactly as they do for
+ * standalone procurement, so a buyer's project never leaks through a purchase
+ * somebody else may legitimately open.
+ */
+export interface LinkedProjectSummary {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+}
+
+/**
  * An RFQ attached to a project, as summarised by the owner procurement view.
  * Dates arrive as ISO strings; the backend `Date` fields are JSON-serialised.
  */

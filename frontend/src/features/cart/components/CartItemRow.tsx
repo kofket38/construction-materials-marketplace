@@ -1,5 +1,4 @@
-import { ImageOff, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { QuantityControl } from "@/features/cart/components/QuantityControl";
@@ -8,6 +7,7 @@ import {
   formatCartAmount,
 } from "@/features/cart/lib/cart-pricing";
 import type { CartItem } from "@/features/cart/model/cart";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 
 interface CartItemRowProps {
@@ -25,38 +25,28 @@ export function CartItemRow({
   quantityDisabled,
   removeDisabled,
 }: CartItemRowProps) {
-  const [imageFailed, setImageFailed] = useState(false);
-
   return (
     <article className="grid gap-4 rounded-md border border-zinc-200 bg-white p-4 shadow-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:p-5">
       <Link
         aria-label={`View ${item.name}`}
-        className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:aspect-square sm:w-28"
+        className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-md bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring sm:aspect-square sm:w-28"
         to={`/products/${item.productId}`}
       >
-        {item.imageUrl && !imageFailed ? (
-          <img
-            alt={item.name}
-            className="h-full w-full object-contain p-2"
-            onError={() => setImageFailed(true)}
-            src={item.imageUrl}
-          />
-        ) : (
-          <ImageOff
-            aria-hidden="true"
-            className="size-8 text-zinc-400"
-            strokeWidth={1.5}
-          />
-        )}
+        <ProductImage
+          categoryName={item.categoryName}
+          imageUrl={item.imageUrl}
+          name={item.name}
+          size="sm"
+        />
       </Link>
 
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase text-emerald-700">
+        <p className="text-xs font-semibold uppercase text-brand-ink">
           {item.categoryName}
         </p>
         <h2 className="mt-1 text-base font-semibold leading-6 text-zinc-950">
           <Link
-            className="hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to={`/products/${item.productId}`}
           >
             {item.name}

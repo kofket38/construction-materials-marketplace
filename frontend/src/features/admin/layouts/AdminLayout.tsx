@@ -16,6 +16,7 @@ import {
   type DashboardNavItem,
   type DashboardNavGroup,
 } from "@/shared/layouts/dashboard";
+import { ThemeToggle } from "@/shared/theme/ThemeToggle";
 
 // ── Admin navigation ─────────────────────────────────────────────────────────
 
@@ -43,6 +44,9 @@ function AdminSidebarFooter() {
 
   return (
     <>
+      {/* The admin shell is a sibling of PublicLayout, so it has no public
+          header to inherit a theme control from — it carries its own. */}
+      <ThemeToggle className="mb-2 w-full" layout="labelled" />
       <div className="mb-1 flex items-center gap-3 rounded-md px-3 py-2">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-bold text-zinc-700">
           {user?.name.charAt(0).toUpperCase()}

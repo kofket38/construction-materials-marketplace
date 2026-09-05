@@ -39,7 +39,7 @@ export function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Administration</p>
+          <p className="text-sm font-semibold text-brand-ink">Administration</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">Dashboard</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
             Marketplace overview and recent activity.
@@ -61,7 +61,7 @@ export function AdminDashboardPage() {
 
       {query.isPending ? (
         <div className="flex min-h-64 items-center justify-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-emerald-700" />
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-brand-ink" />
         </div>
       ) : query.isError ? (
         <div className="mt-8 flex items-start gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -83,8 +83,8 @@ function DashboardContent({ dashboard }: { dashboard: AdminDashboardSummary }) {
     { icon: Boxes, iconTone: "bg-indigo-50 text-indigo-700", label: "Products", value: dashboard.totalProducts },
     { icon: Tag, iconTone: "bg-violet-50 text-violet-700", label: "Categories", value: dashboard.totalCategories },
     { icon: ShoppingBag, iconTone: "bg-amber-50 text-amber-700", label: "Total Orders", value: dashboard.totalOrders },
-    { icon: CircleDollarSign, iconTone: "bg-emerald-50 text-emerald-700", label: "This Month Revenue", value: formatProductPrice(dashboard.monthlyRevenue) },
-    { icon: BarChart3, iconTone: "bg-emerald-50 text-emerald-700", label: "Total Revenue", value: formatProductPrice(dashboard.totalRevenue) },
+    { icon: CircleDollarSign, iconTone: "bg-brand-soft text-brand-ink", label: "This Month Revenue", value: formatProductPrice(dashboard.monthlyRevenue) },
+    { icon: BarChart3, iconTone: "bg-brand-soft text-brand-ink", label: "Total Revenue", value: formatProductPrice(dashboard.totalRevenue) },
   ];
 
   return (

@@ -6,7 +6,6 @@ import {
   Clock3,
   LoaderCircle,
   MapPin,
-  PackageOpen,
   RefreshCw,
   XCircle,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
@@ -35,7 +35,9 @@ import {
   RFQ_UNIT_LABELS,
 } from "@/features/rfq/lib/rfq-display";
 import type { RequestForQuote, SupplierQuote } from "@/features/rfq/model/rfq";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
+import { AttachedProjectLink } from "@/features/projects/components/AttachedProjectLink";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 import { FullPageStatus } from "@/shared/ui/FullPageStatus";
 
@@ -137,7 +139,7 @@ export function RfqDetailPage() {
       {/* Header */}
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Request for Quotation
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -175,6 +177,14 @@ export function RfqDetailPage() {
               ) : null}
               <Detail label="Created" value={formatRfqDateTime(rfq.createdAt)} />
               <Detail label="Deadline" value={formatRfqDate(rfq.expiresAt)} />
+              {/* Only the owning professional receives a project summary, so
+                  this cell is absent for standalone requests and for every
+                  other reader. */}
+              {rfq.project ? (
+                <DetailBlock label="Project">
+                  <AttachedProjectLink project={rfq.project} />
+                </DetailBlock>
+              ) : null}
               {rfq.notes ? (
                 <div className="sm:col-span-2">
                   <Detail label="Notes" value={rfq.notes} />
@@ -196,7 +206,7 @@ export function RfqDetailPage() {
                       <p className="font-semibold text-zinc-950">
                         {i + 1}. {item.materialName}
                       </p>
-                      <p className="mt-1 text-sm text-emerald-700">
+                      <p className="mt-1 text-sm text-brand-ink">
                         {item.categoryName}
                       </p>
                     </div>
@@ -257,7 +267,7 @@ export function RfqDetailPage() {
           {/* Summary */}
           <section className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-950">
-              <Clock3 aria-hidden="true" className="size-4 text-emerald-700" />
+              <Clock3 aria-hidden="true" className="size-4 text-brand-ink" />
               Summary
             </h2>
             <dl className="mt-4 space-y-3 text-sm">
@@ -301,7 +311,7 @@ export function RfqDetailPage() {
           {/* Seller: link to submit quote */}
           {isSeller && isOpen && rfq.quotes.length === 0 ? (
             <Link
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
               to={`/seller/rfqs/${rfqId}/quote`}
             >
               <BadgeCheck aria-hidden="true" className="size-4" />
@@ -351,7 +361,7 @@ function QuoteCard({
   return (
     <article
       className={`rounded-md border bg-white p-5 shadow-sm ${
-        isAwarded ? "border-emerald-300" : "border-zinc-200"
+        isAwarded ? "border-success-line" : "border-zinc-200"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -368,7 +378,7 @@ function QuoteCard({
             {formatQuoteStatus(quote.status)}
           </span>
           {isAwarded ? (
-            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700">
+            <span className="flex items-center gap-1 text-xs font-semibold text-success">
               <CheckCircle2 aria-hidden="true" className="size-3.5" />
               Awarded
             </span>
@@ -410,12 +420,14 @@ function QuoteCard({
           const rfqItem = rfqItemById.get(qi.rfqItemId);
           return (
             <div className="flex items-start gap-3 rounded-md border border-zinc-100 bg-zinc-50 p-3" key={qi.id}>
-              <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded bg-white text-zinc-400 border border-zinc-200">
-                {qi.product?.imageUrl ? (
-                  <img alt="" className="size-full object-cover" src={qi.product.imageUrl} />
-                ) : (
-                  <PackageOpen aria-hidden="true" className="size-4" />
-                )}
+              <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded bg-white border border-zinc-200">
+                <ProductImage
+                  decorative
+                  fit="cover"
+                  imageUrl={qi.product?.imageUrl}
+                  name={qi.productName}
+                  size="xs"
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-zinc-950">{qi.productName}</p>
@@ -459,7 +471,7 @@ function QuoteCard({
             ) : null}
             {onAccept ? (
               <button
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
                 disabled={isAccepting || isRejecting}
                 onClick={onAccept}
                 type="button"
@@ -476,10 +488,21 @@ function QuoteCard({
 }
 
 function Detail({ label, value }: { label: string; value: string | null | undefined }) {
+  return <DetailBlock label={label}>{value || "Not provided"}</DetailBlock>;
+}
+
+/** Detail cell for content richer than a string; no "Not provided" fallback. */
+function DetailBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase text-zinc-500">{label}</dt>
-      <dd className="mt-1 text-sm font-semibold text-zinc-950">{value || "Not provided"}</dd>
+      <dd className="mt-1 text-sm font-semibold text-zinc-950">{children}</dd>
     </div>
   );
 }

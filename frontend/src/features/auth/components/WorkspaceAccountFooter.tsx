@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { useSignOut } from "@/features/auth/model/use-sign-out";
+import { ThemeToggle } from "@/shared/theme/ThemeToggle";
 
 // ── Workspace account footer ──────────────────────────────────────────────────
 //
@@ -24,6 +25,10 @@ export function WorkspaceAccountFooter() {
 
   return (
     <>
+      {/* The seller and professional shells are siblings of PublicLayout, so
+          they have no public header to inherit a theme control from — they
+          carry their own, as the admin shell does. */}
+      <ThemeToggle className="mb-2 w-full" layout="labelled" />
       <div className="mb-1 flex items-center gap-3 rounded-md px-3 py-2">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-bold text-zinc-700">
           {initials}

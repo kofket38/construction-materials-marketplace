@@ -1,13 +1,270 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   CMM design tokens — engineering yellow on neutral surfaces
+   --------------------------------------------------------------------------
+   Two rules govern this file.
+
+   1. Yellow is an accent, never a canvas. Backgrounds stay white/near-white in
+      light mode and charcoal in dark mode. Yellow carries primary actions,
+      active navigation, selected filters, and highlights — nothing more.
+
+   2. Only near-black ink sits on brand yellow. White on `--color-brand`
+      measures 1.86:1, far under the WCAG AA 4.5:1 floor, so every solid brand
+      surface pairs with `--color-on-brand` (near-black, 10.98:1).
+
+   Dark mode re-points these same custom properties under `:root.dark`.
+   Tailwind v4 compiles `bg-white` to `background-color: var(--color-white)` and
+   custom properties resolve at their point of use, so overriding a variable
+   re-themes every existing utility without editing component files. The `.dark`
+   block is deliberately unlayered: it must outrank `@layer theme`'s `:root`.
+   ========================================================================== */
+
+/* The theme store toggles `.dark` on <html>, so an explicit user choice can
+   override the OS preference. Redefines Tailwind's default `prefers-color-scheme`
+   behaviour for the `dark:` variant. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  --color-brand-50: #ecfdf5;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
+
+  /* -- Engineering yellow ramp -------------------------------------------
+     Hue ~47°, held clear of the orange `warning` ramp below so a yellow CTA
+     never reads as a caution state. */
+  --color-brand-50: #fefae8;
+  --color-brand-100: #fdf3c4;
+  --color-brand-200: #fbe68f;
+  --color-brand-300: #f8d64b;
+  --color-brand-400: #f5c518;
+  --color-brand-500: #e0b00c;
+  --color-brand-600: #bf8f08;
+  --color-brand-700: #8a5a0b;
+  --color-brand-800: #6e480c;
+  --color-brand-900: #56380b;
+  --color-brand-950: #33210a;
+
+  /* -- Semantic surfaces --------------------------------------------------
+     `canvas` is the page, `surface` a card, `sunken` an inset panel, `raised`
+     a hover/elevated state. Ratios quoted are measured against `surface`. */
+  --color-canvas: #fafaf9;
+  --color-surface: #ffffff;
+  --color-sunken: #f7f7f6;
+  --color-raised: #f4f4f5;
+  --color-line: #e4e4e7;
+  --color-line-strong: #d4d4d8;
+
+  /* -- Semantic ink ------------------------------------------------------- */
+  --color-ink: #09090b; /* 19.05:1 on canvas */
+  --color-ink-2: #52525b; /*  7.73:1 */
+  --color-ink-3: #71717a; /*  4.83:1 */
+  --color-ink-faint: #8e8e99; /*  3.24:1 — icons and decorative rules only */
+
+  /* -- Brand roles -------------------------------------------------------- */
+  --color-brand: #f5c518; /* solid fill: primary CTA, active nav, selected */
+  --color-brand-hover: #e0b00c;
+  --color-brand-press: #c99c06;
+  --color-on-brand: #191713; /* 10.98:1 on brand — never use white here */
+  --color-brand-ink: #8a5a0b; /*  5.92:1 — brand-tinted text and icons */
+  --color-brand-soft: #fef9e3; /* pale wash for highlighted rows/panels */
+  --color-brand-soft-hover: #fdf3c4;
+  --color-brand-line: #f0dc9a;
+  --color-brand-ring: #d9a900; /* focus ring, visible on both themes */
+
+  /* -- Status roles -------------------------------------------------------
+     Green stays green: `success` is availability and approval, not branding. */
+  --color-success: #047857; /*  5.48:1 */
+  --color-success-solid: #047857; /*  5.48:1 against --color-on-success */
+  --color-on-success: #ffffff;
+  --color-success-soft: #ecfdf5;
+  --color-success-line: #a7f3d0;
+  --color-danger: #b91c1c; /*  6.47:1 */
+  --color-danger-solid: #dc2626; /*  4.83:1 against white ink */
+  --color-danger-soft: #fef2f2;
+  --color-danger-line: #fecaca;
+  --color-warning: #9a5307; /*  5.81:1 — orange, distinct from brand yellow */
+  --color-warning-solid: #b45309;
+  --color-warning-soft: #fff7ed;
+  --color-warning-line: #fed7aa;
+  --color-info: #1d4ed8; /*  6.70:1 */
+  --color-info-soft: #eff6ff;
+  --color-info-line: #bfdbfe;
+
+  /* -- Fixed values: identical in both themes ---------------------------- */
+  --color-on-solid: #ffffff; /* ink for solid red/orange fills */
+  --color-danger-solid-hover: #b91c1c; /* 6.47:1 against white ink */
+  --color-scrim: #0b0b0e; /* modal backdrop, used with an /NN opacity */
+}
+
+/* ==========================================================================
+   Dark theme
+   --------------------------------------------------------------------------
+   Re-points the ramps the app already uses. Lightness is inverted while hue is
+   preserved, so `bg-white`, `border-zinc-200`, `text-zinc-600` and friends keep
+   their visual relationships without a single component edit.
+
+   Two ramp positions carry fills rather than text — `bg-zinc-950 hover:bg-zinc-800`
+   is the app's neutral button — and they invert correctly: a light fill with
+   dark ink. Modal backdrops are the one thing that must not invert, which is
+   why they use `--color-scrim` instead of `bg-zinc-950/45`.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Nudge the warning ramp toward orange in light mode too. Tailwind's amber
+     sits at hue ~38° — close enough to the brand's ~47° that a caution badge
+     beside a yellow CTA reads as the same colour. The dark rungs are already
+     orange-brown and pass on white, so they stay as they are. */
+  --color-amber-50: #fff8ed;
+  --color-amber-100: #ffeed6;
+  --color-amber-200: #fed7aa;
+  --color-amber-300: #fdba74;
+  --color-amber-400: #f89142;
+  --color-amber-500: #ef7d1a;
+  --color-amber-600: #d2620d;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  /* Neutral ramp — hue-preserving lightness inversion. */
+  --color-white: #15181e;
+  --color-zinc-50: #101317;
+  --color-zinc-100: #1b1f26;
+  --color-zinc-200: #282d36;
+  --color-zinc-300: #363c46;
+  --color-zinc-400: #8c93a0; /*  5.75:1 on surface */
+  --color-zinc-500: #a3aab7; /*  7.61:1 */
+  --color-zinc-600: #bac1cd; /*  9.82:1 */
+  --color-zinc-700: #ced5df;
+  --color-zinc-800: #e1e6ec;
+  --color-zinc-900: #eef1f5;
+  --color-zinc-950: #f7f9fc; /* 16.86:1 */
+  --color-stone-50: #101317;
+  --color-stone-100: #1b1f26;
+  --color-stone-200: #282d36;
+
+  /* Brand ramp — the vivid 400/500 rungs hold their value because yellow reads
+     correctly on charcoal; the pale rungs become dark olive washes and the dark
+     rungs become light gold ink. */
+  --color-brand-50: #2a2109;
+  --color-brand-100: #33280a;
+  --color-brand-200: #4a3a0e;
+  --color-brand-300: #6b5411;
+  --color-brand-400: #f5c518;
+  --color-brand-500: #f5c518;
+  --color-brand-600: #f7ce4a;
+  --color-brand-700: #f7ce4a; /* 11.75:1 on surface */
+  --color-brand-800: #fade7e;
+  --color-brand-900: #fce9a8;
+  --color-brand-950: #fef6d6;
+
+  /* Semantic surfaces and ink. */
+  --color-canvas: #0c0e12;
+  --color-surface: #15181e;
+  --color-sunken: #101317;
+  --color-raised: #1b1f26;
+  --color-line: #282d36;
+  --color-line-strong: #363c46;
+  --color-ink: #f7f9fc; /* 16.86:1 on surface */
+  --color-ink-2: #bac1cd; /*  9.82:1 */
+  --color-ink-3: #a3aab7; /*  7.61:1 */
+  --color-ink-faint: #8c93a0; /*  5.75:1 */
+
+  /* Brand roles. The fill and its ink are unchanged — a yellow button looks and
+     measures the same on either canvas — while the tinted text lightens. */
+  --color-brand-ink: #f7ce4a; /* 11.75:1 */
+  --color-brand-soft: #33280a;
+  --color-brand-soft-hover: #4a3a0e;
+  --color-brand-line: #5c4a12;
+
+  /* Status roles. */
+  --color-success: #5eead4; /* 12.02:1 */
+  --color-success-solid: #10b981; /*  6.55:1 against --color-on-success */
+  --color-on-success: #06231b;
+  --color-success-soft: #0c2a26;
+  --color-success-line: #1d5049;
+  --color-danger: #fca5a5; /*  9.37:1 */
+  --color-danger-soft: #2a1416;
+  --color-danger-line: #57242a;
+  --color-warning: #fbbf24; /* 10.65:1 */
+  --color-warning-soft: #2d1e08;
+  --color-warning-line: #5a3d10;
+  --color-info: #93c5fd; /*  9.86:1 */
+  --color-info-soft: #101c33;
+  --color-info-line: #23406e;
+
+  /* Chromatic ramps used directly by existing components, inverted the same way
+     so status panels, validation errors and info callouts stay legible. */
+  --color-red-50: #2a1416;
+  --color-red-100: #38191c;
+  --color-red-200: #57242a;
+  --color-red-300: #7a3139;
+  --color-red-400: #c2545a;
+  --color-red-500: #e5484d;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-900: #fee2e2;
+  --color-red-950: #fef2f2;
+
+  /* Green keeps its meaning in both themes: availability, approval, completion. */
+  --color-emerald-50: #0c2a26;
+  --color-emerald-100: #103630;
+  --color-emerald-200: #1d5049;
+  --color-emerald-300: #2c6f64;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+  --color-emerald-950: #ecfdf5;
+  --color-teal-50: #0b2a2c;
+  --color-teal-100: #103b3e;
+  --color-teal-200: #1d5257;
+  --color-teal-700: #5eead4;
+  --color-teal-800: #99f6e4;
+
+  /* Amber stays the warning ramp and leans orange, so a caution badge is never
+     mistaken for the yellow brand accent. */
+  --color-amber-50: #2d1e08;
+  --color-amber-100: #3a2609;
+  --color-amber-200: #5a3d10;
+  --color-amber-300: #7a5314;
+  --color-amber-400: #d98a2b;
+  --color-amber-500: #f0891f;
+  --color-amber-600: #fdae4b;
+  --color-amber-700: #febd6d;
+  --color-amber-800: #fed3a0;
+  --color-amber-900: #fee6cc;
+  --color-amber-950: #fff5eb;
+
+  /* Blue family — informational callouts and links. */
+  --color-sky-50: #0d1c2b;
+  --color-sky-100: #12263a;
+  --color-sky-200: #1d3c58;
+  --color-sky-600: #7dd3fc;
+  --color-sky-700: #93ddfd;
+  --color-sky-800: #bae6fd;
+  --color-blue-50: #101c33;
+  --color-blue-100: #16253f;
+  --color-blue-200: #23406e;
+  --color-blue-600: #93c5fd;
+  --color-blue-700: #a8d1fd;
+  --color-blue-800: #bfdbfe;
+  --color-indigo-50: #16193a;
+  --color-indigo-100: #1d2149;
+  --color-indigo-200: #2f356f;
+  --color-indigo-700: #b0b8fb;
+  --color-indigo-800: #c7cdfd;
+  --color-violet-50: #1d1435;
+  --color-violet-100: #261a45;
+  --color-violet-200: #3c2a68;
+  --color-violet-700: #c4b5fd;
+  --color-violet-800: #ddd6fe;
 }
 
 @layer base {
@@ -17,16 +274,19 @@
 
   html {
     min-width: 320px;
-    background: #fafaf9;
-    color-scheme: light;
+    background: var(--color-canvas);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
+    background: inherit;
+    color: inherit;
   }
 
   button,
@@ -34,5 +294,34 @@
   select,
   textarea {
     font: inherit;
+  }
+
+  /* Images are constrained by default so a wide product photograph can never be
+     the cause of horizontal page scroll on a 320px viewport. */
+  img {
+    max-width: 100%;
+  }
+
+  /* One focus ring for the whole app, keyed to the brand and legible on both
+     themes. Pointer users keep the ring off; keyboard users always get it. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-on-brand);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

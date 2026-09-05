@@ -21,7 +21,11 @@ import type {
 } from "../types/payment.js";
 import { isManualPaymentMethod } from "../types/payment.js";
 import type { SellerPaymentRepository } from "../repositories/seller-payment.repository.js";
-import type { ProcurementProjectLinker } from "./procurement-project.port.js";
+import type {
+  ProcurementProjectLinker,
+  WithProcurementProject,
+} from "./procurement-project.port.js";
+import { attachProcurementProject } from "./procurement-project.port.js";
 import {
   BadRequestError,
   ConflictError,
@@ -96,17 +100,22 @@ export class OrderService {
     }
   }
 
+  /**
+   * Detail read for the buyer and for administrators. The project link is
+   * resolved for whoever asked, so an administrator reviewing someone else's
+   * order sees it exactly as they see a standalone one.
+   */
   async findById(
     id: string,
     actor: AuthenticatedUser,
-  ): Promise<OrderEntity> {
+  ): Promise<WithProcurementProject<OrderEntity>> {
     const order = await this.requireOrder(id);
 
     if (actor.role !== "ADMIN" && order.customerId !== actor.userId) {
       throw new ForbiddenError("You can only view your own orders.");
     }
 
-    return order;
+    return attachProcurementProject(this.projectLinker, actor, order);
   }
 
   findMyOrders(actor: AuthenticatedUser): Promise<OrderEntity[]> {

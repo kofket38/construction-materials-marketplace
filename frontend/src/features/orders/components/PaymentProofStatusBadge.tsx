@@ -3,7 +3,7 @@ import { formatPaymentProofStatus } from "@/features/orders/lib/order-display";
 
 const statusClasses: Record<PaymentProofStatus, string> = {
   PENDING_VERIFICATION: "border-amber-200 bg-amber-50 text-amber-800",
-  VERIFIED: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  VERIFIED: "border-success-line bg-success-soft text-success",
   REJECTED: "border-red-200 bg-red-50 text-red-800",
 };
 

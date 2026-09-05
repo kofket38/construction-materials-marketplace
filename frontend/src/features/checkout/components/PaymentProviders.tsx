@@ -107,7 +107,7 @@ export function PaymentProviders({
     <section aria-labelledby="payment-provider-heading" className="pt-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Payment
           </p>
           <h2
@@ -123,7 +123,7 @@ export function PaymentProviders({
         {isLoading ? (
           <LoaderCircle
             aria-label="Loading seller payment providers"
-            className="mt-1 size-5 shrink-0 animate-spin text-emerald-700"
+            className="mt-1 size-5 shrink-0 animate-spin text-brand-ink"
           />
         ) : null}
       </div>
@@ -151,7 +151,7 @@ export function PaymentProviders({
               <label
                 className={`relative flex min-h-32 flex-col items-center justify-center border p-3 text-center transition-colors ${
                   selected
-                    ? "border-emerald-700 bg-emerald-50 shadow-[inset_0_0_0_1px_#047857]"
+                    ? "border-brand bg-brand-soft shadow-[inset_0_0_0_1px_#047857]"
                     : available
                       ? "cursor-pointer border-zinc-200 bg-white hover:border-zinc-400"
                       : "cursor-not-allowed border-zinc-200 bg-zinc-50 opacity-55"
@@ -210,7 +210,7 @@ export function PaymentProviders({
 
       {selectedMethod === "CASH_ON_DELIVERY" ? (
         <div className="mt-6 flex items-start gap-4 border-y border-zinc-200 bg-white py-5">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
             <Truck aria-hidden="true" className="size-5" />
           </span>
           <div>
@@ -234,7 +234,7 @@ export function PaymentProviders({
             <div className="flex items-center gap-4">
               <ProviderMark large method={selectedDestination.method} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-emerald-700">
+                <p className="text-xs font-semibold uppercase text-brand-ink">
                   Transfer to seller
                 </p>
                 <h3 className="mt-1 text-lg font-semibold text-zinc-950">
@@ -246,7 +246,7 @@ export function PaymentProviders({
               </div>
               <ShieldCheck
                 aria-label="Seller payment details verified by CMM"
-                className="ml-auto size-5 shrink-0 text-emerald-700"
+                className="ml-auto size-5 shrink-0 text-success"
               />
             </div>
 
@@ -311,7 +311,7 @@ export function PaymentProviders({
             />
 
             <button
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:self-end"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-5 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:self-end"
               disabled={!proofFile || isSubmitting}
               type="submit"
             >
@@ -358,39 +358,43 @@ function ProviderMark({
   if (method === "CASH_ON_DELIVERY") {
     return (
       <span
-        className={`flex ${size} items-center justify-center rounded-md bg-emerald-700 text-white`}
+        className={`flex ${size} items-center justify-center rounded-md bg-brand text-on-brand`}
       >
         <Banknote aria-hidden="true" className="size-6" />
       </span>
     );
   }
 
+  // Provider brand marks. These stay fixed in both themes because they are the
+  // institutions' own colours, not app tokens — but the darker shades below are
+  // deliberate: each provider's published colour paired with its usual ink fell
+  // between 4.08:1 and 4.38:1, under the 4.5:1 floor for the label text.
   const styles: Record<
     ManualPaymentMethod,
     { className: string; label: string }
   > = {
     TELEBIRR: {
-      className: "bg-[#fff200] text-[#118b44]",
+      className: "bg-[#fff200] text-[#0a6b33]", // 5.67:1
       label: "telebirr",
     },
     CBE_BIRR: {
-      className: "bg-[#702082] text-white",
+      className: "bg-[#702082] text-white", // 9.47:1
       label: "CBE Birr",
     },
     CBE_BANK: {
-      className: "bg-[#f7c600] text-[#126b3a]",
+      className: "bg-[#f7c600] text-[#0b4a26]", // 6.45:1
       label: "CBE",
     },
     AWASH_BANK: {
-      className: "bg-[#ed1c24] text-white",
+      className: "bg-[#c41219] text-white", // 6.09:1
       label: "Awash",
     },
     DASHEN_BANK: {
-      className: "bg-[#174ea6] text-white",
+      className: "bg-[#174ea6] text-white", // 7.85:1
       label: "Dashen",
     },
     E_BIRR: {
-      className: "bg-[#0b8f6a] text-white",
+      className: "bg-[#0a7d5c] text-white", // 5.12:1
       label: "E-birr",
     },
   };

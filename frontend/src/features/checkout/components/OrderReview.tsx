@@ -1,5 +1,4 @@
-import { ImageOff, PackageCheck } from "lucide-react";
-import { useState } from "react";
+import { PackageCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import {
@@ -7,6 +6,7 @@ import {
   formatCartAmount,
 } from "@/features/cart/lib/cart-pricing";
 import type { CartItem } from "@/features/cart/model/cart";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 
 interface OrderReviewProps {
@@ -20,7 +20,7 @@ export function OrderReview({ items }: OrderReviewProps) {
       className="border-b border-zinc-200 py-8"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
           <PackageCheck aria-hidden="true" className="size-5" />
         </span>
         <div>
@@ -46,35 +46,25 @@ export function OrderReview({ items }: OrderReviewProps) {
 }
 
 function OrderReviewItem({ item }: { item: CartItem }) {
-  const [imageFailed, setImageFailed] = useState(false);
-
   return (
     <article className="grid gap-4 py-5 sm:grid-cols-[5rem_minmax(0,1fr)] lg:grid-cols-[5rem_minmax(0,1fr)_9rem_9rem_10rem] lg:items-center">
       <Link
         aria-label={`View ${item.name}`}
-        className="flex aspect-square w-20 items-center justify-center overflow-hidden rounded-md bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="flex aspect-square w-20 items-center justify-center overflow-hidden rounded-md bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         to={`/products/${item.productId}`}
       >
-        {item.imageUrl && !imageFailed ? (
-          <img
-            alt={item.name}
-            className="h-full w-full object-contain p-2"
-            onError={() => setImageFailed(true)}
-            src={item.imageUrl}
-          />
-        ) : (
-          <ImageOff
-            aria-hidden="true"
-            className="size-7 text-zinc-400"
-            strokeWidth={1.5}
-          />
-        )}
+        <ProductImage
+          categoryName={item.categoryName}
+          imageUrl={item.imageUrl}
+          name={item.name}
+          size="sm"
+        />
       </Link>
 
       <div className="min-w-0">
         <h3 className="text-sm font-semibold leading-6 text-zinc-950">
           <Link
-            className="hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to={`/products/${item.productId}`}
           >
             {item.name}

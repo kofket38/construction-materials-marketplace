@@ -73,9 +73,9 @@ export function ProductDetailsTabs({
           <button
             aria-controls={`product-panel-${tab.id}`}
             aria-selected={activeTab === tab.id}
-            className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700 sm:px-6 ${
+            className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ring sm:px-6 ${
               activeTab === tab.id
-                ? "border-emerald-700 text-emerald-800"
+                ? "border-brand text-brand-ink"
                 : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-950"
             }`}
             id={`product-tab-${tab.id}`}

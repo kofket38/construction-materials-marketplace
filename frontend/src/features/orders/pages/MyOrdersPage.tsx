@@ -89,7 +89,7 @@ export function MyOrdersPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Account
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -159,7 +159,7 @@ function OrderCard({
 
   return (
     <Link
-      className="group block rounded-md border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:p-5"
+      className="group block rounded-md border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring sm:p-5"
       to={`/orders/${encodeURIComponent(order.id)}`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -266,7 +266,7 @@ function OrdersEmptyState() {
       >
         <span className="absolute bottom-3 left-3 right-3 h-3 rounded-sm bg-zinc-300" />
         <span className="absolute bottom-0 left-7 right-7 h-3 border-x-4 border-zinc-300" />
-        <span className="absolute bottom-7 left-5 flex size-20 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm">
+        <span className="absolute bottom-7 left-5 flex size-20 items-center justify-center rounded-md border border-brand-line bg-brand-soft text-brand-ink shadow-sm">
           <Boxes aria-hidden="true" className="size-9" />
         </span>
         <span className="absolute bottom-7 right-5 flex size-16 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm">
@@ -280,7 +280,7 @@ function OrdersEmptyState() {
         Your completed purchases and delivery progress will appear here.
       </p>
       <Link
-        className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         to="/products"
       >
         <ShoppingBag aria-hidden="true" className="size-4" />

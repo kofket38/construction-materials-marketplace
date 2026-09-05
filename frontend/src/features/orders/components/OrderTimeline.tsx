@@ -57,7 +57,7 @@ export function OrderTimeline({ order }: { order: CustomerOrder }) {
               <span
                 aria-hidden="true"
                 className={`absolute left-[0.9375rem] top-7 h-[calc(100%-0.25rem)] w-0.5 ${
-                  isCompleted ? "bg-emerald-600" : "bg-zinc-200"
+                  isCompleted ? "bg-success" : "bg-zinc-200"
                 }`}
               />
             ) : null}
@@ -65,9 +65,9 @@ export function OrderTimeline({ order }: { order: CustomerOrder }) {
               aria-hidden="true"
               className={`relative z-10 flex size-8 items-center justify-center rounded-full border-2 ${
                 isCompleted
-                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  ? "border-success-solid bg-success-solid text-on-success"
                   : isCurrent
-                    ? "border-emerald-700 bg-emerald-50 text-emerald-700"
+                    ? "border-brand bg-brand-soft text-brand-ink"
                     : "border-zinc-300 bg-white text-zinc-400"
               }`}
             >
@@ -90,7 +90,7 @@ export function OrderTimeline({ order }: { order: CustomerOrder }) {
                 {step.label}
               </p>
               {isCurrent ? (
-                <p className="mt-1 text-xs text-emerald-700">
+                <p className="mt-1 text-xs text-brand-ink">
                   Current step
                 </p>
               ) : null}

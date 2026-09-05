@@ -94,7 +94,7 @@ export function ProfessionalProfilePage() {
 
     if (status === 403) {
       return (
-        <main className="flex min-h-screen items-center justify-center bg-stone-50 px-5 py-12">
+        <main className="flex min-h-screen items-center justify-center bg-canvas px-5 py-12">
           <section className="w-full max-w-md text-center" aria-live="polite">
             <span className="mx-auto flex size-12 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm">
               <Lock aria-hidden="true" className="size-6" strokeWidth={1.8} />
@@ -143,7 +143,7 @@ export function ProfessionalProfilePage() {
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           {/* Back link */}
           <Link
-            className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-ink hover:text-brand-ink"
             to="/professionals"
           >
             ← All Professionals
@@ -229,7 +229,7 @@ export function ProfessionalProfilePage() {
               ) : null}
               {profile.website ? (
                 <a
-                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-brand-ink hover:text-brand-ink"
                   href={profile.website}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -240,7 +240,7 @@ export function ProfessionalProfilePage() {
               ) : null}
               {profile.linkedinUrl ? (
                 <a
-                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-brand-ink hover:text-brand-ink"
                   href={profile.linkedinUrl}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -274,7 +274,7 @@ export function ProfessionalProfilePage() {
                   className="flex items-center gap-2 text-lg font-semibold text-zinc-950"
                   id="bio-heading"
                 >
-                  <User aria-hidden="true" className="size-5 text-emerald-700" />
+                  <User aria-hidden="true" className="size-5 text-brand-ink" />
                   About
                 </h2>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-zinc-700">
@@ -298,7 +298,7 @@ export function ProfessionalProfilePage() {
                 >
                   <BookOpen
                     aria-hidden="true"
-                    className="size-5 text-emerald-700"
+                    className="size-5 text-brand-ink"
                   />
                   Education &amp; credentials
                 </h2>
@@ -322,7 +322,7 @@ export function ProfessionalProfilePage() {
                 >
                   <Sparkles
                     aria-hidden="true"
-                    className="size-4 text-emerald-700"
+                    className="size-4 text-brand-ink"
                   />
                   Specialties
                 </h2>
@@ -368,7 +368,7 @@ function CredentialItem({ credential }: { credential: ProfessionalCredential }) 
         ) : null}
         {credential.credentialUrl ? (
           <a
-            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink hover:text-brand-ink"
             href={credential.credentialUrl}
             rel="noopener noreferrer"
             target="_blank"
@@ -384,7 +384,7 @@ function CredentialItem({ credential }: { credential: ProfessionalCredential }) 
 
 function SpecialtyBadge({ specialty }: { specialty: ProfessionalSpecialty }) {
   return (
-    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-800">
+    <span className="rounded-full border border-brand-line bg-brand-soft px-3 py-1 text-sm font-medium text-brand-ink">
       {specialty.name}
     </span>
   );

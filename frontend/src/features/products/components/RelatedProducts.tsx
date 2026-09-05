@@ -30,7 +30,7 @@ export function RelatedProducts({
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             More in {categoryName}
           </p>
           <h2
@@ -41,7 +41,7 @@ export function RelatedProducts({
           </h2>
         </div>
         <Link
-          className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition-colors hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-brand-ink transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
           to={`/products?${categorySearch}`}
         >
           View category
@@ -83,7 +83,7 @@ export function RelatedProducts({
               {errorMessage}
             </p>
             <button
-              className="mt-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+              className="mt-3 text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
               onClick={onRetry}
               type="button"
             >

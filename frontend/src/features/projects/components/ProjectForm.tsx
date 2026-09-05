@@ -360,7 +360,7 @@ export function ProjectForm({
       ) : null}
 
       {mutation.isSuccess && isSubmitSuccessful ? (
-        <p className="flex items-center gap-2 text-sm font-medium text-emerald-700" role="status">
+        <p className="flex items-center gap-2 text-sm font-medium text-brand-ink" role="status">
           <CheckCircle2 aria-hidden="true" className="size-4" />
           Changes saved.
         </p>
@@ -378,7 +378,7 @@ export function ProjectForm({
           </button>
         ) : null}
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
           disabled={isSaving}
           type="submit"
         >
@@ -512,9 +512,9 @@ function Field({
 function inputClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

@@ -121,7 +121,7 @@ export function SellerOnboardingBanner() {
               {step.done ? (
                 <CheckCircle2
                   aria-hidden="true"
-                  className="size-6 text-emerald-600"
+                  className="size-6 text-brand-ink"
                 />
               ) : (
                 <span
@@ -148,7 +148,7 @@ export function SellerOnboardingBanner() {
                     />
                     {step.title}
                     {step.done ? (
-                      <span className="ml-2 text-xs font-semibold text-emerald-600">
+                      <span className="ml-2 text-xs font-semibold text-brand-ink">
                         Done
                       </span>
                     ) : null}

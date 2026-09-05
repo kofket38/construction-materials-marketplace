@@ -31,7 +31,7 @@ export function PortfolioSection({ profileId }: { profileId: string }) {
         className="flex items-center gap-2 text-lg font-semibold text-zinc-950"
         id="portfolio-heading"
       >
-        <Images aria-hidden="true" className="size-5 text-emerald-700" />
+        <Images aria-hidden="true" className="size-5 text-brand-ink" />
         Portfolio
       </h2>
 
@@ -127,9 +127,9 @@ function PortfolioCard({ item }: { item: PortfolioItem }) {
             <button
               aria-label={`View ${item.title} photo ${index + 1}`}
               aria-pressed={url === activeImage}
-              className={`aspect-square size-12 shrink-0 overflow-hidden rounded-md border bg-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${
+              className={`aspect-square size-12 shrink-0 overflow-hidden rounded-md border bg-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring ${
                 url === activeImage
-                  ? "border-emerald-700 ring-1 ring-emerald-700"
+                  ? "border-brand ring-1 ring-brand-ring"
                   : "border-zinc-200 hover:border-zinc-400"
               }`}
               key={url}
@@ -153,7 +153,7 @@ function PortfolioCard({ item }: { item: PortfolioItem }) {
       <div className="flex min-w-0 grow flex-col p-4">
         <div className="flex flex-wrap items-center gap-2">
           {item.projectType ? (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+            <span className="rounded-full border border-brand-line bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-ink">
               {item.projectType}
             </span>
           ) : null}

@@ -106,7 +106,7 @@ export function CreateProductDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4 py-8 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/45 px-4 py-8 overflow-y-auto"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !isPending) {
           onCancel();
@@ -122,7 +122,7 @@ export function CreateProductDialog({
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-brand-ink">
               Seller inventory
             </p>
             <h2
@@ -343,7 +343,7 @@ export function CreateProductDialog({
               Cancel
             </button>
             <button
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isPending}
               type="submit"
             >
@@ -367,9 +367,9 @@ export function CreateProductDialog({
 function fieldClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

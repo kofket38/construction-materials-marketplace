@@ -61,7 +61,7 @@ export function SellerRfqsPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Seller workspace</p>
+          <p className="text-sm font-semibold text-brand-ink">Seller workspace</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
             Requests for Quotation
           </h1>
@@ -80,7 +80,7 @@ export function SellerRfqsPage() {
           <button
             className={`inline-flex min-h-10 items-center border-b-2 px-4 pb-2 text-sm font-semibold transition-colors ${
               view === tab
-                ? "border-emerald-700 text-emerald-700"
+                ? "border-brand text-brand-ink"
                 : "border-transparent text-zinc-500 hover:text-zinc-950"
             }`}
             key={tab}
@@ -185,7 +185,7 @@ function SellerRfqCard({ rfq }: { rfq: RequestForQuote }) {
       </dl>
 
       {myQuote ? (
-        <p className="mt-3 text-sm font-semibold text-emerald-700">
+        <p className="mt-3 text-sm font-semibold text-brand-ink">
           Your quote: {myQuote.status}
         </p>
       ) : null}

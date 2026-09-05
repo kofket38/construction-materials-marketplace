@@ -42,7 +42,7 @@ function BreadcrumbLink({ label, to }: { label: string; to: string }) {
   return (
     <li className="shrink-0">
       <Link
-        className="transition-colors hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         to={to}
       >
         {label}

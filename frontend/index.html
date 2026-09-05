@@ -8,8 +8,26 @@
       content="Construction materials marketplace for customers and suppliers."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#166534" />
+    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0e12" media="(prefers-color-scheme: dark)" />
     <title>Construction Materials Marketplace</title>
+    <script>
+      // Applies the stored theme before first paint so the page never flashes the
+      // wrong appearance. Mirrors THEME_STORAGE_KEY and DARK_CLASS_NAME in
+      // src/shared/theme/theme.store.ts — keep the two in step.
+      (function () {
+        try {
+          var stored = window.localStorage.getItem("cmm.theme");
+          var isDark =
+            stored === "dark" ||
+            ((stored === "system" || stored === null) &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", isDark);
+        } catch (error) {
+          // Storage or matchMedia unavailable: light mode is the safe default.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

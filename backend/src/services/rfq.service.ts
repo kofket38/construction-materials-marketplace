@@ -34,7 +34,11 @@ import type {
   SupplierQuoteEntity,
 } from "../repositories/rfq.repository.js";
 import type { AuthenticatedUser } from "../types/auth.js";
-import type { ProcurementProjectLinker } from "./procurement-project.port.js";
+import type {
+  ProcurementProjectLinker,
+  WithProcurementProject,
+} from "./procurement-project.port.js";
+import { attachProcurementProject } from "./procurement-project.port.js";
 import {
   BadRequestError,
   ConflictError,
@@ -121,10 +125,17 @@ export class RfqService {
     return this.rfqs.findForAdmin(normalizeListQuery(query));
   }
 
+  /**
+   * Detail read for every role allowed to see one request.
+   *
+   * The project link is resolved last, from whatever the caller is permitted to
+   * see, so a seller quoting the request and an administrator reviewing it read
+   * the buyer's project exactly as they read a standalone request.
+   */
   async findById(
     id: string,
     actor: AuthenticatedUser,
-  ): Promise<RequestForQuoteEntity> {
+  ): Promise<WithProcurementProject<RequestForQuoteEntity>> {
     const rfq =
       actor.role === "SELLER"
         ? await this.rfqs.findByIdForSeller(id, actor.userId)
@@ -133,26 +144,28 @@ export class RfqService {
       throw new NotFoundError("RFQ not found.");
     }
 
+    let visible: RequestForQuoteEntity;
+
     if (actor.role === "ADMIN") {
-      return rfq;
-    }
-    if (actor.role === "CUSTOMER" || actor.role === "PROFESSIONAL") {
+      visible = rfq;
+    } else if (actor.role === "CUSTOMER" || actor.role === "PROFESSIONAL") {
       // PROFESSIONAL accounts are buyer-capable and own RFQs like customers.
       if (rfq.customerId !== actor.userId) {
         throw new ForbiddenError("You can only view your own RFQs.");
       }
-      return rfq;
-    }
-    if (actor.role === "SELLER") {
+      visible = rfq;
+    } else if (actor.role === "SELLER") {
       if (!(await this.rfqs.isSellerEligible(id, actor.userId))) {
         throw new ForbiddenError(
           "This RFQ is not available to the authenticated seller.",
         );
       }
-      return visibleToSeller(rfq, actor.userId);
+      visible = visibleToSeller(rfq, actor.userId);
+    } else {
+      throw new ForbiddenError();
     }
 
-    throw new ForbiddenError();
+    return attachProcurementProject(this.projectLinker, actor, visible);
   }
 
   async update(
@@ -366,6 +379,11 @@ function visibleToSeller(
 ): RequestForQuoteEntity {
   return {
     ...rfq,
+    // A seller quoting a request has no business knowing which project the
+    // buyer groups it under, and correlating several requests to one project
+    // would be commercially revealing. The link reads as absent, matching the
+    // null project summary the detail read gives every non-owner.
+    projectId: null,
     quotes: rfq.quotes.filter((quote) => quote.sellerId === sellerId),
   };
 }

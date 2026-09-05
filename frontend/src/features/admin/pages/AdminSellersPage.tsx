@@ -48,7 +48,7 @@ export function AdminSellersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Administration</p>
+          <p className="text-sm font-semibold text-brand-ink">Administration</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">Sellers</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
             Seller accounts with shop info, product counts, and revenue.
@@ -74,7 +74,7 @@ export function AdminSellersPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search name, email, shop name"
             type="search"
@@ -93,7 +93,7 @@ export function AdminSellersPage() {
       {/* Content */}
       {sellersQuery.isPending ? (
         <div className="flex min-h-64 items-center justify-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-emerald-700" />
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-brand-ink" />
         </div>
       ) : sellersQuery.isError ? (
         <div className="mt-6 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

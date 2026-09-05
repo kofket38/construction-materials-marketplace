@@ -5,7 +5,6 @@ import {
   ChevronRight,
   LoaderCircle,
   MapPin,
-  PackageOpen,
   PackagePlus,
   Pencil,
   Plus,
@@ -23,6 +22,7 @@ import {
 import { useState, type FormEvent } from "react";
 
 import { ConfirmCartActionDialog } from "@/features/cart/components/ConfirmCartActionDialog";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import {
   createSellerInventory,
@@ -167,7 +167,7 @@ export function SellerInventoryPage() {
       {/* ── Page header ── */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Seller workspace
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -194,7 +194,7 @@ export function SellerInventoryPage() {
             New product
           </button>
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             onClick={() => {
               addMutation.reset();
               setShowAddDialog(true);
@@ -220,7 +220,7 @@ export function SellerInventoryPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search product name"
             type="search"
@@ -230,7 +230,7 @@ export function SellerInventoryPage() {
         <label>
           <span className="sr-only">Filter by city</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => {
               setCityFilter(e.target.value);
               setPage(1);
@@ -279,7 +279,7 @@ export function SellerInventoryPage() {
             Add your first listing to start selling.
           </p>
           <button
-            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
             onClick={() => {
               addMutation.reset();
               setShowAddDialog(true);
@@ -468,16 +468,14 @@ function InventoryRow({
       {/* Product */}
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-zinc-100 text-zinc-400">
-            {entry.productImageUrl ? (
-              <img
-                alt=""
-                className="size-full object-cover"
-                src={entry.productImageUrl}
-              />
-            ) : (
-              <PackageOpen aria-hidden="true" className="size-4" />
-            )}
+          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md">
+            <ProductImage
+              decorative
+              fit="cover"
+              imageUrl={entry.productImageUrl}
+              name={entry.productName}
+              size="xs"
+            />
           </div>
           <p className="max-w-48 font-medium text-zinc-950 leading-5">
             {entry.productName}
@@ -514,7 +512,7 @@ function InventoryRow({
       {/* Delivery */}
       <td className="px-4 py-4">
         {entry.deliveryAvailable ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-success-line bg-success-soft px-2.5 py-1 text-xs font-semibold text-success">
             <Truck aria-hidden="true" className="size-3" />
             Available
           </span>
@@ -574,7 +572,7 @@ function StockBadge({ quantity }: { quantity: number }) {
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+    <span className="inline-flex items-center rounded-full border border-brand-line bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">
       In stock
     </span>
   );

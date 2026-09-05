@@ -156,7 +156,7 @@ export function RequestQuoteDialog({
     <div
       aria-labelledby="quote-dialog-heading"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/55 p-0 sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/55 p-0 sm:items-center sm:p-6"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) {
           onClose();
@@ -167,7 +167,7 @@ export function RequestQuoteDialog({
       <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-md bg-white shadow-xl sm:max-w-xl sm:rounded-md">
         <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-5 sm:px-6">
           <div>
-            <span className="flex size-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-800">
+            <span className="flex size-10 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
               <MessageSquareQuote aria-hidden="true" className="size-5" />
             </span>
             <h2
@@ -217,7 +217,7 @@ export function RequestQuoteDialog({
                 errors.requestedQuantity ? "quantity-error" : undefined
               }
               aria-invalid={Boolean(errors.requestedQuantity)}
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="requestedQuantity"
               inputMode="decimal"
               {...register("requestedQuantity")}
@@ -237,7 +237,7 @@ export function RequestQuoteDialog({
               Unit
             </label>
             <select
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="requestedUnit"
               {...register("requestedUnit")}
             >
@@ -262,7 +262,7 @@ export function RequestQuoteDialog({
               }
               aria-invalid={Boolean(errors.deliveryLocation)}
               autoFocus
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="deliveryLocation"
               placeholder="City, district, or site address"
               {...register("deliveryLocation")}
@@ -289,7 +289,7 @@ export function RequestQuoteDialog({
                 errors.expiresOn ? "quote-deadline-error" : undefined
               }
               aria-invalid={Boolean(errors.expiresOn)}
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="expiresOn"
               max={maximumQuoteDate}
               min={minimumQuoteDate}
@@ -317,7 +317,7 @@ export function RequestQuoteDialog({
             <textarea
               aria-describedby={errors.notes ? "quote-notes-error" : undefined}
               aria-invalid={Boolean(errors.notes)}
-              className="mt-2 min-h-28 w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm leading-6 text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-28 w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm leading-6 text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="quoteNotes"
               placeholder="Delivery timing, quality requirements, or other details"
               {...register("notes")}
@@ -338,7 +338,7 @@ export function RequestQuoteDialog({
               Cancel
             </button>
             <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting}
               type="submit"
             >

@@ -86,7 +86,7 @@ export function AddInventoryDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4 py-8"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/45 px-4 py-8"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !isPending) {
           onCancel();
@@ -102,7 +102,7 @@ export function AddInventoryDialog({
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-brand-ink">
               Seller inventory
             </p>
             <h2
@@ -149,7 +149,7 @@ export function AddInventoryDialog({
               </p>
             ) : (
               <select
-                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
                 disabled={isPending}
                 id="inv-product"
                 onChange={(e) => setProductId(e.target.value)}
@@ -179,7 +179,7 @@ export function AddInventoryDialog({
               City
             </label>
             <input
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
               disabled={isPending}
               id="inv-city"
               maxLength={120}
@@ -204,7 +204,7 @@ export function AddInventoryDialog({
               <span className="font-normal text-zinc-500">(optional)</span>
             </label>
             <input
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
               disabled={isPending}
               id="inv-region"
               maxLength={120}
@@ -224,7 +224,7 @@ export function AddInventoryDialog({
                 Price (ETB)
               </label>
               <input
-                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
                 disabled={isPending}
                 id="inv-price"
                 inputMode="decimal"
@@ -247,7 +247,7 @@ export function AddInventoryDialog({
                 Quantity
               </label>
               <input
-                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60"
+                className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60"
                 disabled={isPending}
                 id="inv-qty"
                 min="0"
@@ -267,7 +267,7 @@ export function AddInventoryDialog({
           <label className="flex cursor-pointer items-center gap-3">
             <input
               checked={deliveryAvailable}
-              className="size-4 rounded border-zinc-300 text-emerald-700 focus:ring-emerald-700"
+              className="size-4 rounded border-zinc-300 text-brand-ink focus:ring-brand-ring"
               disabled={isPending}
               onChange={(e) => setDeliveryAvailable(e.target.checked)}
               type="checkbox"
@@ -295,7 +295,7 @@ export function AddInventoryDialog({
               Cancel
             </button>
             <button
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isPending}
               type="submit"
             >

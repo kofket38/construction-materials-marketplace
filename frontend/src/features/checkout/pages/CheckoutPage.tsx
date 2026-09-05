@@ -107,7 +107,7 @@ export function CheckoutPage() {
         <div className="text-center">
           <LoaderCircle
             aria-hidden="true"
-            className="mx-auto size-8 animate-spin text-emerald-700"
+            className="mx-auto size-8 animate-spin text-brand-ink"
           />
           <p className="mt-4 text-sm font-medium text-zinc-600">
             Preparing checkout...
@@ -200,7 +200,7 @@ export function CheckoutPage() {
       </Link>
 
       <div className="mt-4">
-        <p className="text-sm font-semibold text-emerald-700">Checkout</p>
+        <p className="text-sm font-semibold text-brand-ink">Checkout</p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
           Complete your order
         </h1>
@@ -246,7 +246,7 @@ export function CheckoutPage() {
 
           <aside className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm lg:sticky lg:top-6">
             <div className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+              <span className="flex size-9 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
                 <ShoppingCart aria-hidden="true" className="size-4" />
               </span>
               <h2 className="text-lg font-semibold text-zinc-950">
@@ -290,7 +290,7 @@ export function CheckoutPage() {
 
             {selectedPaymentMethod === "CASH_ON_DELIVERY" ? (
               <button
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSubmitting}
                 type="submit"
               >

@@ -38,11 +38,12 @@ import {
 } from "@/features/cart/model/cart.store";
 import { MarketplaceCityButton } from "@/features/marketplace/components/MarketplaceCityButton";
 import { MarketplaceCityDialog } from "@/features/marketplace/components/MarketplaceCityDialog";
+import { ThemeToggle } from "@/shared/theme/ThemeToggle";
 
 const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-10 items-center border-b-2 px-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${
+  `inline-flex min-h-10 items-center border-b-2 px-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring ${
     isActive
-      ? "border-emerald-700 text-zinc-950"
+      ? "border-brand text-zinc-950"
       : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-950"
   }`;
 
@@ -82,7 +83,7 @@ export function PublicLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 text-zinc-950">
+    <div className="min-h-screen bg-canvas text-zinc-950">
       <header className="border-b border-zinc-200 bg-white">
         {/* Tightened base-scale gaps/padding keep the authenticated customer
             control cluster inside a 390px viewport without horizontal
@@ -90,10 +91,10 @@ export function PublicLayout() {
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-3 px-3 sm:gap-5 sm:px-6 lg:px-8">
           <Link
             aria-label="Construction Materials Marketplace home"
-            className="inline-flex shrink-0 items-center gap-3 font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
+            className="inline-flex shrink-0 items-center gap-3 font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-ring"
             to="/"
           >
-            <span className="flex size-9 items-center justify-center rounded-md bg-emerald-700 text-white">
+            <span className="flex size-9 items-center justify-center rounded-md bg-brand text-on-brand">
               <Building2 aria-hidden="true" className="size-5" />
             </span>
             <span className="hidden md:inline">
@@ -296,6 +297,7 @@ export function PublicLayout() {
                       onClick={() => setIsSellerMenuOpen(false)}
                       to="/projects"
                     />
+                    <MobileMenuThemeSection />
                 </HeaderDropdownMenu>
               </>
             ) : (
@@ -386,6 +388,7 @@ export function PublicLayout() {
                         to="/admin/dashboard"
                       />
                     ) : null}
+                    <MobileMenuThemeSection />
                 </HeaderDropdownMenu>
                 <Link
                   aria-label={`Cart with ${cartItemCount.toLocaleString()} ${
@@ -397,13 +400,17 @@ export function PublicLayout() {
                 >
                   <ShoppingCart aria-hidden="true" className="size-5" />
                   {cartItemCount > 0 ? (
-                    <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold leading-none text-white">
+                    <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold leading-none text-on-brand">
                       {cartItemCount > 99 ? "99+" : cartItemCount}
                     </span>
                   ) : null}
                 </Link>
               </>
             )}
+            {/* Sits beside the account controls from `md` up. Below that the
+                header cluster has no room, so the toggle moves into the
+                hamburger panel — the two are mutually exclusive, never both. */}
+            <ThemeToggle className="hidden md:inline-flex" />
             {status === "authenticated" && user ? (
               <>
                 <span className="hidden max-w-40 truncate text-sm text-zinc-600 lg:inline">
@@ -455,6 +462,21 @@ export function PublicLayout() {
   );
 }
 
+/**
+ * Theme control for the hamburger panel. Hidden from `md` up, where the header
+ * renders the compact toggle instead, so only one is ever reachable.
+ */
+function MobileMenuThemeSection() {
+  return (
+    <div className="mt-2 border-t border-zinc-200 pt-2 md:hidden">
+      <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        Theme
+      </p>
+      <ThemeToggle layout="labelled" />
+    </div>
+  );
+}
+
 function MobileMenuLink({
   icon: Icon,
   label,
@@ -471,7 +493,7 @@ function MobileMenuLink({
       className={({ isActive }) =>
         `flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
           isActive
-            ? "bg-emerald-50 text-emerald-800"
+            ? "bg-brand-soft text-brand-ink"
             : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950"
         }`
       }

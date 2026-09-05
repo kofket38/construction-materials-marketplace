@@ -51,7 +51,7 @@ export function ProfessionalProjectsSection({
         >
           <FolderKanban
             aria-hidden="true"
-            className="size-5 text-emerald-700"
+            className="size-5 text-brand-ink"
           />
           Projects
         </h2>
@@ -82,7 +82,7 @@ export function ProfessionalProjectsSection({
         >
           <FolderKanban
             aria-hidden="true"
-            className="size-5 text-emerald-700"
+            className="size-5 text-brand-ink"
           />
           Projects
           <span className="text-base font-normal text-zinc-400">
@@ -91,7 +91,7 @@ export function ProfessionalProjectsSection({
         </h2>
         {hasMore ? (
           <Link
-            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to={`/projects?ownerId=${encodeURIComponent(ownerId)}`}
           >
             View all

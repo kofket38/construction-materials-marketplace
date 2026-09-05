@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-09-02
+Last updated: 2026-09-05
 
 ## 1. Project Overview
 
@@ -41,13 +41,16 @@ applicable.
 | Phase 4 | Complete and stabilized | Administrator oversight, verified-purchase product reviews and ratings, customer product wishlists, and RFQ and supplier quotations. |
 | M1 | Complete | Professional Identity: PROFESSIONAL as a real backend role, professional profiles, portfolio items, professional projects, public professional directory, public project discovery, professional registration, and full buyer capabilities for professional accounts. |
 | M1.5 | Complete | Professional Avatar Management: a profile-image URL field with live preview on professional profile create and edit, empty input clearing the stored avatar, and the professional dashboard rendering the stored avatar with an initials fallback. |
+| Post-M1 increment | Complete, uncommitted | Presentation and procurement visibility: a light/dark theme with a toggle in every shell, one product-image component across all product surfaces, and the owning professional's project shown on RFQ and order detail. |
 
 ## 3. Current Phase
 
 **Milestone M1 — Professional Identity is complete and verified.**
 
-The most recently completed work is **M1.5 Professional Avatar Management**,
-a small frontend increment on top of M1; see the end of this section.
+The most recently completed work is the **post-M1 presentation and
+procurement-visibility increment**, which is verified but not yet committed; it
+follows **M1.5 Professional Avatar Management**. Both are described at the end of
+this section.
 
 M1 introduces `PROFESSIONAL` as a first-class backend role. Professional
 accounts register publicly, manage exactly one professional profile with
@@ -82,6 +85,43 @@ on both create and edit, an empty value is sent as `null` to clear the
 stored avatar, and the professional dashboard renders the shared
 `ProfessionalAvatar` with initials as the fallback. No schema, migration,
 endpoint, validator, service, or role change was required.
+
+**Post-M1 increment: presentation and procurement visibility.**
+
+Three workstreams sit in the working tree, verified but not yet committed.
+
+*Theme.* `frontend/src/styles/index.css` adds a semantic token layer
+(`canvas`/`surface`/`sunken`/`raised`/`line`, `ink` roles, brand roles, status
+roles) and a `:root.dark` block that re-points the `zinc`, `stone`, `white`, and
+chromatic ramps the app already uses, so existing utilities such as `bg-white`
+and `text-zinc-600` re-theme without a single component edit. An inline script
+in `index.html` reads `localStorage["cmm.theme"]` and sets the `dark` class
+before first paint, so there is no flash, and dual `theme-color` metas match the
+browser chrome. `ThemeToggle` (Light / Dark / System) is now reachable from every
+shell: the public header, the admin sidebar, and the seller and professional
+sidebars through the shared `WorkspaceAccountFooter`. The four layouts are router
+siblings, so a workspace shell cannot inherit the public header's control and
+carries its own.
+
+*Product imagery.* `ProductImage` plus `products/lib/product-image.ts` replace
+the removed `product-images.ts` and are the only way a product picture is
+rendered. A product shows a photograph belonging to that product, or a
+placeholder that is labelled as one — there is no category stock photo and no
+brand-matching step, because filling the slot with something plausible would
+misrepresent what the seller is offering. `productImageSrc` accepts absolute
+`http(s)` URLs and root-relative paths verbatim and refuses every other scheme,
+so a stray stored value falls back to the placeholder instead of reaching
+`<img src>`. Every product surface reads it, including the seller inventory
+table, which held the last raw `<img>` on a product.
+
+*Procurement visibility.* `attachProcurementProject`, in the
+`ProcurementProjectLinker` port, attaches an `{ id, title, status }` project
+summary to RFQ and order detail reads. `ProjectService.findProcurementProjectSummary`
+returns `null` for any actor that is not the owning professional, so the field is
+owner-only by construction and the frontend needs no role check of its own;
+`AttachedProjectLink` renders it on both detail pages. A seller reading an RFQ
+they may quote now also receives `projectId: null`, so the buyer's internal
+project grouping is not exposed through the seller view.
 
 ## 4. Completed Modules
 
@@ -598,16 +638,18 @@ Deployment and configuration:
 
 ## 9. Remaining Tasks
 
-No approved implementation work remains within the RFQ & Supplier Quotations
-module.
+The post-M1 presentation and procurement-visibility increment described in
+section 3 is implemented and verified. It is not yet committed; that is the only
+step it has left.
 
 The project procurement links increment is complete on the backend and the
 frontend. What remains for it is deferred rather than unfinished:
 
 - The procurement view is unpaginated; see section 12.
-- There is no RFQ edit screen, so an attached RFQ can only be detached from the
-  project procurement section, not by re-saving the request. The backend update
-  endpoint treats an omitted `projectId` as a detach, but no UI reaches it.
+- There is no RFQ edit screen. RFQ detail and order detail now show the owning
+  professional which project a record belongs to, but detaching is still only
+  possible from the project procurement section. The backend update endpoint
+  treats an omitted `projectId` as a detach, and no UI reaches it.
 
 Features outside the currently implemented scope:
 
@@ -630,15 +672,22 @@ M1.5 professional avatar management increment.** The backend typechecks and
 passes the full suite against live PostgreSQL; the frontend typechecks,
 lints, and builds.
 
+**The next step is reviewing and committing the post-M1 presentation and
+procurement-visibility increment** in section 3. It is implemented and verified —
+frontend typecheck, lint, production build, ink-contrast guard, the four backend
+contract suites, backend typecheck, and the marketplace runtime smoke test all
+pass; see the Verification Baseline — but it is still uncommitted in the working
+tree. No code work is outstanding on it.
+
 One item needs confirmation rather than implementation: M1.5 was never
 written down as a specification. Its scope was reconstructed from the
 implemented state — the avatar was the only professional-identity field the
 backend accepted but no UI could set. If "M1.5" was intended to cover more
 than avatar management, those requirements still need to be provided.
 
-Beyond that, no approved implementation work remains. Do not begin payments,
-messaging, notifications, or another business module until the next
-requirements are provided and approved.
+Beyond committing that increment, no approved implementation work remains. Do
+not begin payments, messaging, notifications, or another business module until
+the next requirements are provided and approved.
 
 ## 11. Important Decisions Made
 
@@ -759,7 +808,7 @@ requirements are provided and approved.
 
 ## 12. Known Bugs Or TODOs
 
-No known failing tests or confirmed functional bugs as of 2026-09-03. The
+No known failing tests or confirmed functional bugs as of 2026-09-05. The
 product-discovery batch transaction now sets an explicit transaction-start
 budget (`maxWait`) after live smoke verification surfaced Prisma `P2028`
 "unable to start a transaction" failures under Supabase latency.
@@ -795,10 +844,9 @@ Current limitations and deferred work:
   order in one unpaginated response. It is bounded in practice by how much
   procurement one professional attaches to a single project, but it should gain
   pagination before that count can grow large.
-- Attached procurement is reachable from the UI, but only from the project it is
-  attached to. The RFQ detail page and the order detail page do not show which
-  project they belong to, and there is no RFQ edit screen, so detaching is only
-  possible from the project procurement section.
+- RFQ detail and order detail now show the attached project to the owning
+  professional, but there is still no RFQ edit screen, so detaching a link is
+  only possible from the project procurement section.
 - The project procurement section lists every attached RFQ and order because the
   endpoint behind it is unpaginated; it inherits that limit.
 - RFQ seller eligibility uses relational category coverage and may need
@@ -807,8 +855,57 @@ Current limitations and deferred work:
   webhooks, refunds, and seller payouts/settlement are not implemented.
 - Messaging, notifications, delivery charges, CI pipelines, and production
   observability remain unscoped and unimplemented.
+- The dark theme works by re-pointing the `zinc`, `stone`, `white`, and
+  chromatic ramps under `:root.dark`, not by migrating components to semantic
+  tokens. New UI must keep using those ramps or the semantic tokens for the
+  inversion to hold; a hard-coded hex or an unmapped colour will not re-theme.
+  The `.dark` block is deliberately unlayered so it outranks `@layer theme`'s
+  `:root`.
+- The seller inventory row has no category on its entry, so a product without a
+  photograph falls back to the neutral placeholder icon rather than a
+  trade-specific one. At that thumbnail size no placeholder caption renders
+  either way.
+- The live database still holds integration-test fixture products ("Inventory
+  test product", "Order Integration Product", and their UUID-suffixed
+  categories), and they appear in the public catalog: five of the first twelve
+  cards on `/products` are fixtures. This predates the presentation increment
+  and is test-data hygiene, not application code. Cleaning it requires deleting
+  live rows and has not been done.
 
 ## Verification Baseline
+
+Re-verified for the post-M1 presentation and procurement-visibility increment
+(2026-09-05). Every gate below was actually executed in this repository:
+
+```text
+frontend typecheck           PASS (tsc -b)
+frontend lint                PASS (eslint . --max-warnings 0)
+frontend build               PASS (vite build, 1931 modules transformed)
+frontend ink-contrast guard  PASS (no white ink found near a warm fill)
+backend typecheck            PASS (tsc --noEmit)
+backend contract suites      PASS (204 tests, 4 files, 8.43s)
+frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
+```
+
+The contract suites are the same four files as before — `project-procurement`,
+`rfqs`, `orders`, `projects` — now 204 tests rather than 195. Unlike the earlier
+frontend-only procurement increment, this one does change backend files
+(`rfq.service.ts`, `order.service.ts`, `project.service.ts`,
+`procurement-project.port.ts`), which is why those suites are the gate that
+matters. They use in-memory repositories and need no database. The full 890-test
+live-PostgreSQL suite was not re-run for this increment; the 2026-09-03 result
+below stands as that baseline.
+
+The marketplace smoke test *was* re-run for this increment, and passes, because
+product imagery is public: `/products`, `/stores`, and the store page are exactly
+the surfaces `ProductImage` now renders. It needs both local services running
+(`npm run dev` in `backend`, then in `frontend`) and the command issued from the
+repository root. Two lines in a passing run are expected and are not defects: six
+`401` responses on `/api/auth/refresh`, which is what an anonymous visitor with no
+refresh cookie gets and which the script's own critical-response filter excludes,
+and an Edge `fallback_task_provider.cc` line on stderr, which is browser noise.
+`vite build` also warns that the main chunk exceeds 500 kB; that warning predates
+this increment and does not fail the build.
 
 Backend re-verified end to end for the M1.5 professional avatar increment
 (2026-09-03):
@@ -832,7 +929,9 @@ frontend build               PASS (tsc -b && vite build, 1930 modules)
 
 The procurement frontend increment changed no backend file. The four HTTP
 suites that define the contract it consumes were re-run standalone to confirm
-that (these use in-memory repositories, so they need no database):
+that (these use in-memory repositories, so they need no database). This is that
+increment's historical result; the current count for the same four files is the
+204 in the 2026-09-05 block above:
 
 ```text
 project-procurement.test.ts  ┐
@@ -842,16 +941,20 @@ projects.test.ts             ┘
 ```
 
 The marketplace smoke test was not re-run for the procurement increment or for
-M1.5: it drives the public marketplace, while every changed screen (RFQ
+M1.5: it drives the public marketplace, while every screen those two changed (RFQ
 creation, checkout, project detail, and for M1.5 the profile form and the
 professional dashboard) is behind buyer or professional authentication, so it
-would exercise none of them. The frontend baseline below is carried forward
-from the M1 Professional Identity baseline (2026-09-01, re-verified end to end
-after the local frontend API base URL was corrected):
+would have exercised none of them. Their frontend baseline was therefore carried
+forward from the M1 Professional Identity baseline (2026-09-01, re-verified end
+to end after the local frontend API base URL was corrected):
 
 ```text
 frontend marketplace smoke   PASS (5 layouts, no overflow, no browser errors)
 ```
+
+That reasoning does not apply to the presentation increment, whose changed
+surfaces are public; its smoke result is the 2026-09-05 line above and was
+produced by an actual run.
 
 The full backend suite also covers the rate-limit and admin dashboard tests and
 the order and inventory-synchronization integration suites; those are not

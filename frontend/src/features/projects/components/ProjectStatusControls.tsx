@@ -33,9 +33,9 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
 function buttonClass(tone: "primary" | "neutral"): string {
   return [
     "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60",
     tone === "primary"
-      ? "bg-emerald-700 text-white hover:bg-emerald-800"
+      ? "bg-brand text-on-brand hover:bg-brand-hover"
       : "border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50",
   ].join(" ");
 }

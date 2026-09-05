@@ -17,7 +17,7 @@ export function PublicProjectCard({ project }: PublicProjectCardProps) {
 
   return (
     <Link
-      className="group flex flex-col overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition-colors hover:border-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+      className="group flex flex-col overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition-colors hover:border-brand-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
       to={`/projects/${encodeURIComponent(project.id)}`}
     >
       {/* Thumbnail */}
@@ -49,11 +49,11 @@ export function PublicProjectCard({ project }: PublicProjectCardProps) {
         {/* Title + type */}
         <div>
           {project.projectType ? (
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-ink">
               {project.projectType}
             </p>
           ) : null}
-          <h3 className="line-clamp-2 text-sm font-semibold text-zinc-950 group-hover:text-emerald-800">
+          <h3 className="line-clamp-2 text-sm font-semibold text-zinc-950 group-hover:text-brand-ink">
             {project.title}
           </h3>
           {project.description ? (
@@ -117,7 +117,7 @@ function OwnerAttribution({ owner }: { owner: PublicOwnerInfo }) {
       </span>
       <div className="min-w-0 flex-1">
         <Link
-          className="block truncate text-xs font-semibold text-zinc-800 hover:text-emerald-700"
+          className="block truncate text-xs font-semibold text-zinc-800 hover:text-brand-ink"
           onClick={(e) => e.stopPropagation()}
           to={`/professionals/${encodeURIComponent(owner.profileId)}`}
         >

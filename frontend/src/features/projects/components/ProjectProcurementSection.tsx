@@ -83,7 +83,7 @@ function ProcurementBody({ projectId }: { projectId: string }) {
       >
         <LoaderCircle
           aria-hidden="true"
-          className="size-4 animate-spin text-emerald-700"
+          className="size-4 animate-spin text-brand-ink"
         />
         Loading attached procurement...
       </p>
@@ -168,7 +168,7 @@ function ProcurementRfqList({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <Link
-                    className="text-sm font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                    className="text-sm font-semibold text-brand-ink underline-offset-2 hover:underline"
                     to={`/rfqs/${encodeURIComponent(rfq.id)}`}
                   >
                     {rfq.title}
@@ -243,7 +243,7 @@ function ProcurementOrderList({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <Link
-                    className="text-sm font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                    className="text-sm font-semibold text-brand-ink underline-offset-2 hover:underline"
                     to={`/orders/${encodeURIComponent(order.id)}`}
                   >
                     Order {formatOrderNumber(order.id)}
@@ -330,7 +330,7 @@ function DetachAction({
   return (
     <div className="mt-2 border-t border-zinc-100 pt-2">
       <button
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
         disabled={busy}
         onClick={() => {
           if (window.confirm(confirmMessage)) {

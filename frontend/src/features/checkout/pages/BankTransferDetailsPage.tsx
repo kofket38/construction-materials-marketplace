@@ -123,11 +123,11 @@ export function BankTransferDetailsPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div className="flex items-start gap-4">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
           <Landmark aria-hidden="true" className="size-6" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             {paymentDestination?.providerName ?? "Manual payment"}
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -150,7 +150,7 @@ export function BankTransferDetailsPage() {
           <div className="flex items-start gap-3">
             <CheckCircle2
               aria-hidden="true"
-              className="mt-0.5 size-6 shrink-0 text-emerald-700"
+              className="mt-0.5 size-6 shrink-0 text-brand-ink"
             />
             <div>
               <h2
@@ -178,7 +178,7 @@ export function BankTransferDetailsPage() {
           </dl>
 
           <Link
-            className="mt-8 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="mt-8 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to="/products"
           >
             <PackageCheck aria-hidden="true" className="size-4" />
@@ -301,7 +301,7 @@ export function BankTransferDetailsPage() {
             ) : null}
 
             <button
-              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
               disabled={
                 paymentMutation.isPending ||
                 !paymentDestination ||

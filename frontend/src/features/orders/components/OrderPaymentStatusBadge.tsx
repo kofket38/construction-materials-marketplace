@@ -9,7 +9,7 @@ const paymentStateDisplay: Record<
     label: "Pending verification",
   },
   APPROVED: {
-    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    className: "border-success-line bg-success-soft text-success",
     label: "Approved",
   },
   REJECTED: {

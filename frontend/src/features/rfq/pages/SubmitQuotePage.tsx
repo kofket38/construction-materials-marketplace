@@ -204,7 +204,7 @@ export function SubmitQuotePage() {
       </Link>
 
       <div className="mt-4 border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">Seller workspace</p>
+        <p className="text-sm font-semibold text-brand-ink">Seller workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
           {isExisting ? "Update Quotation" : "Submit Quotation"}
         </h1>
@@ -327,7 +327,7 @@ export function SubmitQuotePage() {
               Cancel
             </Link>
             <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
               disabled={submitMutation.isPending || withdrawMutation.isPending}
               type="submit"
             >
@@ -372,7 +372,7 @@ function QuoteLineForm({
       {rfqItem ? (
         <div className="mb-3">
           <p className="text-sm font-semibold text-zinc-950">{rfqItem.materialName}</p>
-          <p className="text-xs text-emerald-700">{rfqItem.categoryName}</p>
+          <p className="text-xs text-brand-ink">{rfqItem.categoryName}</p>
           <p className="text-xs text-zinc-500">
             Requested: {rfqItem.requestedQuantity}{" "}
             {rfqItem.requestedUnit === "OTHER" ? rfqItem.customUnit : RFQ_UNIT_LABELS[rfqItem.requestedUnit]}
@@ -457,7 +457,7 @@ function QuoteLineForm({
 function fc(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
-    hasError ? "border-red-400 focus:border-red-500" : "border-zinc-300 focus:border-emerald-700",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
+    hasError ? "border-red-400 focus:border-red-500" : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

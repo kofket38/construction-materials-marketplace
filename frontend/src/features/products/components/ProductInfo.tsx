@@ -51,7 +51,7 @@ export function ProductInfo({
 
   return (
     <section aria-labelledby="product-name" className="min-w-0">
-      <p className="text-sm font-semibold text-emerald-700">
+      <p className="text-sm font-semibold text-brand-ink">
         {product.category.name}
       </p>
       <h1
@@ -83,7 +83,7 @@ export function ProductInfo({
       </div>
 
       <button
-        className="mt-4 inline-flex items-center gap-2 rounded-sm text-sm text-zinc-600 transition-colors hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="mt-4 inline-flex items-center gap-2 rounded-sm text-sm text-zinc-600 transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         onClick={onShowReviews}
         type="button"
       >
@@ -107,7 +107,7 @@ export function ProductInfo({
         </p>
         <p
           className={`mt-3 inline-flex items-center gap-2 text-sm font-semibold ${
-            isInStock ? "text-emerald-700" : "text-red-700"
+            isInStock ? "text-success" : "text-danger"
           }`}
         >
           {isInStock ? (
@@ -162,7 +162,7 @@ export function ProductInfo({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <button
           aria-pressed={isWishlisted}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-emerald-700 bg-white px-4 py-3 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-brand bg-white px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-soft-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isWishlistPending}
           onClick={onToggleWishlist}
           type="button"
@@ -175,13 +175,13 @@ export function ProductInfo({
           ) : (
             <Heart
               aria-hidden="true"
-              className={`size-5 ${isWishlisted ? "fill-emerald-700" : ""}`}
+              className={`size-5 ${isWishlisted ? "fill-brand" : ""}`}
             />
           )}
           {isWishlisted ? "Saved to wishlist" : "Add to wishlist"}
         </button>
         <button
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
           onClick={onRequestQuote}
           type="button"
         >

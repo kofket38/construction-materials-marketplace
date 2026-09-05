@@ -1,4 +1,5 @@
 import type { AuthenticatedUser } from "../types/auth.js";
+import type { ProcurementProjectSummary } from "./procurement-project.port.js";
 import {
   BadRequestError,
   ConflictError,
@@ -362,6 +363,42 @@ export class ProjectService {
     }
 
     return project.id;
+  }
+
+  /**
+   * Resolves the display summary of a project that an RFQ or order points at.
+   *
+   * Callers are the RFQ and order detail reads, which also serve sellers
+   * (quoting on a request) and administrators (oversight). Ownership is the
+   * only gate: a project the caller does not own returns null, so those
+   * viewers see the same thing they see for standalone procurement and the
+   * buyer's project never leaks through a purchase they can read.
+   *
+   * A stale link — the row still points at a project this actor cannot
+   * resolve — also degrades to null rather than failing the whole read.
+   */
+  async findProcurementProjectSummary(
+    actor: AuthenticatedUser,
+    projectId: string,
+  ): Promise<ProcurementProjectSummary | null> {
+    // Only PROFESSIONAL accounts can own projects, so nobody else can be the
+    // owner of this link. Skipping the read keeps customer and seller detail
+    // pages at exactly the query count they had before.
+    if (actor.role !== "PROFESSIONAL") {
+      return null;
+    }
+
+    const project = await this.projects.findById(projectId);
+
+    if (!project || project.ownerId !== actor.userId) {
+      return null;
+    }
+
+    return {
+      id: project.id,
+      title: project.title,
+      status: project.status,
+    };
   }
 
   // ── Lifecycle transitions ─────────────────────────────────────────────────

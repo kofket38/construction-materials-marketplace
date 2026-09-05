@@ -201,7 +201,7 @@ export function CartPage() {
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-brand-ink">
               Shopping cart
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -232,7 +232,7 @@ export function CartPage() {
           >
             <LoaderCircle
               aria-hidden="true"
-              className="size-4 animate-spin text-emerald-700"
+              className="size-4 animate-spin text-brand-ink"
             />
             Checking current prices and inventory...
           </div>
@@ -335,7 +335,7 @@ export function CartPage() {
             </dl>
 
             <button
-              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-55"
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-55"
               disabled={!canProceed}
               onClick={() => navigate("/checkout")}
               type="button"
@@ -393,7 +393,7 @@ function CartAccessState({
       <section className="max-w-lg">
         <ShoppingCart
           aria-hidden="true"
-          className="size-10 text-emerald-700"
+          className="size-10 text-brand-ink"
           strokeWidth={1.5}
         />
         <h1 className="mt-5 text-3xl font-semibold text-zinc-950">
@@ -434,7 +434,7 @@ function CartLoadingState() {
       <div className="text-center">
         <LoaderCircle
           aria-hidden="true"
-          className="mx-auto size-8 animate-spin text-emerald-700"
+          className="mx-auto size-8 animate-spin text-brand-ink"
         />
         <p className="mt-4 text-sm font-medium text-zinc-600">
           Loading your saved cart...
@@ -493,7 +493,7 @@ function EmptyCartState({ message }: { message: string | null }) {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
       <section className="max-w-lg text-center">
-        <span className="mx-auto flex size-14 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+        <span className="mx-auto flex size-14 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
           <ShoppingCart aria-hidden="true" className="size-7" />
         </span>
         <h1 className="mt-6 text-3xl font-semibold text-zinc-950">
@@ -532,7 +532,7 @@ function StatusBanner({
       className={`mt-4 flex flex-wrap items-start gap-3 rounded-md border px-4 py-3 text-sm ${
         tone === "error"
           ? "border-red-200 bg-red-50 text-red-800"
-          : "border-emerald-200 bg-emerald-50 text-emerald-900"
+          : "border-brand-line bg-brand-soft text-brand-ink"
       }`}
       role={tone === "error" ? "alert" : "status"}
     >

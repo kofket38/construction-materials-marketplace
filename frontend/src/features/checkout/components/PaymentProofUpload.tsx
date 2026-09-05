@@ -94,7 +94,7 @@ export function PaymentProofUpload({
           className={`mt-4 flex min-h-40 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center transition-colors ${
             disabled
               ? "cursor-not-allowed opacity-60"
-              : "cursor-pointer hover:border-emerald-600 hover:bg-emerald-50"
+              : "cursor-pointer hover:border-brand hover:bg-brand-soft-hover"
           }`}
           htmlFor="payment-proof"
         >

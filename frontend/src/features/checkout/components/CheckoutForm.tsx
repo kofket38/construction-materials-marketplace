@@ -7,7 +7,7 @@ import {
 import type { CheckoutFormValues } from "@/features/checkout/model/checkout.schema";
 
 const inputClassName =
-  "mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15";
+  "mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15";
 
 export function CheckoutForm() {
   const {
@@ -21,7 +21,7 @@ export function CheckoutForm() {
       className="border-b border-zinc-200 pb-8"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
           <MapPin aria-hidden="true" className="size-5" />
         </span>
         <div>

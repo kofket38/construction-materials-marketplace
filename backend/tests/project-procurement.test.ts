@@ -462,6 +462,163 @@ describe("Project procurement links", () => {
     });
   });
 
+  // ── Reading the project back from a purchase ───────────────────────────────
+
+  describe("project on procurement detail reads", () => {
+    it("names the project on the owner's RFQ detail", async () => {
+      const project = projects.addProject(professionalId, {
+        title: "Riverside Warehouse",
+        status: "IN_PROGRESS",
+      });
+      const created = await createRfq(
+        professionalToken,
+        rfqBody(project.id),
+      ).expect(201);
+
+      const response = await getRfq(
+        created.body.data.rfq.id,
+        professionalToken,
+      ).expect(200);
+
+      expect(response.body.data.rfq.project).toEqual({
+        id: project.id,
+        title: "Riverside Warehouse",
+        status: "IN_PROGRESS",
+      });
+    });
+
+    it("reports a standalone RFQ as unattached", async () => {
+      const created = await createRfq(professionalToken).expect(201);
+
+      const response = await getRfq(
+        created.body.data.rfq.id,
+        professionalToken,
+      ).expect(200);
+
+      expect(response.body.data.rfq.project).toBeNull();
+    });
+
+    it("hides the buyer's project from a seller reading the request", async () => {
+      const project = projects.addProject(professionalId);
+      const created = await createRfq(
+        professionalToken,
+        rfqBody(project.id),
+      ).expect(201);
+
+      // The seller may legitimately read this request in order to quote on it,
+      // so it must read as standalone rather than 404. Neither the summary nor
+      // the raw ID rides along: which project a buyer groups a request under is
+      // their own commercial context and no part of the quoting contract.
+      const response = await getRfq(
+        created.body.data.rfq.id,
+        sellerToken,
+      ).expect(200);
+
+      expect(response.body.data.rfq.project).toBeNull();
+      expect(response.body.data.rfq.projectId).toBeNull();
+    });
+
+    it("hides the project from an admin reading the request", async () => {
+      const project = projects.addProject(professionalId);
+      const created = await createRfq(
+        professionalToken,
+        rfqBody(project.id),
+      ).expect(201);
+
+      const response = await getRfq(
+        created.body.data.rfq.id,
+        adminToken,
+      ).expect(200);
+
+      expect(response.body.data.rfq.project).toBeNull();
+    });
+
+    it("names the project on the owner's order detail", async () => {
+      const project = projects.addProject(professionalId, {
+        title: "Riverside Warehouse",
+      });
+      const created = await createOrder(
+        professionalToken,
+        orderBody(project.id),
+      ).expect(201);
+
+      const response = await getOrder(
+        created.body.data.order.id,
+        professionalToken,
+      ).expect(200);
+
+      expect(response.body.data.order.project).toEqual({
+        id: project.id,
+        title: "Riverside Warehouse",
+        status: "DRAFT",
+      });
+    });
+
+    it("reports a standalone order as unattached", async () => {
+      const created = await createOrder(professionalToken).expect(201);
+
+      const response = await getOrder(
+        created.body.data.order.id,
+        professionalToken,
+      ).expect(200);
+
+      expect(response.body.data.order.project).toBeNull();
+    });
+
+    it("hides the project from an admin reading the order", async () => {
+      const project = projects.addProject(professionalId);
+      const created = await createOrder(
+        professionalToken,
+        orderBody(project.id),
+      ).expect(201);
+
+      const response = await getOrder(
+        created.body.data.order.id,
+        adminToken,
+      ).expect(200);
+
+      expect(response.body.data.order.project).toBeNull();
+    });
+
+    it("keeps naming the project after the request is awarded", async () => {
+      const project = projects.addProject(professionalId, {
+        title: "Riverside Warehouse",
+      });
+      const { rfqId } = await awardedProcurement(project.id);
+
+      const response = await getRfq(rfqId, professionalToken).expect(200);
+
+      expect(response.body.data.rfq.status).toBe("AWARDED");
+      expect(response.body.data.rfq.project).toMatchObject({
+        id: project.id,
+        title: "Riverside Warehouse",
+      });
+    });
+
+    it("stops naming the project once the link is detached", async () => {
+      const project = projects.addProject(professionalId);
+      const createdRfq = await createRfq(
+        professionalToken,
+        rfqBody(project.id),
+      ).expect(201);
+      const createdOrder = await createOrder(
+        professionalToken,
+        orderBody(project.id),
+      ).expect(201);
+      const rfqId = createdRfq.body.data.rfq.id as string;
+      const orderId = createdOrder.body.data.order.id as string;
+
+      await detachRfqLink(project.id, rfqId, professionalToken).expect(200);
+      await detachOrderLink(project.id, orderId, professionalToken).expect(200);
+
+      const rfq = await getRfq(rfqId, professionalToken).expect(200);
+      const order = await getOrder(orderId, professionalToken).expect(200);
+
+      expect(rfq.body.data.rfq.project).toBeNull();
+      expect(order.body.data.order.project).toBeNull();
+    });
+  });
+
   // ── Completion guard ───────────────────────────────────────────────────────
 
   describe("completion guard", () => {
@@ -659,10 +816,7 @@ describe("Project procurement links", () => {
       expect(procurement.body.data.rfqs).toEqual([]);
 
       // The request survives detaching; only the project link was cleared.
-      const rfq = await request(app)
-        .get(`/api/rfqs/${rfqId}`)
-        .set("Authorization", `Bearer ${professionalToken}`)
-        .expect(200);
+      const rfq = await getRfq(rfqId, professionalToken).expect(200);
       expect(rfq.body.data.rfq.projectId).toBeNull();
     });
 
@@ -838,6 +992,18 @@ describe("Project procurement links", () => {
   });
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  function getRfq(rfqId: string, accessToken: string) {
+    return request(app)
+      .get(`/api/rfqs/${rfqId}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  function getOrder(orderId: string, accessToken: string) {
+    return request(app)
+      .get(`/api/orders/${orderId}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+  }
 
   function getProcurement(projectId: string, accessToken: string) {
     return request(app)

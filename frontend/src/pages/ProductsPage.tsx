@@ -157,7 +157,7 @@ export function ProductsPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             {selectedCity ? `${selectedCity} marketplace` : "Marketplace catalog"}
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -180,7 +180,7 @@ export function ProductsPage() {
             </p>
           ) : null}
           <button
-            className="min-h-10 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="min-h-10 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             onClick={openCitySelector}
             type="button"
           >
@@ -201,7 +201,7 @@ export function ProductsPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={search}
             key={search}
             name="search"
@@ -213,7 +213,7 @@ export function ProductsPage() {
         <label>
           <span className="sr-only">Stock availability</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(event) =>
               updateSearchParams({
                 page: undefined,
@@ -231,7 +231,7 @@ export function ProductsPage() {
         <label>
           <span className="sr-only">Sort products</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(event) =>
               updateSearchParams({
                 page: undefined,
@@ -277,7 +277,7 @@ export function ProductsPage() {
         <CatalogStatus>
           <LoaderCircle
             aria-hidden="true"
-            className="size-6 animate-spin text-emerald-700"
+            className="size-6 animate-spin text-brand-ink"
           />
           <p>Loading products...</p>
         </CatalogStatus>
@@ -311,7 +311,7 @@ export function ProductsPage() {
         <CatalogStatus>
           <PackageSearch
             aria-hidden="true"
-            className="size-9 text-emerald-700"
+            className="size-9 text-brand-ink"
             strokeWidth={1.6}
           />
           <div className="text-center">

@@ -151,7 +151,7 @@ export function RegisterPage() {
         aria-labelledby="registration-heading"
         className="w-full max-w-lg rounded-md border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
       >
-        <span className="flex size-10 items-center justify-center rounded-md bg-emerald-700 text-white">
+        <span className="flex size-10 items-center justify-center rounded-md bg-brand text-on-brand">
           <UserPlus aria-hidden="true" className="size-5" />
         </span>
         <h1
@@ -175,9 +175,9 @@ export function RegisterPage() {
             return (
               <button
                 aria-pressed={isSelected}
-                className={`flex flex-col items-start gap-2 rounded-md border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${
+                className={`flex flex-col items-start gap-2 rounded-md border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring ${
                   isSelected
-                    ? "border-emerald-600 bg-emerald-50 text-emerald-900"
+                    ? "border-brand bg-brand-soft text-brand-ink"
                     : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                 }`}
                 key={role}
@@ -187,7 +187,7 @@ export function RegisterPage() {
                 <span
                   className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
                     isSelected
-                      ? "bg-emerald-700 text-white"
+                      ? "bg-brand text-on-brand"
                       : "bg-zinc-100 text-zinc-500"
                   }`}
                 >
@@ -230,7 +230,7 @@ export function RegisterPage() {
               aria-describedby={errors.name ? "name-error" : undefined}
               aria-invalid={Boolean(errors.name)}
               autoComplete="name"
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="name"
               {...register("name")}
             />
@@ -252,7 +252,7 @@ export function RegisterPage() {
               aria-describedby={errors.email ? "email-error" : undefined}
               aria-invalid={Boolean(errors.email)}
               autoComplete="email"
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="email"
               type="email"
               {...register("email")}
@@ -276,7 +276,7 @@ export function RegisterPage() {
               aria-describedby={errors.phone ? "phone-error" : undefined}
               aria-invalid={Boolean(errors.phone)}
               autoComplete="tel"
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="phone"
               type="tel"
               {...register("phone")}
@@ -300,7 +300,7 @@ export function RegisterPage() {
               aria-describedby={errors.company ? "company-error" : undefined}
               aria-invalid={Boolean(errors.company)}
               autoComplete="organization"
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="company"
               {...register("company")}
             />
@@ -322,7 +322,7 @@ export function RegisterPage() {
               aria-describedby={errors.password ? "password-error" : undefined}
               aria-invalid={Boolean(errors.password)}
               autoComplete="new-password"
-              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
               id="password"
               type="password"
               {...register("password")}
@@ -335,7 +335,7 @@ export function RegisterPage() {
           </div>
 
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
             disabled={isSubmitting}
             type="submit"
           >
@@ -354,7 +354,7 @@ export function RegisterPage() {
         <p className="mt-6 text-center text-sm text-zinc-600">
           Already have an account?{" "}
           <Link
-            className="font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to="/login"
           >
             Sign in

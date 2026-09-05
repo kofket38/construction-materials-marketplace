@@ -17,7 +17,7 @@ export function ProfessionalAvatar({
   if (!src || imageFailed) {
     return (
       <span
-        className={`flex size-full items-center justify-center rounded-full bg-emerald-700 font-bold text-white ${initialsClassName}`}
+        className={`flex size-full items-center justify-center rounded-full bg-brand font-bold text-on-brand ${initialsClassName}`}
       >
         {getInitials(name)}
       </span>

@@ -79,7 +79,7 @@ export function MyRfqsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Account</p>
+          <p className="text-sm font-semibold text-brand-ink">Account</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
             Requests for Quotation
           </h1>
@@ -88,7 +88,7 @@ export function MyRfqsPage() {
           </p>
         </div>
         <Link
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
           to="/rfqs/new"
         >
           <Plus aria-hidden="true" className="size-4" />
@@ -102,7 +102,7 @@ export function MyRfqsPage() {
           <button
             className={`inline-flex min-h-9 items-center rounded-full border px-3 py-1 text-sm font-semibold transition-colors ${
               status === option.value
-                ? "border-emerald-700 bg-emerald-700 text-white"
+                ? "border-brand bg-brand text-on-brand"
                 : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
             key={option.value}
@@ -131,7 +131,7 @@ export function MyRfqsPage() {
             Create an RFQ to request quotes from multiple suppliers.
           </p>
           <Link
-            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
             to="/rfqs/new"
           >
             <Plus aria-hidden="true" className="size-4" />
@@ -183,7 +183,7 @@ function RfqCard({ rfq }: { rfq: RequestForQuote }) {
 
   return (
     <Link
-      className="group block rounded-md border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+      className="group block rounded-md border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
       to={`/rfqs/${rfq.id}`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -224,7 +224,7 @@ function RfqCard({ rfq }: { rfq: RequestForQuote }) {
       </dl>
 
       {hasAward ? (
-        <p className="mt-3 text-sm font-semibold text-emerald-700">
+        <p className="mt-3 text-sm font-semibold text-success">
           ✓ Quote accepted — order created
         </p>
       ) : null}

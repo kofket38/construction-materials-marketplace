@@ -183,7 +183,7 @@ export function SellerProfilePage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       {/* Header */}
       <div className="border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">
+        <p className="text-sm font-semibold text-brand-ink">
           Seller workspace
         </p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -210,7 +210,7 @@ export function SellerProfilePage() {
       ) : null}
 
       {saveMutation.isSuccess ? (
-        <div className="mt-4 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="mt-4 flex items-center gap-2 rounded-md border border-success-line bg-success-soft px-4 py-3 text-sm text-brand-ink">
           <BadgeCheck aria-hidden="true" className="size-4 shrink-0" />
           Store profile saved successfully.
         </div>
@@ -220,7 +220,7 @@ export function SellerProfilePage() {
         {/* ── Store information ─────────────────────────────────────────────── */}
         <section aria-labelledby="store-info-heading">
           <div className="flex items-center gap-2 pb-4">
-            <Store aria-hidden="true" className="size-4 text-emerald-700" />
+            <Store aria-hidden="true" className="size-4 text-brand-ink" />
             <h2
               className="text-base font-semibold text-zinc-950"
               id="store-info-heading"
@@ -286,7 +286,7 @@ export function SellerProfilePage() {
         {/* ── Payment accounts ─────────────────────────────────────────────── */}
         <section aria-labelledby="payment-accounts-heading">
           <div className="flex items-center gap-2 border-t border-zinc-200 pb-4 pt-6">
-            <Banknote aria-hidden="true" className="size-4 text-emerald-700" />
+            <Banknote aria-hidden="true" className="size-4 text-brand-ink" />
             <h2
               className="text-base font-semibold text-zinc-950"
               id="payment-accounts-heading"
@@ -405,7 +405,7 @@ export function SellerProfilePage() {
             <p className="text-sm text-zinc-500">You have unsaved changes.</p>
           ) : null}
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
@@ -471,9 +471,9 @@ function Field({
 function inputClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

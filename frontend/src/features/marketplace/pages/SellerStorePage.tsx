@@ -115,7 +115,7 @@ export function SellerStorePage() {
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <Link
-            className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to="/stores"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
@@ -124,11 +124,11 @@ export function SellerStorePage() {
 
           <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex min-w-0 items-start gap-5">
-              <span className="flex size-16 shrink-0 items-center justify-center rounded-md bg-emerald-700 text-xl font-bold text-white">
+              <span className="flex size-16 shrink-0 items-center justify-center rounded-md bg-brand text-xl font-bold text-on-brand">
                 {getStoreInitials(store.storeName)}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-emerald-700">
+                <p className="text-sm font-semibold text-brand-ink">
                   Marketplace supplier
                 </p>
                 <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -159,11 +159,11 @@ export function SellerStorePage() {
             </div>
 
             <button
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
               onClick={openCitySelector}
               type="button"
             >
-              <MapPin aria-hidden="true" className="size-4 text-emerald-700" />
+              <MapPin aria-hidden="true" className="size-4 text-brand-ink" />
               {selectedCity ? "Change city" : "Select city"}
             </button>
           </div>
@@ -194,7 +194,7 @@ export function SellerStorePage() {
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-brand-ink">
               Store inventory
             </p>
             <h2
@@ -216,7 +216,7 @@ export function SellerStorePage() {
           <ProductStatus>
             <LoaderCircle
               aria-hidden="true"
-              className="size-6 animate-spin text-emerald-700"
+              className="size-6 animate-spin text-brand-ink"
             />
             Loading store inventory...
           </ProductStatus>
@@ -245,7 +245,7 @@ export function SellerStorePage() {
           <ProductStatus>
             <PackageSearch
               aria-hidden="true"
-              className="size-9 text-emerald-700"
+              className="size-9 text-brand-ink"
               strokeWidth={1.6}
             />
             <div className="text-center">
@@ -333,9 +333,9 @@ function StoreFact({
       <dt className="text-xs font-medium text-zinc-500">{label}</dt>
       <dd className="mt-2 flex min-w-0 items-center gap-2 font-semibold text-zinc-950">
         {icon ? (
-          <Icon aria-hidden="true" className="size-4 shrink-0 text-emerald-700" />
+          <Icon aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
         ) : (
-          <Store aria-hidden="true" className="size-4 shrink-0 text-emerald-700" />
+          <Store aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
         )}
         <span className="truncate" title={value}>
           {value}
@@ -360,7 +360,7 @@ function StorePageStatus({
         {loading ? (
           <LoaderCircle
             aria-hidden="true"
-            className="mx-auto size-8 animate-spin text-emerald-700"
+            className="mx-auto size-8 animate-spin text-brand-ink"
           />
         ) : (
           <AlertTriangle
@@ -397,10 +397,10 @@ function StoreNotFound() {
       <section>
         <Store
           aria-hidden="true"
-          className="size-9 text-emerald-700"
+          className="size-9 text-brand-ink"
           strokeWidth={1.6}
         />
-        <p className="mt-5 text-sm font-semibold text-emerald-700">404</p>
+        <p className="mt-5 text-sm font-semibold text-brand-ink">404</p>
         <h1 className="mt-2 text-3xl font-semibold text-zinc-950">
           Store not found
         </h1>

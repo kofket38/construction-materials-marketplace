@@ -75,7 +75,7 @@ export function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Administration</p>
+          <p className="text-sm font-semibold text-brand-ink">Administration</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">Users</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
             Manage marketplace accounts and access.
@@ -101,7 +101,7 @@ export function AdminUsersPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search name, email, company"
             type="search"
@@ -111,7 +111,7 @@ export function AdminUsersPage() {
         <label>
           <span className="sr-only">Filter by role</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => { setRole(e.target.value as AdminUserRole | ""); setPage(1); }}
             value={role}
           >
@@ -140,7 +140,7 @@ export function AdminUsersPage() {
       {/* Table */}
       {usersQuery.isPending ? (
         <div className="flex min-h-64 items-center justify-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-emerald-700" />
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-brand-ink" />
         </div>
       ) : usersQuery.isError ? (
         <div className="mt-6 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -191,7 +191,7 @@ export function AdminUsersPage() {
                         className={`inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
                           user.status === "ACTIVE"
                             ? "border-red-200 bg-white text-red-600 hover:bg-red-50"
-                            : "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+                            : "border-brand-line bg-white text-brand-ink hover:bg-brand-soft-hover"
                         }`}
                         onClick={() => { statusMutation.reset(); setConfirmUser(user); }}
                         type="button"
@@ -246,7 +246,7 @@ function ConfirmStatusDialog({
   const isDisabling = user.status === "ACTIVE";
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/45 px-4"
       onMouseDown={(e) => { if (e.currentTarget === e.target && !isLoading) onCancel(); }}
     >
       <div className="w-full max-w-sm rounded-md border border-zinc-200 bg-white p-6 shadow-xl">
@@ -268,8 +268,10 @@ function ConfirmStatusDialog({
             Cancel
           </button>
           <button
-            className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 ${
-              isDisabling ? "bg-red-600 hover:bg-red-700" : "bg-emerald-700 hover:bg-emerald-800"
+            className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
+              isDisabling
+                ? "bg-danger-solid text-on-solid hover:bg-danger-solid-hover"
+                : "bg-brand text-on-brand hover:bg-brand-hover"
             }`}
             disabled={isLoading}
             onClick={onConfirm}

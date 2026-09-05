@@ -31,7 +31,7 @@ export function DashboardShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
+    <div className="flex min-h-screen bg-canvas">
       {/* Sidebar */}
       <DashboardSidebar
         footer={footer}
@@ -49,7 +49,7 @@ export function DashboardShell({
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 lg:hidden">
           <button
             aria-label="Open navigation"
-            className="flex size-9 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-emerald-700"
+            className="flex size-9 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-brand-ring"
             onClick={() => setMobileOpen(true)}
             type="button"
           >

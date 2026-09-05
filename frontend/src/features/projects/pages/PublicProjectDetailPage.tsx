@@ -99,7 +99,7 @@ export function PublicProjectDetailPage() {
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           {/* Back link */}
           <Link
-            className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-ink hover:text-brand-ink"
             to="/projects"
           >
             ← All Projects
@@ -107,7 +107,7 @@ export function PublicProjectDetailPage() {
 
           <div className="mt-5">
             {project.projectType ? (
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-ink">
                 {project.projectType}
               </p>
             ) : null}
@@ -245,7 +245,7 @@ function OwnerCard({ owner }: { owner: PublicOwnerDetailInfo }) {
           </span>
           <div className="min-w-0">
             <Link
-              className="block truncate font-semibold text-zinc-950 hover:text-emerald-700"
+              className="block truncate font-semibold text-zinc-950 hover:text-brand-ink"
               to={`/professionals/${encodeURIComponent(owner.profileId)}`}
             >
               {owner.displayName}
@@ -287,7 +287,7 @@ function OwnerCard({ owner }: { owner: PublicOwnerDetailInfo }) {
             <div className="flex items-center gap-2">
               <Globe aria-hidden="true" className="size-4 shrink-0 text-zinc-400" />
               <a
-                className="truncate text-emerald-700 hover:text-emerald-800"
+                className="truncate text-brand-ink hover:text-brand-ink"
                 href={owner.website}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -300,7 +300,7 @@ function OwnerCard({ owner }: { owner: PublicOwnerDetailInfo }) {
             <div className="flex items-center gap-2">
               <Link2 aria-hidden="true" className="size-4 shrink-0 text-zinc-400" />
               <a
-                className="truncate text-emerald-700 hover:text-emerald-800"
+                className="truncate text-brand-ink hover:text-brand-ink"
                 href={owner.linkedinUrl}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -322,7 +322,7 @@ function OwnerCard({ owner }: { owner: PublicOwnerDetailInfo }) {
               {owner.specialties.map((s) => (
                 <span
                   key={s}
-                  className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
+                  className="rounded-full border border-brand-line bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-ink"
                 >
                   {s}
                 </span>
@@ -333,7 +333,7 @@ function OwnerCard({ owner }: { owner: PublicOwnerDetailInfo }) {
 
         {/* View profile CTA */}
         <Link
-          className="mt-4 inline-flex w-full min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="mt-4 inline-flex w-full min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
           to={`/professionals/${encodeURIComponent(owner.profileId)}`}
         >
           View profile

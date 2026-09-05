@@ -23,7 +23,7 @@ export function CreateProjectPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">
+        <p className="text-sm font-semibold text-brand-ink">
           Professional workspace
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-zinc-950 sm:text-3xl">

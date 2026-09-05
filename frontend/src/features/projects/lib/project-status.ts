@@ -85,7 +85,7 @@ export const PROJECT_STATUS_BADGES: Record<ProjectStatus, StatusBadgeConfig> = {
     label: "Draft",
   },
   PUBLISHED: {
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "border-brand-line bg-brand-soft text-brand-ink",
     icon: Eye,
     label: "Published",
   },

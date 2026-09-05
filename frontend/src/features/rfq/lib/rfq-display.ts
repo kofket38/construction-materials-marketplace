@@ -12,7 +12,7 @@ export function formatRfqStatus(status: RfqStatus): string {
 
 export function rfqStatusColor(status: RfqStatus): string {
   switch (status) {
-    case "OPEN": return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "OPEN": return "border-brand-line bg-brand-soft text-brand-ink";
     case "AWARDED": return "border-blue-200 bg-blue-50 text-blue-800";
     case "CANCELLED": return "border-zinc-300 bg-zinc-100 text-zinc-600";
     case "EXPIRED": return "border-amber-200 bg-amber-50 text-amber-800";
@@ -32,7 +32,7 @@ export function formatQuoteStatus(status: SupplierQuoteStatus): string {
 export function quoteStatusColor(status: SupplierQuoteStatus): string {
   switch (status) {
     case "SUBMITTED": return "border-amber-200 bg-amber-50 text-amber-800";
-    case "ACCEPTED": return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "ACCEPTED": return "border-success-line bg-success-soft text-success";
     case "REJECTED": return "border-red-200 bg-red-50 text-red-800";
     case "WITHDRAWN": return "border-zinc-300 bg-zinc-100 text-zinc-600";
     case "CLOSED": return "border-zinc-300 bg-zinc-100 text-zinc-600";

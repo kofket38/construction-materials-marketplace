@@ -65,7 +65,7 @@ export function SellerWorkspacePage({
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">
+        <p className="text-sm font-semibold text-brand-ink">
           Seller workspace
         </p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -88,7 +88,7 @@ export function SellerWorkspacePage({
             />
           </div>
           <Link
-            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover"
             to="/seller/orders?status=PENDING_PAYMENT_VERIFICATION"
           >
             <ReceiptText aria-hidden="true" className="size-4" />
@@ -122,7 +122,7 @@ export function SellerWorkspacePage({
           <div className="flex items-center gap-3">
             <Settings
               aria-hidden="true"
-              className="size-5 text-emerald-700"
+              className="size-5 text-brand-ink"
             />
             <h2
               className="text-xl font-semibold text-zinc-950"
@@ -154,7 +154,7 @@ function WorkspaceMetric({
 }) {
   return (
     <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
-      <Icon aria-hidden="true" className="size-5 text-emerald-700" />
+      <Icon aria-hidden="true" className="size-5 text-brand-ink" />
       <p className="mt-4 text-sm text-zinc-600">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-zinc-950">{value}</p>
     </div>

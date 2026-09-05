@@ -20,6 +20,21 @@ export interface ProductBrand {
   name: string;
 }
 
+/**
+ * A row of the normalized `product_images` table.
+ *
+ * `Product.imageUrl` is the backend's projection of whichever record has
+ * `isPrimary`, so a list response already carries the correct primary image and
+ * only the detail gallery needs the full set.
+ */
+export interface ProductImageRecord {
+  id: string;
+  productId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
 export interface ProductInventory {
   city: string;
   deliveryAvailable: boolean;

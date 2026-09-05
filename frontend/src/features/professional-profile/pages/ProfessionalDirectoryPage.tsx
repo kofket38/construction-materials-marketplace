@@ -149,7 +149,7 @@ export function ProfessionalDirectoryPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Professional marketplace
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -182,7 +182,7 @@ export function ProfessionalDirectoryPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={search}
             key={search}
             name="search"
@@ -194,7 +194,7 @@ export function ProfessionalDirectoryPage() {
         <label>
           <span className="sr-only">Profession</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={profession}
             key={profession}
             name="profession"
@@ -206,7 +206,7 @@ export function ProfessionalDirectoryPage() {
         <label>
           <span className="sr-only">Specialty</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={specialty}
             key={specialty}
             name="specialty"
@@ -218,7 +218,7 @@ export function ProfessionalDirectoryPage() {
         <label>
           <span className="sr-only">City</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={city}
             key={city}
             name="city"
@@ -230,7 +230,7 @@ export function ProfessionalDirectoryPage() {
         <label>
           <span className="sr-only">Sort professionals</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(event) => {
               const value = event.target.value as SortValue;
               updateSearchParams({
@@ -275,7 +275,7 @@ export function ProfessionalDirectoryPage() {
         <DirectoryStatus>
           <LoaderCircle
             aria-hidden="true"
-            className="size-6 animate-spin text-emerald-700"
+            className="size-6 animate-spin text-brand-ink"
           />
           <p>Loading professionals...</p>
         </DirectoryStatus>
@@ -304,7 +304,7 @@ export function ProfessionalDirectoryPage() {
         ) : directoryQuery.data.totalPages > 0 &&
           directoryQuery.data.currentPage > directoryQuery.data.totalPages ? (
           <DirectoryStatus>
-            <Users aria-hidden="true" className="size-9 text-emerald-700" strokeWidth={1.6} />
+            <Users aria-hidden="true" className="size-9 text-brand-ink" strokeWidth={1.6} />
             <div className="text-center">
               <h2 className="font-semibold text-zinc-950">
                 This page is out of range
@@ -316,7 +316,7 @@ export function ProfessionalDirectoryPage() {
               </p>
             </div>
             <button
-              className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
               onClick={() => updateSearchParams({ page: undefined })}
               type="button"
             >
@@ -326,7 +326,7 @@ export function ProfessionalDirectoryPage() {
         ) : directoryQuery.data.professionals.length === 0 ? (
         hasActiveFilters ? (
           <DirectoryStatus>
-            <Users aria-hidden="true" className="size-9 text-emerald-700" strokeWidth={1.6} />
+            <Users aria-hidden="true" className="size-9 text-brand-ink" strokeWidth={1.6} />
             <div className="text-center">
               <h2 className="font-semibold text-zinc-950">
                 No professionals match your search
@@ -336,7 +336,7 @@ export function ProfessionalDirectoryPage() {
               </p>
             </div>
             <button
-              className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
               onClick={clearFilters}
               type="button"
             >
@@ -346,7 +346,7 @@ export function ProfessionalDirectoryPage() {
           </DirectoryStatus>
         ) : (
           <DirectoryStatus>
-            <Users aria-hidden="true" className="size-9 text-emerald-700" strokeWidth={1.6} />
+            <Users aria-hidden="true" className="size-9 text-brand-ink" strokeWidth={1.6} />
             <div className="text-center">
               <h2 className="font-semibold text-zinc-950">
                 No professionals are available yet

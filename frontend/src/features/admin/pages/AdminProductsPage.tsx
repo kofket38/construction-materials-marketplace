@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Boxes,
   LoaderCircle,
-  PackageOpen,
   Search,
   Trash2,
 } from "lucide-react";
@@ -22,6 +21,7 @@ import {
 import { AdminPaginationBar } from "@/features/admin/components/AdminPagination";
 import { formatAdminDate } from "@/features/admin/lib/admin-display";
 import { getMarketplaceCategories } from "@/features/marketplace/api/marketplace.api";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 
@@ -76,7 +76,7 @@ export function AdminProductsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Administration</p>
+          <p className="text-sm font-semibold text-brand-ink">Administration</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">Products</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
             Browse and moderate the product catalog.
@@ -102,7 +102,7 @@ export function AdminProductsPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search name, description, seller"
             type="search"
@@ -112,7 +112,7 @@ export function AdminProductsPage() {
         <label>
           <span className="sr-only">Filter by category</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}
             value={categoryId}
           >
@@ -142,7 +142,7 @@ export function AdminProductsPage() {
       {/* Content */}
       {productsQuery.isPending ? (
         <div className="flex min-h-64 items-center justify-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-emerald-700" />
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-brand-ink" />
         </div>
       ) : productsQuery.isError ? (
         <div className="mt-6 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -175,16 +175,15 @@ export function AdminProductsPage() {
                   <tr className="hover:bg-zinc-50" key={product.id}>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 text-zinc-400">
-                          {product.imageUrl ? (
-                            <img
-                              alt=""
-                              className="size-full object-cover"
-                              src={product.imageUrl}
-                            />
-                          ) : (
-                            <PackageOpen aria-hidden="true" className="size-4" />
-                          )}
+                        <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200 bg-sunken">
+                          <ProductImage
+                            categoryName={product.category.name}
+                            decorative
+                            fit="cover"
+                            imageUrl={product.imageUrl}
+                            name={product.name}
+                            size="xs"
+                          />
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-zinc-950 line-clamp-1">{product.name}</p>
@@ -259,7 +258,7 @@ function DeleteConfirmDialog({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/45 px-4"
       onMouseDown={(e) => { if (e.currentTarget === e.target && !isLoading) onCancel(); }}
     >
       <div className="w-full max-w-sm rounded-md border border-zinc-200 bg-white p-6 shadow-xl">
@@ -277,7 +276,7 @@ function DeleteConfirmDialog({
             Cancel
           </button>
           <button
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-danger-solid px-4 py-2 text-sm font-semibold text-on-solid hover:bg-danger-solid-hover disabled:opacity-60"
             disabled={isLoading}
             onClick={onConfirm}
             type="button"

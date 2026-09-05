@@ -5,7 +5,7 @@ export function NotFoundPage() {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
       <section>
-        <p className="text-sm font-semibold text-emerald-700">404</p>
+        <p className="text-sm font-semibold text-brand-ink">404</p>
         <h1 className="mt-2 text-3xl font-semibold">Page not found</h1>
         <p className="mt-3 text-base text-zinc-600">
           The requested page does not exist.

@@ -94,7 +94,7 @@ export function PublicProjectsPage() {
       {/* Page header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Project marketplace
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -126,7 +126,7 @@ export function PublicProjectsPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={search}
             key={search}
             name="search"
@@ -138,7 +138,7 @@ export function PublicProjectsPage() {
         <label>
           <span className="sr-only">Project type</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={projectType}
             key={projectType}
             name="projectType"
@@ -150,7 +150,7 @@ export function PublicProjectsPage() {
         <label>
           <span className="sr-only">Location</span>
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             defaultValue={location}
             key={location}
             name="location"
@@ -186,7 +186,7 @@ export function PublicProjectsPage() {
         <ProjectsStatus>
           <LoaderCircle
             aria-hidden="true"
-            className="size-6 animate-spin text-emerald-700"
+            className="size-6 animate-spin text-brand-ink"
           />
           <p>Loading projects...</p>
         </ProjectsStatus>
@@ -221,7 +221,7 @@ export function PublicProjectsPage() {
         <ProjectsStatus>
           <FolderKanban
             aria-hidden="true"
-            className="size-9 text-emerald-700"
+            className="size-9 text-brand-ink"
             strokeWidth={1.6}
           />
           <div className="text-center">
@@ -247,7 +247,7 @@ export function PublicProjectsPage() {
         <ProjectsStatus>
           <FolderKanban
             aria-hidden="true"
-            className="size-9 text-emerald-700"
+            className="size-9 text-brand-ink"
             strokeWidth={1.6}
           />
           <div className="text-center">

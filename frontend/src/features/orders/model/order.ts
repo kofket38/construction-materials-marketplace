@@ -1,3 +1,5 @@
+import type { LinkedProjectSummary } from "@/features/projects/api/projects.api";
+
 export type OrderStatus =
   | "PENDING_PAYMENT"
   | "PENDING_PAYMENT_VERIFICATION"
@@ -45,6 +47,12 @@ export interface CustomerOrderItem {
 export interface CustomerOrder {
   id: string;
   customerId: string;
+  /**
+   * The professional project this order was placed for, present on the detail
+   * read only and filled in for its owner alone. Absent on list results, and
+   * null whenever the order is standalone or the reader does not own it.
+   */
+  project?: LinkedProjectSummary | null;
   status: OrderStatus;
   paymentMethod?: OrderPaymentMethod;
   totalAmount: string;

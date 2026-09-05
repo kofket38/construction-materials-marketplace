@@ -9,7 +9,7 @@ const statusClasses = {
   CONFIRMED: "border-sky-200 bg-sky-50 text-sky-800",
   PROCESSING: "border-blue-200 bg-blue-50 text-blue-800",
   SHIPPED: "border-violet-200 bg-violet-50 text-violet-800",
-  DELIVERED: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  DELIVERED: "border-success-line bg-success-soft text-success",
   COMPLETED: "border-teal-200 bg-teal-50 text-teal-800",
   CANCELLED: "border-zinc-300 bg-zinc-100 text-zinc-700",
 } as const;

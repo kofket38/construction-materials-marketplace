@@ -174,14 +174,14 @@ function ProfileContent({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">Your account</p>
+        <p className="text-sm font-semibold text-brand-ink">Your account</p>
         <div className="mt-1 flex items-center justify-between gap-4">
           <h1 className="text-3xl font-semibold text-zinc-950">
             Professional profile
           </h1>
           {profile ? (
             <Link
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-ink hover:text-brand-ink"
               to={`/professionals/${profile.id}`}
             >
               <Globe aria-hidden="true" className="size-4" />
@@ -379,7 +379,7 @@ function EditProfileSection({
   return (
     <div className="space-y-10">
       {saveSuccess ? (
-        <div className="mt-4 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="mt-4 flex items-center gap-2 rounded-md border border-success-line bg-success-soft px-4 py-3 text-sm text-brand-ink">
           <BadgeCheck aria-hidden="true" className="size-4 shrink-0" />
           Professional profile saved successfully.
         </div>
@@ -511,7 +511,7 @@ function SpecialtiesSection({
       className="border-t border-zinc-200 pt-6"
     >
       <div className="flex items-center gap-2 pb-4">
-        <Sparkles aria-hidden="true" className="size-4 text-emerald-700" />
+        <Sparkles aria-hidden="true" className="size-4 text-brand-ink" />
         <h2
           className="text-base font-semibold text-zinc-950"
           id="specialties-heading"
@@ -547,7 +547,7 @@ function SpecialtiesSection({
 
       <div className="flex gap-2">
         <input
-          className="min-h-10 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+          className="min-h-10 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
           maxLength={150}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -581,7 +581,7 @@ function SpecialtiesSection({
       ) : null}
 
       {saveSuccess ? (
-        <div className="mt-3 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="mt-3 flex items-center gap-2 rounded-md border border-success-line bg-success-soft px-4 py-3 text-sm text-brand-ink">
           <BadgeCheck aria-hidden="true" className="size-4 shrink-0" />
           Specialties saved.
         </div>
@@ -599,7 +599,7 @@ function SpecialtiesSection({
 
       <div className="mt-4 flex justify-end">
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
           disabled={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
           type="button"
@@ -635,7 +635,7 @@ function CredentialsSection({
     >
       <div className="flex items-center justify-between gap-4 pb-4">
         <div className="flex items-center gap-2">
-          <BookOpen aria-hidden="true" className="size-4 text-emerald-700" />
+          <BookOpen aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="credentials-heading"
@@ -645,7 +645,7 @@ function CredentialsSection({
         </div>
         {!isAdding ? (
           <button
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-ink hover:text-brand-ink"
             onClick={() => setIsAdding(true)}
             type="button"
           >
@@ -747,7 +747,7 @@ function CredentialCard({
           ) : null}
           {credential.credentialUrl ? (
             <a
-              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink hover:text-brand-ink"
               href={credential.credentialUrl}
               rel="noopener noreferrer"
               target="_blank"
@@ -1014,7 +1014,7 @@ function CredentialForm({
             Cancel
           </button>
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
             disabled={isSaving}
             type="submit"
           >
@@ -1067,7 +1067,7 @@ function ProfileForm({
       {/* Identity */}
       <section aria-labelledby="identity-heading">
         <div className="flex items-center gap-2 pb-4">
-          <User aria-hidden="true" className="size-4 text-emerald-700" />
+          <User aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="identity-heading"
@@ -1172,7 +1172,7 @@ function ProfileForm({
       {/* Professional info */}
       <section aria-labelledby="professional-info-heading">
         <div className="flex items-center gap-2 border-t border-zinc-200 pb-4 pt-6">
-          <Briefcase aria-hidden="true" className="size-4 text-emerald-700" />
+          <Briefcase aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="professional-info-heading"
@@ -1229,7 +1229,7 @@ function ProfileForm({
       {/* Location */}
       <section aria-labelledby="location-heading">
         <div className="flex items-center gap-2 border-t border-zinc-200 pb-4 pt-6">
-          <MapPin aria-hidden="true" className="size-4 text-emerald-700" />
+          <MapPin aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="location-heading"
@@ -1273,7 +1273,7 @@ function ProfileForm({
       {/* Contact & links */}
       <section aria-labelledby="contact-heading">
         <div className="flex items-center gap-2 border-t border-zinc-200 pb-4 pt-6">
-          <Mail aria-hidden="true" className="size-4 text-emerald-700" />
+          <Mail aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="contact-heading"
@@ -1352,7 +1352,7 @@ function ProfileForm({
           <p className="text-sm text-zinc-500">You have unsaved changes.</p>
         ) : null}
         <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}
           type="submit"
         >
@@ -1429,9 +1429,9 @@ function Field({
 function inputClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

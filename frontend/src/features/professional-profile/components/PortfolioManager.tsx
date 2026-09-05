@@ -111,7 +111,7 @@ export function PortfolioManagerSection({
     >
       <div className="flex items-center justify-between gap-4 pb-4">
         <div className="flex items-center gap-2">
-          <Images aria-hidden="true" className="size-4 text-emerald-700" />
+          <Images aria-hidden="true" className="size-4 text-brand-ink" />
           <h2
             className="text-base font-semibold text-zinc-950"
             id="portfolio-heading"
@@ -121,7 +121,7 @@ export function PortfolioManagerSection({
         </div>
         {!isAdding && editingId === null ? (
           <button
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-ink hover:text-brand-ink"
             onClick={() => setIsAdding(true)}
             type="button"
           >
@@ -232,7 +232,7 @@ function PortfolioItemCard({
               Position {item.displayOrder}
             </span>
             {item.projectType ? (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="rounded-full border border-brand-line bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-ink">
                 {item.projectType}
               </span>
             ) : null}
@@ -617,7 +617,7 @@ function PortfolioItemForm({
             Cancel
           </button>
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
             disabled={isSaving}
             type="submit"
           >
@@ -720,10 +720,10 @@ function Field({
 function inputClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }
 

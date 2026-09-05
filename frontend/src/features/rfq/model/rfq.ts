@@ -1,3 +1,5 @@
+import type { LinkedProjectSummary } from "@/features/projects/api/projects.api";
+
 export type RfqStatus = "OPEN" | "AWARDED" | "CANCELLED" | "EXPIRED";
 
 export type SupplierQuoteStatus =
@@ -124,6 +126,12 @@ export interface RequestForQuote {
    * standalone. Only PROFESSIONAL accounts can set it.
    */
   projectId: string | null;
+  /**
+   * The attached project itself, present on detail reads only and filled in for
+   * its owner alone. Absent on list results, and null whenever the request is
+   * standalone or the reader does not own the project.
+   */
+  project?: LinkedProjectSummary | null;
   title: string;
   deliveryLocation: string;
   notes: string | null;

@@ -138,7 +138,7 @@ export function CreateRfqPage() {
       </Link>
 
       <div className="mt-4 border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">New request</p>
+        <p className="text-sm font-semibold text-brand-ink">New request</p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
           Create RFQ
         </h1>
@@ -221,7 +221,7 @@ export function CreateRfqPage() {
             </h2>
             {items.length < 20 ? (
               <button
-                className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-ink hover:text-brand-ink"
                 disabled={createMutation.isPending}
                 onClick={addItem}
                 type="button"
@@ -268,7 +268,7 @@ export function CreateRfqPage() {
             Cancel
           </Link>
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover disabled:opacity-60"
             disabled={createMutation.isPending}
             type="submit"
           >
@@ -470,9 +470,9 @@ function FieldGroup({
 function fieldClass(hasError: boolean): string {
   return [
     "min-h-11 w-full rounded-md border px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-emerald-700/15 disabled:opacity-60",
+    "focus:ring-2 focus:ring-brand-ring/15 disabled:opacity-60",
     hasError
       ? "border-red-400 focus:border-red-500"
-      : "border-zinc-300 focus:border-emerald-700",
+      : "border-zinc-300 focus:border-brand",
   ].join(" ");
 }

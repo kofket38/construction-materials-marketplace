@@ -88,7 +88,7 @@ function DashboardContent({ userName }: { userName: string }) {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       {/* Page header */}
       <div className="border-b border-zinc-200 pb-6">
-        <p className="text-sm font-semibold text-emerald-700">
+        <p className="text-sm font-semibold text-brand-ink">
           Professional workspace
         </p>
         <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -114,7 +114,7 @@ function DashboardContent({ userName }: { userName: string }) {
 function EmptyProfileState() {
   return (
     <div className="mt-10 flex flex-col items-center justify-center rounded-md border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+      <span className="flex size-14 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
         <User aria-hidden="true" className="size-7" strokeWidth={1.6} />
       </span>
       <h2 className="mt-4 text-xl font-semibold text-zinc-950">
@@ -125,7 +125,7 @@ function EmptyProfileState() {
         and specialties to the CMM community.
       </p>
       <Link
-        className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
         to="/profile/professional"
       >
         <Plus aria-hidden="true" className="size-4" />
@@ -218,7 +218,7 @@ function ProfileSummaryCard({
         <span
           className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
             profile.visibility === "PUBLIC"
-              ? "bg-emerald-50 text-emerald-700"
+              ? "bg-brand-soft text-brand-ink"
               : "bg-zinc-100 text-zinc-600"
           }`}
         >
@@ -241,7 +241,7 @@ function ProfileSummaryCard({
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
             <div
               aria-label={`${completion.percent}% complete`}
-              className="h-full rounded-full bg-emerald-600 transition-all"
+              className="h-full rounded-full bg-brand transition-all"
               role="progressbar"
               aria-valuenow={completion.percent}
               aria-valuemin={0}
@@ -262,7 +262,7 @@ function ProfileSummaryCard({
           View profile
         </Link>
         <Link
-          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800"
+          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-on-brand hover:bg-brand-hover"
           to="/profile/professional"
         >
           <Pencil aria-hidden="true" className="size-3.5" />
@@ -288,7 +288,7 @@ function ProfessionalOverviewSection({
       >
         <LayoutDashboard
           aria-hidden="true"
-          className="size-5 text-emerald-700"
+          className="size-5 text-brand-ink"
         />
         Professional overview
       </h2>
@@ -365,7 +365,7 @@ function ProfessionalOverviewSection({
             {profile.specialties.map((s) => (
               <span
                 key={s.id}
-                className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+                className="rounded-full border border-brand-line bg-brand-soft px-3 py-1 text-xs font-medium text-brand-ink"
               >
                 {s.name}
               </span>
@@ -403,7 +403,7 @@ function ProfessionalOverviewSection({
           </ul>
           {profile.credentials.length > 3 ? (
             <Link
-              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink hover:text-brand-ink"
               to="/profile/professional"
             >
               View all {profile.credentials.length} credentials
@@ -500,10 +500,10 @@ function QuickActionCard({
 }) {
   return (
     <Link
-      className="flex items-center gap-4 rounded-md border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+      className="flex items-center gap-4 rounded-md border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-brand-line hover:bg-brand-soft-hover/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
       to={to}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
         <Icon aria-hidden="true" className="size-5" />
       </span>
       <div className="min-w-0">
@@ -616,9 +616,9 @@ function ProfileCompletionCard({
           <div
             className={`h-full rounded-full transition-all ${
               completion.percent === 100
-                ? "bg-emerald-600"
+                ? "bg-success-solid"
                 : completion.percent >= 60
-                  ? "bg-emerald-500"
+                  ? "bg-brand"
                   : "bg-amber-500"
             }`}
             role="progressbar"
@@ -639,7 +639,7 @@ function ProfileCompletionCard({
             {done ? (
               <CheckCircle2
                 aria-hidden="true"
-                className="size-4 shrink-0 text-emerald-600"
+                className="size-4 shrink-0 text-brand-ink"
               />
             ) : (
               <Circle
@@ -657,7 +657,7 @@ function ProfileCompletionCard({
       {completion.percent < 100 ? (
         <div className="border-t border-zinc-100 p-3">
           <Link
-            className="inline-flex w-full min-h-9 items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800"
+            className="inline-flex w-full min-h-9 items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-on-brand hover:bg-brand-hover"
             to="/profile/professional"
           >
             <Pencil aria-hidden="true" className="size-3.5" />
@@ -666,7 +666,7 @@ function ProfileCompletionCard({
         </div>
       ) : (
         <div className="border-t border-zinc-100 p-4 text-center">
-          <span className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-700">
+          <span className="flex items-center justify-center gap-2 text-sm font-semibold text-brand-ink">
             <BadgeCheck aria-hidden="true" className="size-4" />
             Profile complete!
           </span>

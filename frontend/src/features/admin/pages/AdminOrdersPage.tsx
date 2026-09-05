@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   LoaderCircle,
-  PackageOpen,
   Search,
   ShoppingBag,
   X,
@@ -24,6 +23,7 @@ import {
 } from "@/features/admin/api/admin.api";
 import { AdminPaginationBar } from "@/features/admin/components/AdminPagination";
 import { formatAdminDate, formatAdminDateTime } from "@/features/admin/lib/admin-display";
+import { ProductImage } from "@/features/products/components/ProductImage";
 import { formatProductPrice } from "@/features/products/lib/product-display";
 import { formatOrderNumber } from "@/features/orders/lib/order-display";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
@@ -129,7 +129,7 @@ export function AdminOrdersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Administration</p>
+          <p className="text-sm font-semibold text-brand-ink">Administration</p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">Orders</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
             Inspect and manage all marketplace orders.
@@ -155,7 +155,7 @@ export function AdminOrdersPage() {
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
           />
           <input
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Customer name or email"
             type="search"
@@ -165,7 +165,7 @@ export function AdminOrdersPage() {
         <label>
           <span className="sr-only">Filter by order status</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) =>
               handleFilterChange(e.target.value as AdminOrderStatus | "", paymentStatus)
             }
@@ -179,7 +179,7 @@ export function AdminOrdersPage() {
         <label>
           <span className="sr-only">Filter by payment status</span>
           <select
-            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15"
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
             onChange={(e) =>
               handleFilterChange(status, e.target.value as AdminPaymentStatus | "")
             }
@@ -202,7 +202,7 @@ export function AdminOrdersPage() {
       {/* Table */}
       {ordersQuery.isPending ? (
         <div className="flex min-h-64 items-center justify-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-emerald-700" />
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-brand-ink" />
         </div>
       ) : ordersQuery.isError ? (
         <div className="mt-6 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -314,7 +314,7 @@ export function AdminOrdersPage() {
 function PaymentStatusPill({ status }: { status: string }) {
   const classes: Record<string, string> = {
     PENDING_VERIFICATION: "border-amber-200 bg-amber-50 text-amber-700",
-    VERIFIED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    VERIFIED: "border-brand-line bg-brand-soft text-brand-ink",
     REJECTED: "border-red-200 bg-red-50 text-red-700",
   };
   const labels: Record<string, string> = {
@@ -348,7 +348,7 @@ function OrderDetailPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-zinc-950/40"
+      className="fixed inset-0 z-50 flex justify-end bg-scrim/40"
       onMouseDown={(e) => {
         if (e.currentTarget === e.target && !isUpdating) onClose();
       }}
@@ -357,7 +357,7 @@ function OrderDetailPanel({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">Order detail</p>
+            <p className="text-sm font-semibold text-brand-ink">Order detail</p>
             <h2 className="mt-0.5 font-mono text-base font-semibold text-zinc-950">
               {formatOrderNumber(order.id)}
             </h2>
@@ -495,12 +495,14 @@ function OrderDetailPanel({
             <div className="mt-2 divide-y divide-zinc-200 rounded-md border border-zinc-200">
               {order.items.map((item) => (
                 <div className="flex items-start gap-3 p-3" key={item.id}>
-                  <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 text-zinc-400">
-                    {item.productImageUrl ? (
-                      <img alt="" className="size-full object-cover" src={item.productImageUrl} />
-                    ) : (
-                      <PackageOpen aria-hidden="true" className="size-4" />
-                    )}
+                  <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200 bg-sunken">
+                    <ProductImage
+                      decorative
+                      fit="cover"
+                      imageUrl={item.productImageUrl}
+                      name={item.productName}
+                      size="xs"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-zinc-950 line-clamp-1">
@@ -544,7 +546,7 @@ function AdminProofBlock({ filename }: { filename: string }) {
       {objectUrl ? (
         <div className="border-t border-zinc-200 px-3 py-2">
           <a
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            className="text-xs font-semibold text-brand-ink hover:text-brand-ink"
             download={filename}
             href={objectUrl}
           >

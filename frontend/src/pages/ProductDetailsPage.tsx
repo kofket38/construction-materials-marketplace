@@ -439,10 +439,10 @@ function ProductNotFoundState() {
       <section>
         <PackageX
           aria-hidden="true"
-          className="size-9 text-emerald-700"
+          className="size-9 text-brand-ink"
           strokeWidth={1.6}
         />
-        <p className="mt-5 text-sm font-semibold text-emerald-700">404</p>
+        <p className="mt-5 text-sm font-semibold text-brand-ink">404</p>
         <h1 className="mt-2 text-3xl font-semibold text-zinc-950">
           Product not found
         </h1>

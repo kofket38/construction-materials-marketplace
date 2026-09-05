@@ -25,7 +25,7 @@ export function CheckoutProjectSection({ disabled }: { disabled: boolean }) {
       className="border-b border-zinc-200 py-8"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-ink">
           <FolderKanban aria-hidden="true" className="size-5" />
         </span>
         <div>

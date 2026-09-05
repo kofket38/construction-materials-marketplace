@@ -62,7 +62,7 @@ export function ProfessionalCard({
         <div className="mt-4 flex flex-wrap gap-2">
           {professional.specialties.map((specialty) => (
             <span
-              className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+              className="rounded-full border border-brand-line bg-brand-soft px-3 py-1 text-xs font-medium text-brand-ink"
               key={specialty}
             >
               {specialty}

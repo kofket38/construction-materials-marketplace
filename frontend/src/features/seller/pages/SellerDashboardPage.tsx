@@ -71,7 +71,7 @@ export function SellerDashboardPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-ink">
             Seller workspace
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
@@ -113,7 +113,7 @@ export function SellerDashboardPage() {
             Recent orders
           </h2>
           <Link
-            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            className="text-sm font-semibold text-brand-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to="/seller/orders"
           >
             View all
@@ -141,7 +141,7 @@ export function SellerDashboardPage() {
                   <tr key={order.id}>
                     <td className="px-3 py-4 font-semibold text-zinc-950">
                       <Link
-                        className="hover:text-emerald-700"
+                        className="hover:text-brand-ink"
                         to={`/seller/orders/${encodeURIComponent(order.id)}`}
                       >
                         {formatOrderNumber(order.id)}
@@ -206,7 +206,7 @@ function createDashboardCards(
     },
     {
       icon: ClipboardCheck,
-      iconTone: "bg-emerald-50 text-emerald-700",
+      iconTone: "bg-brand-soft text-brand-ink",
       label: "Delivered",
       value: dashboard.delivered,
     },
@@ -218,7 +218,7 @@ function createDashboardCards(
     },
     {
       icon: CircleDollarSign,
-      iconTone: "bg-emerald-50 text-emerald-700",
+      iconTone: "bg-brand-soft text-brand-ink",
       label: "Revenue",
       value: formatProductPrice(dashboard.totalRevenue),
     },

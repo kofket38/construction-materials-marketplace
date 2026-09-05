@@ -11,7 +11,7 @@ const statusClasses: Record<OrderStatus, string> = {
   PROCESSING: "border-sky-200 bg-sky-50 text-sky-800",
   READY_FOR_DELIVERY: "border-indigo-200 bg-indigo-50 text-indigo-800",
   OUT_FOR_DELIVERY: "border-violet-200 bg-violet-50 text-violet-800",
-  DELIVERED: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  DELIVERED: "border-success-line bg-success-soft text-success",
   COMPLETED: "border-teal-200 bg-teal-50 text-teal-800",
   REJECTED: "border-red-200 bg-red-50 text-red-800",
   CANCELLED: "border-zinc-300 bg-zinc-100 text-zinc-700",

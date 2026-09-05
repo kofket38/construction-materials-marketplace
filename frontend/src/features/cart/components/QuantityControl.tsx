@@ -29,7 +29,7 @@ export function QuantityControl({
     >
       <button
         aria-label="Decrease quantity"
-        className="inline-flex items-center justify-center text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex items-center justify-center text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-40"
         disabled={disabled || value <= 1}
         onClick={() => updateQuantity(value - 1)}
         title="Decrease quantity"
@@ -39,7 +39,7 @@ export function QuantityControl({
       </button>
       <input
         aria-label="Quantity"
-        className="min-w-0 border-x border-zinc-300 bg-white px-1 text-center text-sm font-semibold text-zinc-950 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-50"
+        className="min-w-0 border-x border-zinc-300 bg-white px-1 text-center text-sm font-semibold text-zinc-950 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-ring disabled:cursor-not-allowed disabled:bg-zinc-50"
         disabled={disabled}
         inputMode="numeric"
         max={safeMax}
@@ -54,7 +54,7 @@ export function QuantityControl({
       />
       <button
         aria-label="Increase quantity"
-        className="inline-flex items-center justify-center text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex items-center justify-center text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-brand-ring disabled:cursor-not-allowed disabled:opacity-40"
         disabled={disabled || value >= safeMax}
         onClick={() => updateQuantity(value + 1)}
         title="Increase quantity"
