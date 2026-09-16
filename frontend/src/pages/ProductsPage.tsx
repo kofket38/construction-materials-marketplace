@@ -12,56 +12,18 @@ import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { useMarketplaceLocationStore } from "@/features/marketplace/model/marketplace-location.store";
+import { useMarketplaceCategories } from "@/features/marketplace/model/use-marketplace-categories";
 import { getProducts } from "@/features/products/api/products.api";
 import { ProductCard } from "@/features/products/components/ProductCard";
-import type {
-  ProductSortBy,
-  ProductSortOrder,
-  ProductStockFilter,
-} from "@/features/products/model/product";
+import {
+  defaultProductSortValue,
+  parseProductSortValue,
+  productSortOptions,
+} from "@/features/products/lib/product-sort";
+import type { ProductStockFilter } from "@/features/products/model/product";
 import { getApiErrorMessage } from "@/shared/api/http-error";
 
 const PAGE_SIZE = 12;
-
-const sortOptions = [
-  {
-    label: "Newest",
-    sortBy: "newest",
-    sortOrder: "desc",
-    value: "newest-desc",
-  },
-  {
-    label: "Most popular",
-    sortBy: "popularity",
-    sortOrder: "desc",
-    value: "popularity-desc",
-  },
-  {
-    label: "Price: low to high",
-    sortBy: "price",
-    sortOrder: "asc",
-    value: "price-asc",
-  },
-  {
-    label: "Price: high to low",
-    sortBy: "price",
-    sortOrder: "desc",
-    value: "price-desc",
-  },
-  {
-    label: "Name: A to Z",
-    sortBy: "name",
-    sortOrder: "asc",
-    value: "name-asc",
-  },
-] as const satisfies ReadonlyArray<{
-  label: string;
-  sortBy: ProductSortBy;
-  sortOrder: ProductSortOrder;
-  value: string;
-}>;
-
-type SortValue = (typeof sortOptions)[number]["value"];
 
 export function ProductsPage() {
   const user = useAuthStore((state) => state.user);
@@ -76,9 +38,15 @@ export function ProductsPage() {
   const categoryId = searchParams.get("categoryId") ?? undefined;
   const page = parsePage(searchParams.get("page"));
   const stock = parseStockFilter(searchParams.get("stock"));
-  const sortValue = parseSortValue(searchParams.get("sort"));
+  const sortValue = parseProductSortValue(searchParams.get("sort"));
   const selectedSort =
-    sortOptions.find((option) => option.value === sortValue) ?? sortOptions[0];
+    productSortOptions.find((option) => option.value === sortValue) ??
+    productSortOptions[0];
+
+  // The shopfront's category selector links here with `?categoryId=…`, so the
+  // catalog needs the matching control: without it a visitor arriving from the
+  // landing page could see a filtered catalog and no way to widen it again.
+  const categoriesQuery = useMarketplaceCategories();
 
   const productsQuery = useQuery({
     queryKey: [
@@ -147,7 +115,7 @@ export function ProductsPage() {
     Boolean(categoryId) ||
     Boolean(search) ||
     Boolean(stock) ||
-    selectedSort.value !== "newest-desc";
+    selectedSort.value !== defaultProductSortValue;
 
   if (user?.role === "SELLER") {
     return <Navigate replace to="/seller/inventory" />;
@@ -190,11 +158,11 @@ export function ProductsPage() {
       </div>
 
       <form
-        className="mt-8 grid gap-3 border-y border-zinc-200 py-4 md:grid-cols-[minmax(16rem,1fr)_12rem_13rem_auto]"
+        className="mt-8 grid gap-3 border-y border-zinc-200 py-4 sm:grid-cols-2 md:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,11rem)_minmax(0,12rem)_auto]"
         onSubmit={handleSearch}
         role="search"
       >
-        <label className="relative block">
+        <label className="relative block sm:col-span-2 md:col-span-1">
           <span className="sr-only">Search products</span>
           <Search
             aria-hidden="true"
@@ -208,6 +176,41 @@ export function ProductsPage() {
             placeholder="Search materials or suppliers"
             type="search"
           />
+        </label>
+
+        <label>
+          <span className="sr-only">Material category</span>
+          <select
+            className="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand-ring/15"
+            disabled={categoriesQuery.isPending || categoriesQuery.isError}
+            onChange={(event) =>
+              updateSearchParams({
+                categoryId: event.target.value || undefined,
+                page: undefined,
+              })
+            }
+            value={categoryId ?? ""}
+          >
+            <option value="">
+              {categoriesQuery.isError
+                ? "Categories unavailable"
+                : "All categories"}
+            </option>
+            {(categoriesQuery.data ?? []).map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+            {/* A link can carry a category the list has not loaded yet; keeping
+                the incoming id as an option stops the select from silently
+                snapping back to "All categories" and dropping the filter. */}
+            {categoryId &&
+            !(categoriesQuery.data ?? []).some(
+              (category) => category.id === categoryId,
+            ) ? (
+              <option value={categoryId}>Selected category</option>
+            ) : null}
+          </select>
         </label>
 
         <label>
@@ -236,14 +239,14 @@ export function ProductsPage() {
               updateSearchParams({
                 page: undefined,
                 sort:
-                  event.target.value === "newest-desc"
+                  event.target.value === defaultProductSortValue
                     ? undefined
                     : event.target.value,
               })
             }
             value={selectedSort.value}
           >
-            {sortOptions.map((option) => (
+            {productSortOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -251,7 +254,7 @@ export function ProductsPage() {
           </select>
         </label>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:col-span-2 md:col-span-1">
           <button
             className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 md:flex-none"
             type="submit"
@@ -319,7 +322,7 @@ export function ProductsPage() {
               No products found
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              Try a different search, availability filter, or city.
+              Try a different search, category, availability filter, or city.
             </p>
           </div>
           {hasActiveFilters ? (
@@ -409,10 +412,4 @@ function parseStockFilter(value: string | null): ProductStockFilter | undefined 
   return value === "in_stock" || value === "out_of_stock"
     ? value
     : undefined;
-}
-
-function parseSortValue(value: string | null): SortValue {
-  return sortOptions.some((option) => option.value === value)
-    ? (value as SortValue)
-    : "newest-desc";
 }

@@ -18,6 +18,17 @@ export const DARK_CLASS_NAME = "dark";
 export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
+/**
+ * What a first-time visitor sees. CMM's identity is the dark industrial site
+ * palette — charcoal surfaces with engineering yellow — so dark is the product's
+ * appearance rather than an opt-in, and "system" stays available for anyone who
+ * would rather follow their OS.
+ *
+ * The pre-paint script in `index.html` hard-codes the same default. Change both
+ * together or a first paint will flash the wrong theme.
+ */
+export const DEFAULT_THEME_PREFERENCE: ThemePreference = "dark";
+
 /** Order the toggle cycles through, matching the order shown in its menu. */
 export const themePreferences: readonly ThemePreference[] = [
   "light",
@@ -87,14 +98,14 @@ export function prefersDarkScheme(): boolean {
 
 function readStoredPreference(): ThemePreference {
   if (typeof window === "undefined") {
-    return "system";
+    return DEFAULT_THEME_PREFERENCE;
   }
 
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemePreference(stored) ? stored : "system";
+    return isThemePreference(stored) ? stored : DEFAULT_THEME_PREFERENCE;
   } catch {
-    return "system";
+    return DEFAULT_THEME_PREFERENCE;
   }
 }
 

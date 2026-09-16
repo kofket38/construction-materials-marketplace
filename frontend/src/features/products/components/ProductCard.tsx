@@ -42,10 +42,13 @@ export function ProductCard({ product }: ProductCardProps) {
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-xs font-semibold uppercase text-brand-ink">
+        {/* `break-anywhere` on both the category and the name: seeded catalogs
+            can carry an unbroken identifier-shaped string, and a word with no
+            break opportunity is exactly what pushes a card past the viewport. */}
+        <p className="break-anywhere text-xs font-semibold uppercase text-brand-ink">
           {product.category.name}
         </p>
-        <h2 className="mt-2 line-clamp-2 text-lg font-semibold leading-6 text-zinc-950">
+        <h2 className="mt-2 line-clamp-2 break-anywhere text-lg font-semibold leading-6 text-zinc-950">
           <Link
             className="transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
             to={`/products/${product.id}`}

@@ -7,6 +7,7 @@ import { PublicLayout } from "@/shared/layouts/PublicLayout";
 import { RootLayout } from "@/shared/layouts/RootLayout";
 
 import { LoginPage } from "@/pages/LoginPage";
+import { HomePage } from "@/pages/HomePage";
 import { CartPage } from "@/pages/CartPage";
 import { BankTransferDetailsPage } from "@/features/checkout/pages/BankTransferDetailsPage";
 import { CheckoutPage } from "@/features/checkout/pages/CheckoutPage";
@@ -61,9 +62,12 @@ export const appRouter = createBrowserRouter([
         element: <PublicLayout />,
 
         children: [
+          // `/` is the marketplace shopfront; the catalog keeps its own route at
+          // `/products`, so every existing catalog link and query string works
+          // exactly as before.
           {
             index: true,
-            element: <ProductsPage />,
+            element: <HomePage />,
           },
 
           {

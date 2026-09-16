@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Building2,
   ClipboardList,
   CreditCard,
   FileText,
@@ -38,6 +37,7 @@ import {
 } from "@/features/cart/model/cart.store";
 import { MarketplaceCityButton } from "@/features/marketplace/components/MarketplaceCityButton";
 import { MarketplaceCityDialog } from "@/features/marketplace/components/MarketplaceCityDialog";
+import { CmmLogo, CmmLogoLink } from "@/shared/brand/CmmLogo";
 import { ThemeToggle } from "@/shared/theme/ThemeToggle";
 
 const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
@@ -83,25 +83,16 @@ export function PublicLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas text-zinc-950">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="flex min-h-screen flex-col bg-canvas text-zinc-950">
+      {/* Sticky so the cart, city and workspace controls stay one tap away down
+          a long catalog. `z-30` sits under the header's own dropdown panels
+          (`z-40`) and under the city dialog. */}
+      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white">
         {/* Tightened base-scale gaps/padding keep the authenticated customer
             control cluster inside a 390px viewport without horizontal
             overflow; larger breakpoints keep the original spacing. */}
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-3 px-3 sm:gap-5 sm:px-6 lg:px-8">
-          <Link
-            aria-label="Construction Materials Marketplace home"
-            className="inline-flex shrink-0 items-center gap-3 font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-ring"
-            to="/"
-          >
-            <span className="flex size-9 items-center justify-center rounded-md bg-brand text-on-brand">
-              <Building2 aria-hidden="true" className="size-5" />
-            </span>
-            <span className="hidden md:inline">
-              Construction Materials Marketplace
-            </span>
-            <span className="md:hidden">CMM</span>
-          </Link>
+          <CmmLogoLink className="shrink-0" size="sm" variant="full" />
 
           <nav
             aria-label="Primary navigation"
@@ -456,9 +447,86 @@ export function PublicLayout() {
           </div>
         </div>
       </header>
-      <Outlet />
+      {/* Pages own their own `<main>`, so this is a plain growth wrapper that
+          pins the footer to the bottom of short pages. */}
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <PublicFooter />
       <MarketplaceCityDialog />
     </div>
+  );
+}
+
+/**
+ * Site footer for every public page.
+ *
+ * Deliberately limited to destinations that exist and facts the application can
+ * stand behind: the four public sections, the account entry points, and what
+ * CMM actually is. No counts, no delivery promises, no social accounts — an
+ * invented statistic in a footer is still an invented statistic.
+ */
+function PublicFooter() {
+  return (
+    <footer className="mt-16 border-t border-zinc-200 bg-white">
+      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <div className="sm:col-span-2 lg:col-span-2">
+          <CmmLogo size="sm" variant="full" />
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-600">
+            CMM connects construction buyers with material suppliers across
+            Ethiopian cities. Compare prices and stock, request quotations for
+            bulk work, and order for delivery to your site.
+          </p>
+        </div>
+        <FooterColumn title="Marketplace">
+          <FooterLink label="Catalog" to="/products" />
+          <FooterLink label="Suppliers" to="/stores" />
+          <FooterLink label="Professionals" to="/professionals" />
+          <FooterLink label="Projects" to="/projects" />
+        </FooterColumn>
+        <FooterColumn title="Your account">
+          <FooterLink label="Sign in" to="/login" />
+          <FooterLink label="Create an account" to="/register" />
+          <FooterLink label="Cart" to="/cart" />
+          <FooterLink label="Wishlist" to="/wishlist" />
+        </FooterColumn>
+      </div>
+      <div className="border-t border-zinc-200">
+        <p className="mx-auto w-full max-w-7xl px-4 py-5 text-xs text-zinc-500 sm:px-6 lg:px-8">
+          © {new Date().getFullYear()} CMM — Construction Materials Marketplace.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+function FooterColumn({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <nav aria-label={title}>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        {title}
+      </h2>
+      <ul className="mt-3 space-y-2">{children}</ul>
+    </nav>
+  );
+}
+
+function FooterLink({ label, to }: { label: string; to: string }) {
+  return (
+    <li>
+      <Link
+        className="inline-flex min-h-8 items-center text-sm text-zinc-700 transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ring"
+        to={to}
+      >
+        {label}
+      </Link>
+    </li>
   );
 }
 

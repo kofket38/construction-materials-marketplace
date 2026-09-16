@@ -295,7 +295,7 @@ const brands: NamedSeed[] = [
 const products: ProductSeed[] = [
   cementProduct({
     id: "40000000-0000-4000-8000-000000000001",
-    name: "Dangote Cement 50kg",
+    name: "Cement",
     brandName: "Dangote Cement",
     price: "1280.00",
     quantity: 480,
@@ -306,7 +306,7 @@ const products: ProductSeed[] = [
   }),
   cementProduct({
     id: "40000000-0000-4000-8000-000000000002",
-    name: "Derba Cement 50kg",
+    name: "Cement",
     brandName: "Derba Cement",
     price: "1325.00",
     quantity: 360,
@@ -317,7 +317,7 @@ const products: ProductSeed[] = [
   }),
   cementProduct({
     id: "40000000-0000-4000-8000-000000000003",
-    name: "Habesha Cement 50kg",
+    name: "Cement",
     brandName: "Habesha Cement",
     price: "1295.00",
     quantity: 420,
@@ -328,7 +328,7 @@ const products: ProductSeed[] = [
   }),
   cementProduct({
     id: "40000000-0000-4000-8000-000000000004",
-    name: "Mugher Cement 50kg",
+    name: "Cement",
     brandName: "Mugher Cement",
     price: "1260.00",
     quantity: 310,
@@ -339,7 +339,7 @@ const products: ProductSeed[] = [
   }),
   cementProduct({
     id: "40000000-0000-4000-8000-000000000005",
-    name: "National Cement 50kg",
+    name: "Cement",
     brandName: "National Cement",
     price: "1305.00",
     quantity: 390,
@@ -353,7 +353,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Steel and Reinforcement",
     brandName: "Abyssinia Steel",
-    name: "Reinforcement Bar 12mm Grade 60",
+    name: "Reinforcement Bar",
     summary:
       "High-yield deformed reinforcement bar for slabs, beams, columns, and reinforced concrete foundations.",
     price: "1480.00",
@@ -376,12 +376,11 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Steel and Reinforcement",
     brandName: "Abyssinia Steel",
-    name: "Galvanized Steel Pipe 2 Inch",
+    name: "Steel Pipe",
     summary:
       "Hot-dip galvanized steel pipe for structural frames, handrails, water lines, and fabrication work.",
     price: "3850.00",
     quantity: 190,
-    imageUrl: "/images/products/galvanized-steel-pipe-2-inch.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -398,7 +397,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Masonry",
     brandName: "Ethio Block",
-    name: "Hollow Concrete Block 20cm",
+    name: "Hollow Concrete Block",
     summary:
       "Machine-vibrated hollow concrete block for external walls, partitions, and general masonry construction.",
     price: "115.00",
@@ -420,7 +419,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Tiles and Flooring",
     brandName: "Prime Ceramics",
-    name: "Porcelain Ceramic Floor Tile 60x60cm",
+    name: "Floor Tile",
     summary:
       "Low-porosity porcelain floor tile with a durable matte finish for residential and commercial interiors.",
     price: "1650.00",
@@ -440,7 +439,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Roofing",
     brandName: "Kality Metal Products",
-    name: "Corrugated Galvanized Roofing Sheet 0.35mm",
+    name: "Corrugated Roofing Sheet",
     summary:
       "Zinc-coated corrugated roofing sheet for residential, warehouse, workshop, and agricultural structures.",
     price: "2150.00",
@@ -462,7 +461,7 @@ const products: ProductSeed[] = [
     seller: 0,
     categoryName: "Aggregates",
     brandName: "Addis Aggregates",
-    name: "Washed Construction Sand 7 m3 Load",
+    name: "Construction Sand",
     summary:
       "Clean washed construction sand graded for concrete production, block work, plastering, and screed.",
     price: "18500.00",
@@ -482,7 +481,7 @@ const products: ProductSeed[] = [
     seller: 0,
     categoryName: "Aggregates",
     brandName: "Addis Aggregates",
-    name: "Crushed Gravel 20mm 7 m3 Load",
+    name: "Crushed Gravel",
     summary:
       "Washed crushed stone aggregate for structural concrete, foundations, drainage beds, and site works.",
     price: "22400.00",
@@ -502,7 +501,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Paint and Finishes",
     brandName: "Rainbow Paints",
-    name: "Interior Emulsion Paint White 20L",
+    name: "Emulsion Paint",
     summary:
       "Low-odor water-based interior emulsion paint with a washable matt finish and strong surface coverage.",
     price: "4680.00",
@@ -523,7 +522,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Electrical",
     brandName: "Ethiopian Cable",
-    name: "Copper Electrical Cable 2.5mm2 100m",
+    name: "Electrical Cable",
     summary:
       "Single-core copper building wire for socket circuits, lighting distribution, and general concealed wiring.",
     price: "7850.00",
@@ -544,7 +543,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Plumbing",
     brandName: "Nifas PVC",
-    name: "PVC Pressure Pipe 4 Inch 6m",
+    name: "PVC Pressure Pipe",
     summary:
       "Rigid PVC pressure pipe for cold-water distribution, irrigation, and buried utility installations.",
     price: "2380.00",
@@ -564,7 +563,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Steel and Reinforcement",
     brandName: "Abyssinia Steel",
-    name: "Reinforcement Bar 16mm Grade 60",
+    name: "Reinforcement Bar",
     summary:
       "Heavy deformed reinforcement bar for columns, transfer beams, retaining walls, and reinforced foundations.",
     price: "2590.00",
@@ -587,7 +586,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Steel and Reinforcement",
     brandName: "Abyssinia Steel",
-    name: "Annealed Binding Wire 25kg",
+    name: "Binding Wire",
     summary:
       "Flexible black annealed wire for tying reinforcement cages, mesh, and general site fixing work.",
     price: "3650.00",
@@ -609,7 +608,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Masonry",
     brandName: "Ethio Block",
-    name: "Hollow Concrete Block 15cm",
+    name: "Hollow Concrete Block",
     summary:
       "Machine-vibrated concrete block sized for internal partitions and non-load-bearing enclosure walls.",
     price: "92.00",
@@ -631,7 +630,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Masonry",
     brandName: "Addis Brickworks",
-    name: "Fired Clay Brick Standard Size",
+    name: "Fired Clay Brick",
     summary:
       "Kiln-fired clay masonry brick for durable wall construction, facades, garden walls, and repair work.",
     price: "38.00",
@@ -653,7 +652,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Tiles and Flooring",
     brandName: "Prime Ceramics",
-    name: "Gloss Ceramic Wall Tile 30x60cm",
+    name: "Ceramic Wall Tile",
     summary:
       "Easy-clean glazed ceramic wall tile for kitchens, bathrooms, utility rooms, and wet-area finishes.",
     price: "1420.00",
@@ -673,7 +672,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Tiles and Flooring",
     brandName: "PrimeBond",
-    name: "Cementitious Tile Adhesive 25kg",
+    name: "Cementitious Tile Adhesive",
     summary:
       "Polymer-modified cementitious adhesive for fixing ceramic and porcelain tiles to prepared floors and walls.",
     price: "1180.00",
@@ -693,7 +692,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Roofing",
     brandName: "Kality Metal Products",
-    name: "Prepainted Roofing Sheet 0.40mm",
+    name: "Prepainted Roofing Sheet",
     summary:
       "Color-coated corrugated steel roofing sheet for weather-resistant residential and light-commercial roofs.",
     price: "2980.00",
@@ -715,12 +714,11 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Roofing",
     brandName: "Kality Metal Products",
-    name: "Galvanized Roofing Ridge Cap 3m",
+    name: "Roofing Ridge Cap",
     summary:
       "Folded galvanized ridge section for closing and weatherproofing the apex of pitched sheet-metal roofs.",
     price: "980.00",
     quantity: 260,
-    imageUrl: "/images/products/galvanized-ridge-cap.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -737,7 +735,7 @@ const products: ProductSeed[] = [
     seller: 0,
     categoryName: "Aggregates",
     brandName: "Addis Aggregates",
-    name: "Crushed Stone Hardcore 40mm 7 m3 Load",
+    name: "Crushed Stone Hardcore",
     summary:
       "Well-graded crushed stone for sub-base preparation, access roads, slab foundations, and site filling.",
     price: "20800.00",
@@ -757,7 +755,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Paint and Finishes",
     brandName: "Rainbow Paints",
-    name: "Exterior Weather Shield Paint 20L",
+    name: "Exterior Paint",
     summary:
       "UV- and rain-resistant acrylic exterior paint formulated for rendered masonry, blockwork, and concrete.",
     price: "6950.00",
@@ -778,7 +776,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Paint and Finishes",
     brandName: "Rainbow Paints",
-    name: "Alkali Resistant Masonry Primer 20L",
+    name: "Masonry Primer",
     summary:
       "Penetrating masonry primer that seals porous plaster and helps finish coats resist alkaline substrates.",
     price: "5220.00",
@@ -799,7 +797,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Electrical",
     brandName: "Ethiopian Cable",
-    name: "Copper Electrical Cable 1.5mm2 100m",
+    name: "Electrical Cable",
     summary:
       "PVC-insulated single-core copper wire for residential lighting circuits and low-load branch wiring.",
     price: "5480.00",
@@ -820,7 +818,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Electrical",
     brandName: "PowerSafe",
-    name: "12-Way Flush Distribution Board",
+    name: "Distribution Board",
     summary:
       "Metal consumer unit for organizing residential branch circuits with space for main and protective breakers.",
     price: "4350.00",
@@ -840,7 +838,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Electrical",
     brandName: "PowerSafe",
-    name: "Twin Switched Wall Socket 13A",
+    name: "Switched Wall Socket",
     summary:
       "White twin switched socket outlet for residential bedrooms, living rooms, kitchens, and offices.",
     price: "680.00",
@@ -860,7 +858,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Plumbing",
     brandName: "Nifas PVC",
-    name: "PVC Drainage Pipe 110mm 6m",
+    name: "Drainage Pipe",
     summary:
       "Rigid uPVC soil and waste pipe for residential drainage stacks, underground drains, and vent systems.",
     price: "1980.00",
@@ -880,7 +878,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Plumbing",
     brandName: "Nifas PVC",
-    name: "PPR Hot and Cold Water Pipe 25mm 4m",
+    name: "PPR Pipe",
     summary:
       "Heat-fusion PPR pipe for concealed hot- and cold-water distribution in kitchens, bathrooms, and utilities.",
     price: "760.00",
@@ -900,7 +898,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Plumbing",
     brandName: "AquaFlow",
-    name: "Brass Gate Valve 1 Inch",
+    name: "Gate Valve",
     summary:
       "Full-bore brass isolation valve for residential water tanks, supply mains, pump lines, and service branches.",
     price: "1350.00",
@@ -920,7 +918,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Doors and Windows",
     brandName: "Horizon Doors",
-    name: "Security Steel Entrance Door 900x2100mm",
+    name: "Security Steel Door",
     summary:
       "Powder-coated steel entrance door set with reinforced leaf, frame, hinges, lockset, and weather seals.",
     price: "38500.00",
@@ -940,7 +938,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Doors and Windows",
     brandName: "Addis Aluminium",
-    name: "Aluminium Sliding Window 1200x1200mm",
+    name: "Aluminium Sliding Window",
     summary:
       "Two-panel glazed aluminium sliding window for bedrooms, living areas, kitchens, and stair landings.",
     price: "22800.00",
@@ -960,7 +958,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Doors and Windows",
     brandName: "Horizon Doors",
-    name: "Flush Interior Door 800x2100mm",
+    name: "Flush Interior Door",
     summary:
       "Smooth paint-grade flush door leaf for bedrooms, stores, studies, and other dry interior spaces.",
     price: "8950.00",
@@ -980,7 +978,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Timber and Boards",
     brandName: "Sheger Timber",
-    name: "Treated Eucalyptus Construction Pole 4m",
+    name: "Construction Pole",
     summary:
       "Straight treated eucalyptus pole for scaffolding, temporary support, fencing, and light roof structures.",
     price: "620.00",
@@ -1002,7 +1000,7 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Timber and Boards",
     brandName: "Sheger Timber",
-    name: "Structural Plywood Sheet 18mm",
+    name: "Plywood Sheet",
     summary:
       "General-purpose structural plywood for concrete formwork, roofing decks, cabinetry, and site fabrication.",
     price: "4950.00",
@@ -1022,12 +1020,11 @@ const products: ProductSeed[] = [
     seller: 1,
     categoryName: "Timber and Boards",
     brandName: "Sheger Timber",
-    name: "MDF Board Sheet 16mm",
+    name: "MDF Board",
     summary:
       "Smooth medium-density fibreboard for wardrobes, cabinets, shelving, wall panels, and interior joinery.",
     price: "4250.00",
     quantity: 120,
-    imageUrl: "/images/products/mdf-board-16mm.png",
     specifications: {
       Dimensions: "1220 x 2440 mm",
       Thickness: "16 mm",
@@ -1042,7 +1039,7 @@ const products: ProductSeed[] = [
     seller: 2,
     categoryName: "Waterproofing",
     brandName: "HydroSeal",
-    name: "Torch-On Bituminous Membrane 4mm",
+    name: "Torch-On Membrane",
     summary:
       "Polyester-reinforced torch-applied waterproofing membrane for flat roofs, balconies, and foundations.",
     price: "6850.00",
@@ -1087,7 +1084,6 @@ const products: ProductSeed[] = [
       "Vitreous china close-coupled toilet with dual-flush cistern, soft-close seat, and floor fixing kit.",
     price: "18900.00",
     quantity: 42,
-    imageUrl: "/images/products/close-coupled-toilet.png",
     specifications: {
       Material: "Vitreous china",
       Color: "White",
@@ -1258,9 +1254,11 @@ async function upsertProduct(
     "category",
   );
   const brandId = requiredMapValue(brandIds, seed.brandName, "brand");
-  const existing = await prisma.product.findFirst({
-    where: { name: { equals: seed.name, mode: "insensitive" } },
+  // Look up by ID first (unique), then by name as fallback for backward compatibility
+  let record = await prisma.product.findUnique({
+    where: { id: seed.id },
   });
+
   const data = {
     sellerId,
     categoryId,
@@ -1273,14 +1271,19 @@ async function upsertProduct(
     quantity: seed.quantity,
     imageUrl: seed.imageUrl ?? null,
   };
-  const record = existing
-    ? await prisma.product.update({
-        where: { id: existing.id },
-        data,
-      })
-    : await prisma.product.create({
-        data: { id: seed.id, ...data },
-      });
+
+  if (record) {
+    // Update existing by ID
+    record = await prisma.product.update({
+      where: { id: seed.id },
+      data,
+    });
+  } else {
+    // Create new by ID
+    record = await prisma.product.create({
+      data: { id: seed.id, ...data },
+    });
+  }
 
   await prisma.sellerInventory.upsert({
     where: {
@@ -1396,7 +1399,7 @@ function product(input: {
   summary: string;
   price: string;
   quantity: number;
-  imageUrl: string;
+  imageUrl?: string;
   city?: string;
   region?: string;
   specifications: Record<string, string>;
@@ -1415,7 +1418,7 @@ function product(input: {
     summary: input.summary,
     price: input.price,
     quantity: input.quantity,
-    imageUrl: input.imageUrl,
+    ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
     inventory: {
       city: input.city ?? "Addis Ababa",
       region: input.region ?? "Addis Ababa",

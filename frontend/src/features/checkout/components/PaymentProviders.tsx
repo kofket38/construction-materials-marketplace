@@ -244,10 +244,9 @@ export function PaymentProviders({
                   {seller?.name ?? selectedDestination.accountName}
                 </p>
               </div>
-              <ShieldCheck
-                aria-label="Seller payment details verified by CMM"
-                className="ml-auto size-5 shrink-0 text-success"
-              />
+              {/* No verification badge here: these are the account details the
+                  seller published, and CMM does not vet them. The buyer's
+                  protection is the payment-proof step below, not a checkmark. */}
             </div>
 
             <dl className="grid border-y border-zinc-200 bg-white sm:grid-cols-2">

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { login } from "@/features/auth/api/auth.api";
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getApiErrorMessage } from "@/shared/api/http-error";
+import { CmmLogoLink } from "@/shared/brand/CmmLogo";
 import { defaultFormOptions } from "@/shared/forms/form-config";
 
 const loginSchema = z.object({
@@ -88,9 +89,7 @@ export function LoginPage() {
         aria-labelledby="login-heading"
         className="w-full max-w-md rounded-md border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
       >
-        <span className="flex size-10 items-center justify-center rounded-md bg-brand text-on-brand">
-          <LogIn aria-hidden="true" className="size-5" />
-        </span>
+        <CmmLogoLink size="md" variant="full" />
         <h1
           className="mt-5 text-2xl font-semibold text-zinc-950"
           id="login-heading"

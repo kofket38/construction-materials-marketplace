@@ -9,6 +9,7 @@ import { register as registerAccount } from "@/features/auth/api/auth.api";
 import type { RegistrationRole } from "@/features/auth/model/auth.types";
 import { useAuthStore } from "@/features/auth/model/auth.store";
 import { getApiErrorMessage } from "@/shared/api/http-error";
+import { CmmLogoLink } from "@/shared/brand/CmmLogo";
 import { defaultFormOptions } from "@/shared/forms/form-config";
 
 // ── Role picker configuration ─────────────────────────────────────────────────
@@ -151,9 +152,7 @@ export function RegisterPage() {
         aria-labelledby="registration-heading"
         className="w-full max-w-lg rounded-md border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
       >
-        <span className="flex size-10 items-center justify-center rounded-md bg-brand text-on-brand">
-          <UserPlus aria-hidden="true" className="size-5" />
-        </span>
+        <CmmLogoLink size="md" variant="full" />
         <h1
           className="mt-5 text-2xl font-semibold text-zinc-950"
           id="registration-heading"

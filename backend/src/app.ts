@@ -147,6 +147,10 @@ import { ProjectService } from "./services/project.service.js";
 
 import { WishlistService } from "./services/wishlist.service.js";
 
+import { MetricsService } from "./services/metrics.service.js";
+
+import { MetricsController } from "./controllers/metrics.controller.js";
+
 import {
   JwtTokenService,
   type TokenService,
@@ -155,6 +159,8 @@ import {
 import { prisma } from "./prisma/client.js";
 
 import { validateRequest } from "./middleware/validate-request.js";
+
+import { createMetricsMiddleware } from "./middleware/metrics.js";
 
 import { emptyObjectSchema } from "./validators/auth.validators.js";
 
@@ -177,8 +183,9 @@ export interface AppDependencies {
   projectRepository?: ProjectRepository;
   wishlistRepository?: WishlistRepository;
   paymentProofStorage?: PaymentProofStorage;
-  tokenService?: TokenService;
-  logger?: Logger;
+   tokenService?: TokenService;
+   logger?: Logger;
+   metricsService?: MetricsService;
 }
 
 export function createApp(dependencies: AppDependencies = {}): Express {
@@ -235,6 +242,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
     dependencies.adminDashboardRepository ??
     new PrismaAdminDashboardRepository(prisma);
 
+  const metricsService = dependencies.metricsService ?? new MetricsService();
+
   const tokenService = dependencies.tokenService ?? new JwtTokenService();
 
   const authService = new AuthService(userRepository, tokenService);
@@ -248,6 +257,8 @@ export function createApp(dependencies: AppDependencies = {}): Express {
   const adminDashboardController = new AdminDashboardController(
     adminDashboardService,
   );
+
+  const metricsController = new MetricsController(metricsService);
 
   const categoryService = new CategoryService(categoryRepository);
 
@@ -367,6 +378,10 @@ export function createApp(dependencies: AppDependencies = {}): Express {
 
   app.use(cookieParser());
 
+  // Metrics collection middleware — records every request's duration and
+  // status code into the MetricsService before routes handle the request.
+  app.use(createMetricsMiddleware(metricsService));
+
   // Root endpoint
   app.get("/", (_req, res) => {
     res.status(200).json({
@@ -406,11 +421,12 @@ export function createApp(dependencies: AppDependencies = {}): Express {
 
   app.use(
     "/api",
-    createApiRouter(
-      adminDashboardController,
-      authController,
-      categoryController,
-      orderController,
+      createApiRouter(
+        adminDashboardController,
+        authController,
+        categoryController,
+        metricsController,
+        orderController,
       paymentController,
       productController,
       professionalProfileController,

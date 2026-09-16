@@ -169,3 +169,76 @@ export function categoryPlaceholderIconKey(
 
   return "generic";
 }
+
+/**
+ * Category photography, resolved from the category name by the same kind of
+ * keyword rules that pick its placeholder icon.
+ *
+ * A category is a *class* of material, so unlike a product it can honestly be
+ * illustrated by a stock photograph of that class — a bag of cement does
+ * represent "Cement". The mapping is still deterministic: one key per file in
+ * `public/images/categories/`, resolved from the name, never chosen at random
+ * and never shared between two unrelated classes.
+ *
+ * Returns `null` for a name that matches nothing, which is what lets a caller
+ * fall back to the placeholder icon instead of showing a misleading picture.
+ */
+export type CategoryImageKey =
+  | "aggregates"
+  | "cement"
+  | "doors-windows"
+  | "electrical"
+  | "masonry"
+  | "paint"
+  | "plumbing"
+  | "roofing"
+  | "sanitary"
+  | "steel"
+  | "tiles"
+  | "timber"
+  | "waterproofing";
+
+/**
+ * Ordered, and the order is load-bearing: "Waterproofing" contains both "water"
+ * and — count the letters — "roofing", so it has to be tested before plumbing
+ * and roofing or it would resolve to one of them.
+ */
+const CATEGORY_IMAGE_RULES: readonly (readonly [
+  CategoryImageKey,
+  readonly string[],
+])[] = [
+  ["waterproofing", ["waterproof", "membrane", "damp"]],
+  ["cement", ["cement", "mortar"]],
+  ["steel", ["steel", "rebar", "reinforc", "metal"]],
+  ["masonry", ["masonry", "block", "brick"]],
+  ["tiles", ["tile", "floor"]],
+  ["roofing", ["roof"]],
+  ["aggregates", ["aggregate", "sand", "gravel", "ballast"]],
+  ["paint", ["paint", "finish", "coating"]],
+  ["electrical", ["electric", "wiring", "cable"]],
+  ["plumbing", ["plumb", "pipe", "water"]],
+  ["doors-windows", ["door", "window", "glazing"]],
+  ["timber", ["timber", "wood", "board", "plywood"]],
+  ["sanitary", ["sanitary", "bathroom", "toilet", "shower"]],
+];
+
+export function categoryImageKey(categoryName: string): CategoryImageKey | null {
+  const category = categoryName.toLowerCase();
+  if (category.trim().length === 0) {
+    return null;
+  }
+
+  for (const [key, keywords] of CATEGORY_IMAGE_RULES) {
+    if (keywords.some((keyword) => category.includes(keyword))) {
+      return key;
+    }
+  }
+
+  return null;
+}
+
+/** The `src` for a category's photograph, or `null` when it has none. */
+export function categoryImageSrc(categoryName: string): string | null {
+  const key = categoryImageKey(categoryName);
+  return key ? `/images/categories/${key}.png` : null;
+}

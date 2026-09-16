@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { AdminDashboardController } from "../controllers/admin-dashboard.controller.js";
 import type { AuthController } from "../controllers/auth.controller.js";
 import type { CategoryController } from "../controllers/category.controller.js";
+import type { MetricsController } from "../controllers/metrics.controller.js";
 import type { OrderController } from "../controllers/order.controller.js";
 import type { PaymentController } from "../controllers/payment.controller.js";
 import type { ProductController } from "../controllers/product.controller.js";
@@ -20,6 +21,7 @@ import type { TokenService } from "../services/token.service.js";
 import { createAdminDashboardRouter } from "./admin-dashboard.routes.js";
 import { createAuthRouter } from "./auth.routes.js";
 import { createCategoryRouter } from "./category.routes.js";
+import { createMetricsRouter } from "./metrics.routes.js";
 import { createOrderRouter } from "./order.routes.js";
 import { createPaymentRouter } from "./payment.routes.js";
 import { createProductRouter } from "./product.routes.js";
@@ -36,6 +38,7 @@ export function createApiRouter(
   adminDashboardController: AdminDashboardController,
   authController: AuthController,
   categoryController: CategoryController,
+  metricsController: MetricsController,
   orderController: OrderController,
   paymentController: PaymentController,
   productController: ProductController,
@@ -65,11 +68,15 @@ export function createApiRouter(
     createAuthRateLimiter(),
     createAuthRouter(authController, requireAuthentication),
   );
-  router.use(
-    "/categories",
-    createCategoryRouter(categoryController, requireAuthentication),
-  );
-  router.use(
+   router.use(
+     "/categories",
+     createCategoryRouter(categoryController, requireAuthentication),
+   );
+   router.use(
+     "/metrics",
+     createMetricsRouter(metricsController, requireAuthentication),
+   );
+   router.use(
     "/orders",
     createOrderRouter(orderController, requireAuthentication),
   );

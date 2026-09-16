@@ -1,0 +1,652 @@
+/**
+ * Sources real construction-material photography from Wikimedia Commons.
+ *
+ * Why this exists as a script rather than a one-off download: every photograph
+ * shipped in `public/images` needs a recorded provenance — title, author,
+ * licence and the Commons file page — and a hand-run download loses that within
+ * a week. Running this writes both the images and `image-credits.json` beside
+ * them, so the attribution can never drift from the files it describes.
+ *
+ * Each slot names its target filename and the search phrase that finds it. The
+ * phrase is deliberately narrow ("brass gate valve", not "valve") because the
+ * one rule that cannot be broken is that the photograph must show the material
+ * the product actually is — a cement bag on a rebar listing is worse than no
+ * photograph at all.
+ *
+ * Usage:
+ *   node scripts/source-material-photos.mjs                     # every slot
+ *   node scripts/source-material-photos.mjs --only=rebar-12mm   # re-source one
+ *   node scripts/source-material-photos.mjs --only=x --index=2  # next candidate
+ *   node scripts/source-material-photos.mjs --list=steel        # inspect matches
+ *
+ * Downloads land in `.image-staging/` (git-ignored). `convert-material-photos.ps1`
+ * turns them into the 4:3 PNGs the application serves.
+ */
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const frontendDir = join(scriptDir, "..");
+const stageDir = join(frontendDir, ".image-staging");
+
+const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+const USER_AGENT =
+  "CMM-marketplace-asset-sourcing/1.0 (construction materials marketplace build tooling)";
+
+/** Thumbnail width requested from Commons. Wider than any rendered slot so the
+ *  downscale to 4:3 always has pixels to spare. */
+const SOURCE_WIDTH = 1400;
+
+/** A licence must be one of these to ship. Commons hosts a small amount of
+ *  non-free material under exemptions; none of it belongs in a product catalog. */
+const ALLOWED_LICENCE = /^(cc0|cc[ -]by|public domain|pd|fal|attribution)/i;
+
+/**
+ * Product photographs. `slot` is the existing filename in
+ * `public/images/products/` — kept byte-identical because the live database
+ * stores that path, so replacing the file contents needs no data migration.
+ *
+ * A third element pins an exact `File:` title. Pinned means a human looked at
+ * that picture and confirmed it shows the material; unpinned slots resolve to
+ * the first candidate of the query and still have to pass the contact sheet.
+ *
+ * A third element of `null` is the deliberate opposite: a human looked and found
+ * that Commons has nothing honest for this slot. Those download nothing, so the
+ * product renders the labelled placeholder instead of a misleading photograph.
+ */
+const PRODUCT_SLOTS = [
+  ["rebar-12mm", "steel reinforcing bar rebar", "File:Rebar on a pallet.jpg"],
+  ["rebar-16mm", "rebar bundle", "File:A bunch of rebar up close.jpg"],
+  // Two rounds of pipe queries returned a 1905 trade journal, a blast-furnace
+  // diagram and a scrapyard heap. A scrap pile is not a saleable pipe.
+  ["galvanized-steel-pipe-2-inch", "steel pipes", null],
+  ["binding-wire-25kg", "steel wire coil", "File:Steel wire reel in Finland.jpg"],
+  // The "Concrete masonry unit 1z..6z" series turned out to photograph block
+  // *manufacture* — a mixer, a heap of grey aggregate and workers under a tarp.
+  // A listing needs the finished unit a buyer is paying for, not the yard it was
+  // cast in, so both slots moved to photographs of blocks themselves.
+  [
+    "hollow-concrete-block-20cm",
+    "cinder block",
+    "File:Concrete masonry units.jpg",
+  ],
+  // "Concrete blocks beside A592" is filed under its blocks but photographed as a
+  // Lake District panorama — fells, drystone walls, and the blocks a speck at the
+  // roadside. Third attempt at this slot: a single-subject file instead of one
+  // whose title happens to mention blocks.
+  ["hollow-concrete-block-15cm", "cinder block", "File:Cinder block.jpg"],
+  ["fired-clay-brick", "clay bricks", "File:A Load of Bricks (8408569556).jpg"],
+  [
+    "porcelain-floor-tile-60x60",
+    "porcelain floor tiles",
+    "File:Polished Porcelain Floor Tiling.jpg",
+  ],
+  [
+    "ceramic-wall-tile-30x60",
+    "ceramic tiles wall bathroom",
+    "File:Kitchen backsplash tile.jpeg",
+  ],
+  ["tile-adhesive-25kg", "tile adhesive", "File:Sopro auf Baustelle.jpg"],
+  [
+    "corrugated-roofing-sheet-035",
+    "corrugated galvanised iron",
+    "File:Corrugated-galv-iron.jpg",
+  ],
+  [
+    "prepainted-roofing-sheet-040",
+    "metal roofing sheets",
+    "File:Seabees apply metal roofing sheets while reconstructing. (44604813675).jpg",
+  ],
+  // Ridge searches return clay and ceramic ridge tiles — a different material —
+  // and the only galvanised-iron photograph on Commons is already the corrugated
+  // sheet above. Showing one picture twice is what makes a catalogue look faked.
+  ["galvanized-ridge-cap", "roof ridge cap metal", null],
+  [
+    "washed-construction-sand",
+    "construction sand pile",
+    "File:Pile of Sand for Building in Anambra State.jpg",
+  ],
+  ["crushed-gravel-20mm", "crushed stone gravel", "File:20mm-aggregate.jpg"],
+  [
+    "crushed-hardcore-40mm",
+    "crushed stone",
+    "File:2d Av subway crush stone 72 jeh.jpg",
+  ],
+  ["interior-emulsion-paint-20l", "paint bucket", "File:Behr paint bucket.jpg"],
+  ["exterior-weather-paint-20l", "paint cans", "File:Paint cans in store.jpg"],
+  ["alkali-resistant-primer-20l", "paint primer", "File:White primer bucket.jpg"],
+  [
+    "copper-cable-25mm",
+    "copper electrical cable",
+    "File:'Twin and Earth' electrical cable. BS 6004, 6mm².jpg",
+  ],
+  ["copper-cable-15mm", "electrical wire", "File:Electric guide 3×2.5 mm.jpg"],
+  // "Exposed Wall Wiring and Breaker Box" is a *closed* white enclosure beside
+  // scribbled-on plaster: nothing in it reads as a 12-way board. This one shows
+  // the breaker row, which is what the product is.
+  [
+    "distribution-board-12-way",
+    "electrical wiring distribution board",
+    "File:Pretty distribution board.JPG",
+  ],
+  [
+    "twin-socket-13a",
+    "BS 1363 double socket",
+    "File:UK BS1363 double wall socket.jpg",
+  ],
+  [
+    "pvc-pressure-pipe-4-inch",
+    "PVC pressure pipe",
+    "File:Dura-Blue PVC Pipe for Underground Water Mains.JPG",
+  ],
+  [
+    "pvc-drainage-pipe-110mm",
+    "PVC drainage pipes",
+    "File:Bundled PVC pipes for drainage in Awka.jpg",
+  ],
+  ["ppr-pipe-25mm", "polypropylene pipe", "File:Green plastic pipes.JPG"],
+  [
+    "brass-gate-valve-1-inch",
+    "gate valve",
+    "File:Absperrventil für Heizungs-Rücklauf.jpg",
+  ],
+  ["security-steel-door", "steel security door", "File:Arrest-door.jpg"],
+  // `null` means: a human searched, looked at the candidates, and found that
+  // Commons has no photograph a buyer would recognise as this material. Leaving
+  // the slot empty renders `ProductImage`'s labelled placeholder, which is the
+  // honest answer — far better than a picture of a different thing. Here the
+  // searches returned church façades and half-timbered houses; the one on-topic
+  // result was a cutaway of a window frame, which sells nothing.
+  ["aluminium-sliding-window", "aluminium window frame", null],
+  [
+    "flush-interior-door",
+    "door white painted room",
+    "File:Door in a white room (Unsplash).jpg",
+  ],
+  [
+    "eucalyptus-poles-4m",
+    "wooden poles delivery",
+    "File:FEMA - 40831 - A utility crew delivers new poles in Arkansas.jpg",
+  ],
+  ["plywood-18mm", "plywood", "File:Birch plywood.jpg"],
+  // Every fibreboard query returned either instrument panels or fly-tipped
+  // rubbish; the one plausible hit was pink MDF *decking*, a different product.
+  ["mdf-board-16mm", "medium density fibreboard", null],
+  [
+    "torch-on-membrane",
+    "bitumen membrane roll roofing",
+    "File:Roofing felt (укладка рубероида на обрешётку2).jpg",
+  ],
+  [
+    "cementitious-waterproofing-25kg",
+    "waterproofing membrane roof application",
+    "File:Roof waterproofing system application by Monotica Athens.jpg",
+  ],
+  // The only toilet photographs on Commons are an institutional disabled-toilet
+  // suite and a cubicle with graffiti on the tiles. Neither belongs on a listing.
+  ["close-coupled-toilet", "flush toilet cistern white", null],
+  ["ceramic-wash-basin", "wash basin bathroom", "File:Wash basin gn.jpg"],
+  // A lever tap over a stainless kitchen sink is a mixer, but a buyer reading
+  // "shower mixer" and seeing a kitchen sink concludes the images are assigned at
+  // random — which is the impression this whole exercise exists to avoid. Chrome
+  // shower brassware at least puts the fitting in a shower.
+  ["chrome-shower-mixer", "shower head", "File:Shower head.JPG"],
+];
+
+/**
+ * One photograph per category the seed actually creates. Keys match
+ * `categoryImageKey()` in `src/features/products/lib/product-image.ts`, so a
+ * category name resolves to its picture by the same keyword rules that already
+ * choose its placeholder icon — nothing is assigned by hand or at random.
+ */
+const CATEGORY_SLOTS = [
+  ["cement", "cement bags stacked", "File:Portland Cement Bags.jpg"],
+  [
+    "steel",
+    "steel reinforcement bars construction",
+    "File:US Navy 040914-N-2970T-029 Builder 3rd Class Mark Dyas, assigned to Naval Mobile Construction Battalion One Three Three (NMCB-133), Detail Sasebo, slices through a steel reinforcement bar.jpg",
+  ],
+  // The LIRR photograph is titled for its block wall but the frame is dominated by
+  // scaffolding in a dim concourse; the wall is barely visible. A foundation wall
+  // going up in daylight shows the same trade and actually shows the blocks.
+  [
+    "masonry",
+    "concrete blocks building wall",
+    "File:Foundation Wall Construction.jpg",
+  ],
+  [
+    "tiles",
+    "ceramic floor tiles",
+    "File:Ceramic floor in Maracaibo Colonial House.jpg",
+  ],
+  ["roofing", "corrugated iron roof", "File:Bølgjeblekk.JPG"],
+  [
+    "aggregates",
+    "gravel pile aggregate",
+    "File:Sand piling up at Brett Aggregate Works - geograph.org.uk - 6548708.jpg",
+  ],
+  ["paint", "paint cans", "File:Farrow & Ball paint cans.jpg"],
+  [
+    "electrical",
+    "electrical wiring distribution board",
+    "File:Alians PL,TypicalswitchgearinelectricnetworksinthehousingstockoflocalcommunesinPoland,02-07-2021.jpg",
+  ],
+  ["plumbing", "plumbing pipework", "File:2006-02-15 Piping.jpg"],
+  [
+    "doors-windows",
+    "wooden door house entrance",
+    "File:Aigues Vives Wooden Entrance 9215.JPG",
+  ],
+  // Categories are classes, so illustrating "Timber and Boards" with a different
+  // plywood photograph than the plywood *product* uses keeps the two surfaces
+  // from showing the same picture side by side.
+  ["timber", "plywood board", "File:Birke Multiplex.JPG"],
+  [
+    "waterproofing",
+    "waterproofing membrane roof application",
+    "File:Aplikasi Waterproofing Dak Beton Sikalastic 590 Grey oleh PT Kharisma Utomo Group.png",
+  ],
+  // A file called "museum of ceramic tiles and sanitary ware" sounded ideal and
+  // resolved to a framed antique advertising sign hanging on the museum wall — a
+  // reminder that a promising Commons title proves nothing until someone looks at
+  // the picture. A row of installed basins is unambiguous, and it is a different
+  // photograph from the one on the wash-basin listing.
+  [
+    "sanitary",
+    "wash basin bathroom",
+    "File:Washbasins of the restrooms in Crowne Plaza Vientiane.jpg",
+  ],
+];
+
+/** Hero candidates. Several, because the landing page gets exactly one and it
+ *  has to be a real working site rather than an architectural render. */
+const HERO_SLOTS = [
+  [
+    "site-a",
+    "Addis Ababa construction site",
+    "File:00-addis-construction-site.JPG",
+  ],
+  // Sourced, looked at, rejected. `site-b` is a demolition rubble heap and
+  // `site-d` is hand-breaking of stone in a quarry: both are real Ethiopian
+  // construction work, and neither is something to put across the top of a
+  // shopfront. The two that remain show buildings actually going up.
+  ["site-b", "construction site Ethiopia building", null],
+  [
+    "site-c",
+    "Addis Ababa construction scaffold",
+    "File:Addis Abeba Wood Scaffold (Sam Effron).jpg",
+  ],
+  ["site-d", "Ethiopian construction workers", null],
+];
+
+const GROUPS = [
+  { kind: "products", slots: PRODUCT_SLOTS },
+  { kind: "categories", slots: CATEGORY_SLOTS },
+  { kind: "hero", slots: HERO_SLOTS },
+];
+
+// ── Commons access ────────────────────────────────────────────────────────────
+
+/**
+ * `fetch` plus the two failures Wikimedia actually produces during a run of
+ * this size: HTTP 429 when requests come too fast, and a dropped TLS connection
+ * (`ECONNRESET`) somewhere in the middle. Both are transient, and both used to
+ * abort the whole listing — so both are retried with a widening delay.
+ */
+async function fetchWithRetry(url, { attempts = 6 } = {}) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) {
+      await sleep(3000 * attempt);
+    }
+    try {
+      const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+      if (response.status === 429 || response.status >= 500) {
+        lastError = new Error(`HTTP ${response.status}`);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(
+    `${attempts} attempts failed for ${url}: ${lastError?.message ?? "unknown"}`,
+  );
+}
+
+async function callCommons(params) {
+  const url = new URL(COMMONS_API);
+  for (const [key, value] of Object.entries({
+    format: "json",
+    formatversion: "2",
+    origin: "*",
+    ...params,
+  })) {
+    url.searchParams.set(key, String(value));
+  }
+
+  const response = await fetchWithRetry(url);
+  if (!response.ok) {
+    throw new Error(
+      `Commons API ${response.status} for ${params.gsrsearch ?? params.gcmtitle ?? params.titles}`,
+    );
+  }
+  return response.json();
+}
+
+/** Wikimedia throttles bursts, so every request is spaced and 429s are retried
+ *  rather than turned into a missing photograph. */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Strips the HTML Commons wraps around author and licence fields. */
+function plainText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Candidate photographs for one query.
+ *
+ * A query of the form `cat:Rebar` enumerates a Commons category instead of
+ * running a full-text search. Categories are far more precise for materials
+ * whose names are ordinary words — a search for "sand" returns beaches, while
+ * `cat:Construction aggregates` returns aggregate.
+ */
+async function findCandidates(query) {
+  const data = query.startsWith("cat:")
+    ? await callCommons({
+        action: "query",
+        generator: "categorymembers",
+        gcmtitle: `Category:${query.slice(4)}`,
+        gcmtype: "file",
+        gcmlimit: "40",
+        prop: "imageinfo",
+        iiprop: "url|size|mime|extmetadata",
+        iiurlwidth: String(SOURCE_WIDTH),
+      })
+    : await callCommons({
+        action: "query",
+        generator: "search",
+        gsrsearch: `${query} filetype:bitmap`,
+        gsrnamespace: "6",
+        gsrlimit: "20",
+        prop: "imageinfo",
+        iiprop: "url|size|mime|extmetadata",
+        iiurlwidth: String(SOURCE_WIDTH),
+      });
+
+  const pages = data?.query?.pages ?? [];
+  return pages
+    .map((page) => {
+      const info = page.imageinfo?.[0];
+      if (!info) {
+        return null;
+      }
+      const meta = info.extmetadata ?? {};
+      return {
+        title: page.title,
+        pageUrl: info.descriptionurl,
+        licence: plainText(meta.LicenseShortName?.value) || "unknown",
+        author: plainText(meta.Artist?.value) || "unknown",
+        credit: plainText(meta.Credit?.value),
+        width: info.width,
+        height: info.height,
+        mime: info.mime,
+        thumbUrl: info.thumburl,
+      };
+    })
+    .filter(
+      (candidate) =>
+        candidate !== null &&
+        /^image\/(jpeg|png)$/.test(candidate.mime) &&
+        candidate.width >= 700 &&
+        candidate.height >= 450 &&
+        ALLOWED_LICENCE.test(candidate.licence) &&
+        Boolean(candidate.thumbUrl),
+    );
+}
+
+// ── Download ──────────────────────────────────────────────────────────────────
+
+const EXTENSION_BY_MIME = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+async function download(url, destination) {
+  const response = await fetchWithRetry(url);
+  if (!response.ok) {
+    throw new Error(`Download ${response.status} for ${url}`);
+  }
+  await writeFile(destination, Buffer.from(await response.arrayBuffer()));
+}
+
+/** Resolves one pinned `File:` title, bypassing search entirely. Used wherever a
+ *  search phrase returns something that is only topically related — the pinned
+ *  title is the record of a human having looked at the picture. */
+async function fetchByTitle(title) {
+  const data = await callCommons({
+    action: "query",
+    titles: title,
+    prop: "imageinfo",
+    iiprop: "url|size|mime|extmetadata",
+    iiurlwidth: String(SOURCE_WIDTH),
+  });
+
+  const page = data?.query?.pages?.[0];
+  const info = page?.imageinfo?.[0];
+  if (!info) {
+    throw new Error(`pinned title not found: ${title}`);
+  }
+  const meta = info.extmetadata ?? {};
+  return {
+    title: page.title,
+    pageUrl: info.descriptionurl,
+    licence: plainText(meta.LicenseShortName?.value) || "unknown",
+    author: plainText(meta.Artist?.value) || "unknown",
+    credit: plainText(meta.Credit?.value),
+    width: info.width,
+    height: info.height,
+    mime: info.mime,
+    thumbUrl: info.thumburl,
+  };
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
+function parseArgs(argv) {
+  const options = { index: 0, only: null, list: null, listAll: false };
+  for (const arg of argv) {
+    const [flag, value = ""] = arg.split("=");
+    if (flag === "--index") {
+      options.index = Number.parseInt(value, 10) || 0;
+    } else if (flag === "--only") {
+      options.only = new Set(value.split(",").filter(Boolean));
+    } else if (flag === "--list") {
+      options.list = value;
+    } else if (flag === "--list-all") {
+      options.listAll = true;
+    }
+  }
+  return options;
+}
+
+async function listMatches(query) {
+  const candidates = await findCandidates(query);
+  console.log(`\n${candidates.length} usable match(es) for "${query}":`);
+  candidates.forEach((candidate, index) => {
+    console.log(
+      `  [${index}] ${candidate.title.replace(/^File:/, "")}  (${candidate.width}x${candidate.height}, ${candidate.licence})`,
+    );
+  });
+}
+
+/**
+ * Prints candidate titles for every slot so a pinned title can be chosen by
+ * hand. Titles are not proof — the contact sheet is — but they filter out the
+ * obviously unrelated before anything is downloaded.
+ *
+ * Slots that already carry a pinned title — or an explicit `null` recording that
+ * nothing honest exists — are skipped unless `--only` names them: they are
+ * decided, and every skipped slot is one fewer request against a rate limit that
+ * has already aborted this listing once.
+ */
+async function listAll(only) {
+  for (const { kind, slots } of GROUPS) {
+    for (const [slot, query, pinnedTitle] of slots) {
+      if (only ? !only.has(slot) : pinnedTitle !== undefined) {
+        continue;
+      }
+      const candidates = await findCandidates(query);
+      console.log(`\n${kind}/${slot}  "${query}"`);
+      candidates.slice(0, 8).forEach((candidate, index) => {
+        console.log(
+          `  [${index}] ${candidate.title.replace(/^File:/, "").slice(0, 76)}`,
+        );
+      });
+      await sleep(900);
+    }
+  }
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+
+  if (options.list) {
+    await listMatches(options.list);
+    return;
+  }
+
+  if (options.listAll) {
+    await listAll(options.only);
+    return;
+  }
+
+  const credits = [];
+  const failures = [];
+  const unsourced = [];
+
+  for (const { kind, slots } of GROUPS) {
+    await mkdir(join(stageDir, kind), { recursive: true });
+
+    for (const [slot, query, pinnedTitle] of slots) {
+      if (options.only && !options.only.has(slot)) {
+        continue;
+      }
+      // Explicitly unsourced: no photograph is downloaded and none is invented.
+      if (pinnedTitle === null) {
+        unsourced.push(`${kind}/${slot} (no honest match for "${query}")`);
+        continue;
+      }
+
+      try {
+        const chosen = pinnedTitle
+          ? await fetchByTitle(pinnedTitle)
+          : (await findCandidates(query))[options.index];
+        if (!chosen) {
+          failures.push(`${kind}/${slot}: no usable candidate for "${query}"`);
+          continue;
+        }
+        if (!ALLOWED_LICENCE.test(chosen.licence)) {
+          failures.push(
+            `${kind}/${slot}: licence "${chosen.licence}" is not shippable`,
+          );
+          continue;
+        }
+
+        const extension = EXTENSION_BY_MIME[chosen.mime];
+        if (!extension) {
+          failures.push(`${kind}/${slot}: unsupported type ${chosen.mime}`);
+          continue;
+        }
+        const savedAs = `${kind}/${slot}.${extension}`;
+        await download(chosen.thumbUrl, join(stageDir, kind, `${slot}.${extension}`));
+        await sleep(350);
+
+        credits.push({
+          kind,
+          slot,
+          query,
+          pinned: Boolean(pinnedTitle),
+          savedAs,
+          source: "Wikimedia Commons",
+          title: chosen.title,
+          pageUrl: chosen.pageUrl,
+          licence: chosen.licence,
+          author: chosen.author,
+          credit: chosen.credit,
+        });
+        console.log(
+          `  ok  ${kind}/${slot}  <-  ${chosen.title.replace(/^File:/, "")} [${chosen.licence}]`,
+        );
+      } catch (error) {
+        failures.push(`${kind}/${slot}: ${error.message}`);
+      }
+    }
+  }
+
+  // `image-credits.json` is merged rather than rewritten so re-sourcing a single
+  // slot cannot silently drop the attribution for the other fifty. Merging alone
+  // leaks the other way, though: a slot demoted to `null` after review left its
+  // old credit in place, crediting a photograph no longer shipped. So the merge is
+  // filtered to the slots this table still intends to ship.
+  const creditsPath = join(frontendDir, "public/images/image-credits.json");
+  const shippable = new Set(
+    GROUPS.flatMap(({ kind, slots }) =>
+      slots
+        .filter(([, , pinnedTitle]) => pinnedTitle !== null)
+        .map(([slot]) => `${kind}/${slot}.png`),
+    ),
+  );
+  let existing = {};
+  try {
+    existing = JSON.parse(await readFile(creditsPath, "utf8")).images ?? {};
+  } catch {
+    // First run: no file yet.
+  }
+  for (const entry of credits) {
+    existing[`${entry.kind}/${entry.slot}.png`] = entry;
+  }
+  await writeFile(
+    creditsPath,
+    `${JSON.stringify(
+      {
+        note: "Photographs sourced by scripts/source-material-photos.mjs come from Wikimedia Commons under the licence recorded here; regenerate with that script. The Ethiopian cement-brand product images predate it and are not covered by these credits. Slots with no honest match ship no photograph at all and render ProductImage's labelled placeholder.",
+        images: Object.fromEntries(
+          Object.entries(existing)
+            .filter(([key]) => shippable.has(key))
+            .sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+
+  console.log(`\nsourced ${credits.length}, failed ${failures.length}`);
+  for (const failure of failures) {
+    console.log(`  FAIL ${failure}`);
+  }
+  for (const slot of unsourced) {
+    console.log(`  SKIP ${slot}`);
+  }
+}
+
+await main();

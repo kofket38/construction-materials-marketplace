@@ -4,3 +4,8 @@ dist/
 .env.local
 .env.*.local
 *.log
+
+# Raw downloads from `scripts/source-material-photos.mjs`. Only the converted
+# PNGs under `public/images` are committed; the originals are large and
+# reproducible from `public/images/image-credits.json`.
+.image-staging/

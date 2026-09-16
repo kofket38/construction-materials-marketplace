@@ -6,6 +6,7 @@ import type {
   DashboardNavItem,
   DashboardNavGroup,
 } from "./DashboardSidebar";
+import { CmmLogoLink } from "@/shared/brand/CmmLogo";
 import { DashboardSidebar } from "./DashboardSidebar";
 
 export interface DashboardShellProps {
@@ -45,17 +46,21 @@ export function DashboardShell({
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile top bar */}
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 lg:hidden">
+        {/* Mobile top bar. Sticky so the drawer trigger — the only route back to
+            workspace navigation below `lg` — never scrolls out of reach. */}
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 lg:hidden">
           <button
             aria-label="Open navigation"
-            className="flex size-9 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-brand-ring"
+            className="flex size-9 shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-brand-ring"
             onClick={() => setMobileOpen(true)}
             type="button"
           >
             <Menu aria-hidden="true" className="size-5" />
           </button>
-          <span className="font-semibold text-zinc-950">{workspaceTitle}</span>
+          <CmmLogoLink size="sm" variant="mark" />
+          <span className="min-w-0 truncate font-semibold text-zinc-950">
+            {workspaceTitle}
+          </span>
         </header>
 
         {/* Routed workspace content */}

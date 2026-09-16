@@ -43,14 +43,17 @@ export function MarketplaceSellersPage() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
+          {/* CMM has no supplier-verification feature, so this line says what the
+              directory really is: the suppliers listing stock in this city. */}
           <p className="text-sm font-semibold text-brand-ink">
-            Verified marketplace suppliers
+            Suppliers listing stock on CMM
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-zinc-950">
             Suppliers {selectedCity ? `in ${selectedCity}` : "by city"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-            Compare local stores, ratings, and available product ranges.
+            Compare local stores, their listed product count, and buyer ratings
+            where reviews exist.
           </p>
         </div>
         <button

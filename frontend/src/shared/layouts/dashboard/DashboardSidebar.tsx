@@ -1,7 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Building2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
+
+import { CmmLogo } from "@/shared/brand/CmmLogo";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,12 +67,13 @@ function SidebarContent({
       {/* Brand + workspace header */}
       <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4">
         <Link
+          aria-label={`${workspaceTitle} — CMM home`}
           className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-ring"
           to="/"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand text-on-brand">
-            <Building2 aria-hidden="true" className="size-4" />
-          </span>
+          {/* The badge alone: the workspace title beside it already names the
+              context, so repeating the "CMM" wordmark here would say it twice. */}
+          <CmmLogo size="sm" variant="mark" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-zinc-950">
               {workspaceTitle}

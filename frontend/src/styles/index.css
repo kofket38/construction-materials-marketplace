@@ -13,7 +13,8 @@
       measures 1.86:1, far under the WCAG AA 4.5:1 floor, so every solid brand
       surface pairs with `--color-on-brand` (near-black, 10.98:1).
 
-   Dark mode re-points these same custom properties under `:root.dark`.
+   Dark mode re-points these same custom properties under `:root.dark`, and dark
+   is CMM's default appearance (see DEFAULT_THEME_PREFERENCE in the theme store).
    Tailwind v4 compiles `bg-white` to `background-color: var(--color-white)` and
    custom properties resolve at their point of use, so overriding a variable
    re-themes every existing utility without editing component files. The `.dark`
@@ -129,22 +130,25 @@
 :root.dark {
   color-scheme: dark;
 
-  /* Neutral ramp — hue-preserving lightness inversion. */
-  --color-white: #15181e;
-  --color-zinc-50: #101317;
-  --color-zinc-100: #1b1f26;
-  --color-zinc-200: #282d36;
-  --color-zinc-300: #363c46;
-  --color-zinc-400: #8c93a0; /*  5.75:1 on surface */
-  --color-zinc-500: #a3aab7; /*  7.61:1 */
-  --color-zinc-600: #bac1cd; /*  9.82:1 */
-  --color-zinc-700: #ced5df;
-  --color-zinc-800: #e1e6ec;
-  --color-zinc-900: #eef1f5;
-  --color-zinc-950: #f7f9fc; /* 16.86:1 */
-  --color-stone-50: #101317;
-  --color-stone-100: #1b1f26;
-  --color-stone-200: #282d36;
+  /* Neutral ramp — graphite, not blue-black. The cast is deliberately neutral
+     with a whisper of warmth so charcoal surfaces read as site concrete and
+     steel rather than as a blue software chrome, and so engineering yellow sits
+     on them without a colour clash. Ratios are measured against `surface`. */
+  --color-white: #17171a;
+  --color-zinc-50: #101012;
+  --color-zinc-100: #1d1d21;
+  --color-zinc-200: #2b2b30;
+  --color-zinc-300: #3b3b41;
+  --color-zinc-400: #8d8d96; /*  5.39:1 on surface */
+  --color-zinc-500: #a4a4ad; /*  7.17:1 */
+  --color-zinc-600: #bcbcc4; /*  9.40:1 */
+  --color-zinc-700: #d0d0d6;
+  --color-zinc-800: #e2e2e7;
+  --color-zinc-900: #eeeef1;
+  --color-zinc-950: #f8f8fa; /* 17.01:1 */
+  --color-stone-50: #101012;
+  --color-stone-100: #1d1d21;
+  --color-stone-200: #2b2b30;
 
   /* Brand ramp — the vivid 400/500 rungs hold their value because yellow reads
      correctly on charcoal; the pale rungs become dark olive washes and the dark
@@ -161,17 +165,18 @@
   --color-brand-900: #fce9a8;
   --color-brand-950: #fef6d6;
 
-  /* Semantic surfaces and ink. */
-  --color-canvas: #0c0e12;
-  --color-surface: #15181e;
-  --color-sunken: #101317;
-  --color-raised: #1b1f26;
-  --color-line: #282d36;
-  --color-line-strong: #363c46;
-  --color-ink: #f7f9fc; /* 16.86:1 on surface */
-  --color-ink-2: #bac1cd; /*  9.82:1 */
-  --color-ink-3: #a3aab7; /*  7.61:1 */
-  --color-ink-faint: #8c93a0; /*  5.75:1 */
+  /* Semantic surfaces and ink. `canvas` is near-black so a card lifts off it
+     without a shadow, which is what carries the layered industrial look. */
+  --color-canvas: #0a0a0c;
+  --color-surface: #17171a;
+  --color-sunken: #101012;
+  --color-raised: #1d1d21;
+  --color-line: #2b2b30;
+  --color-line-strong: #3b3b41;
+  --color-ink: #f8f8fa; /* 17.01:1 on surface */
+  --color-ink-2: #bcbcc4; /*  9.40:1 */
+  --color-ink-3: #a4a4ad; /*  7.17:1 */
+  --color-ink-faint: #8d8d96; /*  5.39:1 */
 
   /* Brand roles. The fill and its ink are unchanged — a yellow button looks and
      measures the same on either canvas — while the tinted text lightens. */
@@ -312,6 +317,32 @@
   ::selection {
     background: var(--color-brand);
     color: var(--color-on-brand);
+  }
+}
+
+@layer utilities {
+  /* Horizontal rails (the mobile category strip) scroll on purpose. Hiding the
+     bar keeps the strip looking deliberate rather than clipped; the rail still
+     scrolls by touch, wheel and keyboard, and `scroll-snap` is applied with
+     Tailwind utilities at the call site.
+
+     Scoped to the rail on purpose: the page itself must never scroll sideways,
+     and hiding a scrollbar app-wide would mask exactly that bug. */
+  .rail-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .rail-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* A long identifier with no spaces (a SKU, a stray UUID) would otherwise push
+     its container wider than the viewport. Applied at the few call sites that
+     render seller-supplied or machine-generated strings. */
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
