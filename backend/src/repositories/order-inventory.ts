@@ -4,6 +4,7 @@ import {
 } from "../prisma/generated/client.js";
 import {
   InsufficientProductStockError,
+  InventoryRestorationFailedError,
   OrderProductNotFoundError,
   SellerInventoryNotFoundError,
 } from "./order.errors.js";
@@ -127,8 +128,11 @@ export async function restoreOrderInventory(
 
     const restoredQuantity = -shipment.quantityChange;
 
-    // Restore the exact SellerInventory row that was decremented.
-    await transaction.sellerInventory.updateMany({
+    // Restore the exact SellerInventory row that was decremented. A failed
+    // restoration must abort the transaction — recording the reversal ledger
+    // entry while incrementing nothing would silently destroy the reserved
+    // stock and leave a false audit trail.
+    const restoration = await transaction.sellerInventory.updateMany({
       where: {
         sellerId: shipment.sellerId,
         productId: shipment.productId,
@@ -137,6 +141,13 @@ export async function restoreOrderInventory(
         quantity: { increment: restoredQuantity },
       },
     });
+
+    if (restoration.count !== 1) {
+      throw new InventoryRestorationFailedError(
+        shipment.productId,
+        shipment.sellerId,
+      );
+    }
 
     await transaction.inventoryTransaction.create({
       data: {

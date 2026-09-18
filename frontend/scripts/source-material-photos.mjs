@@ -22,9 +22,9 @@
  * Downloads land in `.image-staging/` (git-ignored). `convert-material-photos.ps1`
  * turns them into the 4:3 PNGs the application serves.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendDir = join(scriptDir, "..");
@@ -40,7 +40,7 @@ const SOURCE_WIDTH = 1400;
 
 /** A licence must be one of these to ship. Commons hosts a small amount of
  *  non-free material under exemptions; none of it belongs in a product catalog. */
-const ALLOWED_LICENCE = /^(cc0|cc[ -]by|public domain|pd|fal|attribution)/i;
+const ALLOWED_LICENCE = /^(?:CC0(?: 1\.0)?|CC BY(?:-SA)? [1-4]\.[05]|Public domain|FAL(?: 1\.[123])?|Attribution)$/i;
 
 /**
  * Product photographs. `slot` is the existing filename in
@@ -146,11 +146,7 @@ const PRODUCT_SLOTS = [
     "File:Bundled PVC pipes for drainage in Awka.jpg",
   ],
   ["ppr-pipe-25mm", "polypropylene pipe", "File:Green plastic pipes.JPG"],
-  [
-    "brass-gate-valve-1-inch",
-    "gate valve",
-    "File:Absperrventil für Heizungs-Rücklauf.jpg",
-  ],
+  ["brass-gate-valve-1-inch", "brass gate valve", null],
   ["security-steel-door", "steel security door", "File:Arrest-door.jpg"],
   // `null` means: a human searched, looked at the candidates, and found that
   // Commons has no photograph a buyer would recognise as this material. Leaving
@@ -302,7 +298,10 @@ async function fetchWithRetry(url, { attempts = 6 } = {}) {
       await sleep(3000 * attempt);
     }
     try {
-      const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+      const response = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(20000),
+      });
       if (response.status === 429 || response.status >= 500) {
         lastError = new Error(`HTTP ${response.status}`);
         continue;
@@ -391,6 +390,7 @@ async function findCandidates(query) {
       });
 
   const pages = data?.query?.pages ?? [];
+  pages.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
   return pages
     .map((page) => {
       const info = page.imageinfo?.[0];
@@ -471,7 +471,7 @@ async function fetchByTitle(title) {
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const options = { index: 0, only: null, list: null, listAll: false };
+  const options = { index: 0, only: null, list: null, listAll: false, dryRun: false };
   for (const arg of argv) {
     const [flag, value = ""] = arg.split("=");
     if (flag === "--index") {
@@ -482,6 +482,8 @@ function parseArgs(argv) {
       options.list = value;
     } else if (flag === "--list-all") {
       options.listAll = true;
+    } else if (flag === "--dry-run") {
+      options.dryRun = true;
     }
   }
   return options;
@@ -538,6 +540,16 @@ async function main() {
     return;
   }
 
+  if (options.dryRun) {
+    for (const { kind, slots } of GROUPS) {
+      for (const [slot, , pinnedTitle] of slots) {
+        if (options.only && !options.only.has(slot)) continue;
+        console.log(`${kind}/${slot}: ${pinnedTitle ?? "SOURCING GAP"}`);
+      }
+    }
+    return;
+  }
+
   const credits = [];
   const failures = [];
   const unsourced = [];
@@ -551,7 +563,11 @@ async function main() {
       }
       // Explicitly unsourced: no photograph is downloaded and none is invented.
       if (pinnedTitle === null) {
-        unsourced.push(`${kind}/${slot} (no honest match for "${query}")`);
+        await rm(join(frontendDir, "public/images", kind, `${slot}.png`), { force: true });
+        for (const extension of Object.values(EXTENSION_BY_MIME)) {
+          await rm(join(stageDir, kind, `${slot}.${extension}`), { force: true });
+        }
+        unsourced.push(`${kind}/${slot} (SOURCING GAP for "${query}")`);
         continue;
       }
 
@@ -575,7 +591,7 @@ async function main() {
           failures.push(`${kind}/${slot}: unsupported type ${chosen.mime}`);
           continue;
         }
-        const savedAs = `${kind}/${slot}.${extension}`;
+        const savedAs = `${kind}/${slot}.png`;
         await download(chosen.thumbUrl, join(stageDir, kind, `${slot}.${extension}`));
         await sleep(350);
 
@@ -607,10 +623,12 @@ async function main() {
   // old credit in place, crediting a photograph no longer shipped. So the merge is
   // filtered to the slots this table still intends to ship.
   const creditsPath = join(frontendDir, "public/images/image-credits.json");
-  const shippable = new Set(
+  const retired = new Set(
     GROUPS.flatMap(({ kind, slots }) =>
       slots
-        .filter(([, , pinnedTitle]) => pinnedTitle !== null)
+        .filter(([slot, , pinnedTitle]) =>
+          pinnedTitle === null && (!options.only || options.only.has(slot)),
+        )
         .map(([slot]) => `${kind}/${slot}.png`),
     ),
   );
@@ -620,17 +638,22 @@ async function main() {
   } catch {
     // First run: no file yet.
   }
+  for (const key of retired) {
+    delete existing[key];
+  }
   for (const entry of credits) {
     existing[`${entry.kind}/${entry.slot}.png`] = entry;
+  }
+  for (const [key, entry] of Object.entries(existing)) {
+    entry.savedAs = key;
   }
   await writeFile(
     creditsPath,
     `${JSON.stringify(
       {
-        note: "Photographs sourced by scripts/source-material-photos.mjs come from Wikimedia Commons under the licence recorded here; regenerate with that script. The Ethiopian cement-brand product images predate it and are not covered by these credits. Slots with no honest match ship no photograph at all and render ProductImage's labelled placeholder.",
+        note: "Photographs from Wikimedia Commons under the recorded licences. Generic product-type illustrations do not verify brand, dimensions or specifications. The five cement product files share one public-domain source. savedAs identifies the final PNG relative to public/images; conversion resizes and may crop the source. SOURCING GAP slots ship no photograph. CC BY-SA adaptations retain the recorded source licence.",
         images: Object.fromEntries(
           Object.entries(existing)
-            .filter(([key]) => shippable.has(key))
             .sort(([a], [b]) => a.localeCompare(b)),
         ),
       },
@@ -649,4 +672,8 @@ async function main() {
   }
 }
 
-await main();
+export { callCommons, download, fetchByTitle, findCandidates };
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

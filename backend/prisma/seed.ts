@@ -903,7 +903,6 @@ const products: ProductSeed[] = [
       "Full-bore brass isolation valve for residential water tanks, supply mains, pump lines, and service branches.",
     price: "1350.00",
     quantity: 180,
-    imageUrl: "/images/products/brass-gate-valve-1-inch.png",
     specifications: {
       Size: "1 inch",
       Material: "Brass",

@@ -76,3 +76,19 @@ export class OrderSerializationError extends Error {
     this.name = "OrderSerializationError";
   }
 }
+
+/**
+ * Raised when a cancellation cannot restore stock because the SellerInventory
+ * row the order originally decremented no longer exists. Recording the
+ * reversal anyway would report a restoration that never happened, so the
+ * whole cancellation transaction is rolled back instead.
+ */
+export class InventoryRestorationFailedError extends Error {
+  constructor(productId: string, sellerId: string) {
+    super(
+      `The inventory entry for product ${productId} and seller ${sellerId} ` +
+        "no longer exists, so the reserved stock cannot be restored.",
+    );
+    this.name = "InventoryRestorationFailedError";
+  }
+}
