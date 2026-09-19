@@ -19,7 +19,6 @@ interface FormErrors {
   categoryId?: string;
   price?: string;
   quantity?: string;
-  imageUrl?: string;
 }
 
 export function CreateProductDialog({
@@ -33,7 +32,6 @@ export function CreateProductDialog({
   const [categoryId, setCategoryId] = useState("");
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("0");
-  const [imageUrl, setImageUrl] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
 
   const categoriesQuery = useQuery({
@@ -73,17 +71,6 @@ export function CreateProductDialog({
       next.quantity = "Quantity must be a non-negative whole number.";
     }
 
-    if (imageUrl.trim()) {
-      try {
-        const protocol = new URL(imageUrl.trim()).protocol;
-        if (protocol !== "http:" && protocol !== "https:") {
-          next.imageUrl = "Image URL must use HTTP or HTTPS.";
-        }
-      } catch {
-        next.imageUrl = "Enter a valid URL.";
-      }
-    }
-
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -98,7 +85,6 @@ export function CreateProductDialog({
       categoryId,
       price: Number(price).toFixed(2),
       quantity: Number(quantity),
-      imageUrl: imageUrl.trim() || null,
     });
   }
 
@@ -299,31 +285,20 @@ export function CreateProductDialog({
             </div>
           </div>
 
-          {/* Image URL (optional) */}
-          <div>
-            <label
-              className="block text-sm font-medium text-zinc-800"
-              htmlFor="cp-image"
-            >
-              Image URL{" "}
-              <span className="font-normal text-zinc-500">(optional)</span>
-            </label>
-            <input
-              className={fieldClass(Boolean(errors.imageUrl))}
-              disabled={isPending}
-              id="cp-image"
-              inputMode="url"
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/product.jpg"
-              type="url"
-              value={imageUrl}
-            />
-            {errors.imageUrl ? (
-              <p className="mt-1 text-xs text-red-700" role="alert">
-                {errors.imageUrl}
-              </p>
-            ) : null}
-          </div>
+          {/* Images are added after creation.
+
+              A product is created with none, and the seller adds photographs
+              from "Manage images" on the inventory row. Keeping one URL box here
+              would give images two entry points writing to the same
+              `ProductImage` records, and the box could only ever manage the
+              first of up to eight. */}
+          <p className="rounded-md border border-zinc-200 bg-raised px-3 py-2 text-xs text-zinc-600">
+            Product photographs are added after the product is created. Once it
+            is saved, use{" "}
+            <span className="font-semibold">Manage images</span> on its inventory
+            row to upload one or more images and choose which one buyers see
+            first.
+          </p>
 
           {/* Server error */}
           {serverError ? (

@@ -5,7 +5,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import {
   PrismaClient,
   ProductApprovalStatus,
-  ProductImageType,
   Role,
 } from "../src/prisma/generated/client.js";
 import { hashPassword } from "../src/utils/password.js";
@@ -51,7 +50,6 @@ interface ProductSeed {
   summary: string;
   price: string;
   quantity: number;
-  imageUrl?: string;
   inventory: {
     city: string;
     region: string;
@@ -299,7 +297,6 @@ const products: ProductSeed[] = [
     brandName: "Dangote Cement",
     price: "1280.00",
     quantity: 480,
-    imageUrl: "/images/products/dangote-cement.png",
     strengthGrade: "32.5R",
     cementType: "Portland limestone cement",
     origin: "Ethiopia",
@@ -310,7 +307,6 @@ const products: ProductSeed[] = [
     brandName: "Derba Cement",
     price: "1325.00",
     quantity: 360,
-    imageUrl: "/images/products/derba-cement.png",
     strengthGrade: "42.5N",
     cementType: "Ordinary Portland cement",
     origin: "Derba, Ethiopia",
@@ -321,7 +317,6 @@ const products: ProductSeed[] = [
     brandName: "Habesha Cement",
     price: "1295.00",
     quantity: 420,
-    imageUrl: "/images/products/habesha-cement.png",
     strengthGrade: "32.5N",
     cementType: "Portland pozzolana cement",
     origin: "Holeta, Ethiopia",
@@ -332,7 +327,6 @@ const products: ProductSeed[] = [
     brandName: "Mugher Cement",
     price: "1260.00",
     quantity: 310,
-    imageUrl: "/images/products/mugher-cement.png",
     strengthGrade: "32.5N",
     cementType: "Portland pozzolana cement",
     origin: "Mugher, Ethiopia",
@@ -343,7 +337,6 @@ const products: ProductSeed[] = [
     brandName: "National Cement",
     price: "1305.00",
     quantity: 390,
-    imageUrl: "/images/products/national-cement.png",
     strengthGrade: "32.5R",
     cementType: "Portland pozzolana cement",
     origin: "Dire Dawa, Ethiopia",
@@ -358,7 +351,6 @@ const products: ProductSeed[] = [
       "High-yield deformed reinforcement bar for slabs, beams, columns, and reinforced concrete foundations.",
     price: "1480.00",
     quantity: 850,
-    imageUrl: "/images/products/rebar-12mm.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -402,7 +394,6 @@ const products: ProductSeed[] = [
       "Machine-vibrated hollow concrete block for external walls, partitions, and general masonry construction.",
     price: "115.00",
     quantity: 4200,
-    imageUrl: "/images/products/hollow-concrete-block-20cm.png",
     city: "Bishoftu",
     region: "Oromia",
     specifications: {
@@ -424,7 +415,6 @@ const products: ProductSeed[] = [
       "Low-porosity porcelain floor tile with a durable matte finish for residential and commercial interiors.",
     price: "1650.00",
     quantity: 275,
-    imageUrl: "/images/products/porcelain-floor-tile-60x60.png",
     specifications: {
       Dimensions: "60 x 60 cm",
       Finish: "Matte",
@@ -444,7 +434,6 @@ const products: ProductSeed[] = [
       "Zinc-coated corrugated roofing sheet for residential, warehouse, workshop, and agricultural structures.",
     price: "2150.00",
     quantity: 520,
-    imageUrl: "/images/products/corrugated-roofing-sheet-035.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -466,7 +455,6 @@ const products: ProductSeed[] = [
       "Clean washed construction sand graded for concrete production, block work, plastering, and screed.",
     price: "18500.00",
     quantity: 65,
-    imageUrl: "/images/products/washed-construction-sand.png",
     specifications: {
       Volume: "7 m3",
       Grading: "0-5 mm",
@@ -486,7 +474,6 @@ const products: ProductSeed[] = [
       "Washed crushed stone aggregate for structural concrete, foundations, drainage beds, and site works.",
     price: "22400.00",
     quantity: 52,
-    imageUrl: "/images/products/crushed-gravel-20mm.png",
     specifications: {
       Volume: "7 m3",
       AggregateSize: "20 mm",
@@ -506,7 +493,6 @@ const products: ProductSeed[] = [
       "Low-odor water-based interior emulsion paint with a washable matt finish and strong surface coverage.",
     price: "4680.00",
     quantity: 145,
-    imageUrl: "/images/products/interior-emulsion-paint-20l.png",
     specifications: {
       Volume: "20 L",
       Color: "White",
@@ -527,7 +513,6 @@ const products: ProductSeed[] = [
       "Single-core copper building wire for socket circuits, lighting distribution, and general concealed wiring.",
     price: "7850.00",
     quantity: 230,
-    imageUrl: "/images/products/copper-cable-25mm.png",
     specifications: {
       Conductor: "Copper",
       CrossSection: "2.5 mm2",
@@ -548,7 +533,6 @@ const products: ProductSeed[] = [
       "Rigid PVC pressure pipe for cold-water distribution, irrigation, and buried utility installations.",
     price: "2380.00",
     quantity: 310,
-    imageUrl: "/images/products/pvc-pressure-pipe-4-inch.png",
     specifications: {
       Diameter: "4 inch",
       Length: "6 m",
@@ -568,7 +552,6 @@ const products: ProductSeed[] = [
       "Heavy deformed reinforcement bar for columns, transfer beams, retaining walls, and reinforced foundations.",
     price: "2590.00",
     quantity: 620,
-    imageUrl: "/images/products/rebar-16mm.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -591,7 +574,6 @@ const products: ProductSeed[] = [
       "Flexible black annealed wire for tying reinforcement cages, mesh, and general site fixing work.",
     price: "3650.00",
     quantity: 175,
-    imageUrl: "/images/products/binding-wire-25kg.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -613,7 +595,6 @@ const products: ProductSeed[] = [
       "Machine-vibrated concrete block sized for internal partitions and non-load-bearing enclosure walls.",
     price: "92.00",
     quantity: 5100,
-    imageUrl: "/images/products/hollow-concrete-block-15cm.png",
     city: "Bishoftu",
     region: "Oromia",
     specifications: {
@@ -635,7 +616,6 @@ const products: ProductSeed[] = [
       "Kiln-fired clay masonry brick for durable wall construction, facades, garden walls, and repair work.",
     price: "38.00",
     quantity: 8900,
-    imageUrl: "/images/products/fired-clay-brick.png",
     city: "Sebeta",
     region: "Oromia",
     specifications: {
@@ -657,7 +637,6 @@ const products: ProductSeed[] = [
       "Easy-clean glazed ceramic wall tile for kitchens, bathrooms, utility rooms, and wet-area finishes.",
     price: "1420.00",
     quantity: 340,
-    imageUrl: "/images/products/ceramic-wall-tile-30x60.png",
     specifications: {
       Dimensions: "30 x 60 cm",
       Finish: "Gloss",
@@ -677,7 +656,6 @@ const products: ProductSeed[] = [
       "Polymer-modified cementitious adhesive for fixing ceramic and porcelain tiles to prepared floors and walls.",
     price: "1180.00",
     quantity: 290,
-    imageUrl: "/images/products/tile-adhesive-25kg.png",
     specifications: {
       Weight: "25 kg",
       Color: "Grey",
@@ -697,7 +675,6 @@ const products: ProductSeed[] = [
       "Color-coated corrugated steel roofing sheet for weather-resistant residential and light-commercial roofs.",
     price: "2980.00",
     quantity: 410,
-    imageUrl: "/images/products/prepainted-roofing-sheet-040.png",
     city: "Dukem",
     region: "Oromia",
     specifications: {
@@ -740,7 +717,6 @@ const products: ProductSeed[] = [
       "Well-graded crushed stone for sub-base preparation, access roads, slab foundations, and site filling.",
     price: "20800.00",
     quantity: 44,
-    imageUrl: "/images/products/crushed-hardcore-40mm.png",
     specifications: {
       Volume: "7 m3",
       AggregateSize: "0-40 mm",
@@ -760,7 +736,6 @@ const products: ProductSeed[] = [
       "UV- and rain-resistant acrylic exterior paint formulated for rendered masonry, blockwork, and concrete.",
     price: "6950.00",
     quantity: 118,
-    imageUrl: "/images/products/exterior-weather-paint-20l.png",
     specifications: {
       Volume: "20 L",
       Color: "Off-white",
@@ -781,7 +756,6 @@ const products: ProductSeed[] = [
       "Penetrating masonry primer that seals porous plaster and helps finish coats resist alkaline substrates.",
     price: "5220.00",
     quantity: 96,
-    imageUrl: "/images/products/alkali-resistant-primer-20l.png",
     specifications: {
       Volume: "20 L",
       Color: "White",
@@ -802,7 +776,6 @@ const products: ProductSeed[] = [
       "PVC-insulated single-core copper wire for residential lighting circuits and low-load branch wiring.",
     price: "5480.00",
     quantity: 265,
-    imageUrl: "/images/products/copper-cable-15mm.png",
     specifications: {
       Conductor: "Copper",
       CrossSection: "1.5 mm2",
@@ -823,7 +796,6 @@ const products: ProductSeed[] = [
       "Metal consumer unit for organizing residential branch circuits with space for main and protective breakers.",
     price: "4350.00",
     quantity: 82,
-    imageUrl: "/images/products/distribution-board-12-way.png",
     specifications: {
       Ways: "12",
       Mounting: "Flush",
@@ -843,7 +815,6 @@ const products: ProductSeed[] = [
       "White twin switched socket outlet for residential bedrooms, living rooms, kitchens, and offices.",
     price: "680.00",
     quantity: 460,
-    imageUrl: "/images/products/twin-socket-13a.png",
     specifications: {
       Rating: "13 A, 250 V",
       Gang: "Twin",
@@ -863,7 +834,6 @@ const products: ProductSeed[] = [
       "Rigid uPVC soil and waste pipe for residential drainage stacks, underground drains, and vent systems.",
     price: "1980.00",
     quantity: 285,
-    imageUrl: "/images/products/pvc-drainage-pipe-110mm.png",
     specifications: {
       Diameter: "110 mm",
       Length: "6 m",
@@ -883,7 +853,6 @@ const products: ProductSeed[] = [
       "Heat-fusion PPR pipe for concealed hot- and cold-water distribution in kitchens, bathrooms, and utilities.",
     price: "760.00",
     quantity: 520,
-    imageUrl: "/images/products/ppr-pipe-25mm.png",
     specifications: {
       Diameter: "25 mm",
       Length: "4 m",
@@ -922,7 +891,6 @@ const products: ProductSeed[] = [
       "Powder-coated steel entrance door set with reinforced leaf, frame, hinges, lockset, and weather seals.",
     price: "38500.00",
     quantity: 34,
-    imageUrl: "/images/products/security-steel-door.png",
     specifications: {
       Dimensions: "900 x 2100 mm",
       Material: "Galvanized steel",
@@ -942,7 +910,6 @@ const products: ProductSeed[] = [
       "Two-panel glazed aluminium sliding window for bedrooms, living areas, kitchens, and stair landings.",
     price: "22800.00",
     quantity: 46,
-    imageUrl: "/images/products/aluminium-sliding-window.png",
     specifications: {
       Dimensions: "1200 x 1200 mm",
       Frame: "Powder-coated aluminium",
@@ -962,7 +929,6 @@ const products: ProductSeed[] = [
       "Smooth paint-grade flush door leaf for bedrooms, stores, studies, and other dry interior spaces.",
     price: "8950.00",
     quantity: 78,
-    imageUrl: "/images/products/flush-interior-door.png",
     specifications: {
       Dimensions: "800 x 2100 mm",
       Thickness: "40 mm",
@@ -982,7 +948,6 @@ const products: ProductSeed[] = [
       "Straight treated eucalyptus pole for scaffolding, temporary support, fencing, and light roof structures.",
     price: "620.00",
     quantity: 760,
-    imageUrl: "/images/products/eucalyptus-poles-4m.png",
     city: "Addis Ababa",
     region: "Addis Ababa",
     specifications: {
@@ -1004,7 +969,6 @@ const products: ProductSeed[] = [
       "General-purpose structural plywood for concrete formwork, roofing decks, cabinetry, and site fabrication.",
     price: "4950.00",
     quantity: 135,
-    imageUrl: "/images/products/plywood-18mm.png",
     specifications: {
       Dimensions: "1220 x 2440 mm",
       Thickness: "18 mm",
@@ -1043,7 +1007,6 @@ const products: ProductSeed[] = [
       "Polyester-reinforced torch-applied waterproofing membrane for flat roofs, balconies, and foundations.",
     price: "6850.00",
     quantity: 94,
-    imageUrl: "/images/products/torch-on-membrane.png",
     specifications: {
       Thickness: "4 mm",
       RollSize: "1 x 10 m",
@@ -1063,7 +1026,6 @@ const products: ProductSeed[] = [
       "Two-component cement-based coating for bathrooms, water tanks, balconies, retaining walls, and wet rooms.",
     price: "3950.00",
     quantity: 155,
-    imageUrl: "/images/products/cementitious-waterproofing-25kg.png",
     specifications: {
       Weight: "25 kg",
       Coverage: "10-12 m2 at two coats",
@@ -1102,7 +1064,6 @@ const products: ProductSeed[] = [
       "White vitreous china basin and pedestal set for residential bathrooms, powder rooms, and guest washrooms.",
     price: "9650.00",
     quantity: 58,
-    imageUrl: "/images/products/ceramic-wash-basin.png",
     specifications: {
       Width: "550 mm",
       Material: "Vitreous china",
@@ -1122,7 +1083,6 @@ const products: ProductSeed[] = [
       "Wall-mounted brass shower mixer with chrome finish, hand shower, hose, and adjustable holder.",
     price: "7350.00",
     quantity: 76,
-    imageUrl: "/images/products/chrome-shower-mixer.png",
     specifications: {
       Material: "Brass body",
       Finish: "Chrome plated",
@@ -1208,10 +1168,43 @@ async function main(): Promise<void> {
     await upsertProduct(seed, sellerIds, categoryIds, brandIds);
   }
 
+  const purged = await purgeLegacyCatalogImages();
+
   console.log(
     `Seeded ${sellers.length} sellers, ${categories.length} categories, ` +
       `${brands.length} brands, and ${products.length} products.`,
   );
+  console.log(
+    `Removed ${purged.images} legacy catalog image record(s) and cleared ` +
+      `${purged.products} legacy product image path(s).`,
+  );
+}
+
+/**
+ * CMM no longer ships product photography; sellers upload their own. Databases
+ * seeded before that change still hold `ProductImage` rows and `Product.imageUrl`
+ * values pointing at `/images/products/<name>.png`, and those files no longer
+ * exist in the repository, so every one of them would render as a broken image.
+ *
+ * The match is deliberately narrow — the exact path prefix the old seed wrote —
+ * so seller uploads, which validate to absolute http(s) URLs, are never touched.
+ */
+const LEGACY_CATALOG_IMAGE_PREFIX = "/images/products/";
+
+async function purgeLegacyCatalogImages(): Promise<{
+  images: number;
+  products: number;
+}> {
+  const images = await prisma.productImage.deleteMany({
+    where: { imageUrl: { startsWith: LEGACY_CATALOG_IMAGE_PREFIX } },
+  });
+
+  const products = await prisma.product.updateMany({
+    where: { imageUrl: { startsWith: LEGACY_CATALOG_IMAGE_PREFIX } },
+    data: { imageUrl: null },
+  });
+
+  return { images: images.count, products: products.count };
 }
 
 async function upsertCategory(seed: NamedSeed): Promise<string> {
@@ -1268,7 +1261,9 @@ async function upsertProduct(
     approvalStatus: ProductApprovalStatus.APPROVED,
     price: seed.price,
     quantity: seed.quantity,
-    imageUrl: seed.imageUrl ?? null,
+    // Sellers own product photography. The seed never supplies an image, and it
+    // writes null explicitly so re-seeding clears any legacy CMM-owned path.
+    imageUrl: null,
   };
 
   if (record) {
@@ -1308,45 +1303,6 @@ async function upsertProduct(
       deliveryAvailable: seed.inventory.deliveryAvailable,
     },
   });
-
-  if (seed.imageUrl) {
-    await seedPrimaryImage(record.id, seed.imageUrl);
-  }
-}
-
-async function seedPrimaryImage(
-  productId: string,
-  imageUrl: string,
-): Promise<void> {
-  await prisma.$transaction(async (transaction) => {
-    await transaction.productImage.updateMany({
-      where: { productId, isPrimary: true },
-      data: { isPrimary: false },
-    });
-    const existing = await transaction.productImage.findFirst({
-      where: { productId, imageUrl },
-    });
-
-    if (existing) {
-      await transaction.productImage.update({
-        where: { id: existing.id },
-        data: {
-          type: ProductImageType.OFFICIAL,
-          isPrimary: true,
-        },
-      });
-      return;
-    }
-
-    await transaction.productImage.create({
-      data: {
-        productId,
-        imageUrl,
-        type: ProductImageType.OFFICIAL,
-        isPrimary: true,
-      },
-    });
-  });
 }
 
 function named(id: string, name: string, description: string): NamedSeed {
@@ -1359,7 +1315,6 @@ function cementProduct(input: {
   brandName: string;
   price: string;
   quantity: number;
-  imageUrl: string;
   strengthGrade: string;
   cementType: string;
   origin: string;
@@ -1375,7 +1330,6 @@ function cementProduct(input: {
       "screed, and general building work.",
     price: input.price,
     quantity: input.quantity,
-    imageUrl: input.imageUrl,
     inventory: defaultInventory(),
     specifications: {
       Weight: "50 kg",
@@ -1398,7 +1352,6 @@ function product(input: {
   summary: string;
   price: string;
   quantity: number;
-  imageUrl?: string;
   city?: string;
   region?: string;
   specifications: Record<string, string>;
@@ -1417,7 +1370,6 @@ function product(input: {
     summary: input.summary,
     price: input.price,
     quantity: input.quantity,
-    ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
     inventory: {
       city: input.city ?? "Addis Ababa",
       region: input.region ?? "Addis Ababa",

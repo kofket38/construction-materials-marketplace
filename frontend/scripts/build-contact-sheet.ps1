@@ -14,11 +14,11 @@
   application asset.
 
 .PARAMETER Group
-  products, categories, hero, or all (default).
+  categories, hero, or all (default).
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet('products', 'categories', 'hero', 'all')]
+  [ValidateSet('categories', 'hero', 'all')]
   [string]$Group = 'all'
 )
 
@@ -33,7 +33,6 @@ $outDir = Join-Path $frontendDir '.image-staging'
 # most of them; the hero banners get the largest because the landing page shows
 # one of them at full width and a thumbnail cannot tell you whether it works.
 $layouts = @{
-  products   = @{ Columns = 6; TileWidth = 210; TileHeight = 158 }
   categories = @{ Columns = 5; TileWidth = 250; TileHeight = 188 }
   hero       = @{ Columns = 2; TileWidth = 460; TileHeight = 259 }
 }
@@ -139,5 +138,5 @@ function Build-Sheet {
 }
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-$groups = if ($Group -eq 'all') { 'products', 'categories', 'hero' } else { @($Group) }
+$groups = if ($Group -eq 'all') { 'categories', 'hero' } else { @($Group) }
 foreach ($name in $groups) { Build-Sheet -Name $name }

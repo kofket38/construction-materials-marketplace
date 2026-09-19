@@ -103,16 +103,24 @@ sidebars through the shared `WorkspaceAccountFooter`. The four layouts are route
 siblings, so a workspace shell cannot inherit the public header's control and
 carries its own.
 
-*Product imagery.* `ProductImage` plus `products/lib/product-image.ts` replace
-the removed `product-images.ts` and are the only way a product picture is
-rendered. A product shows a photograph belonging to that product, or a
-placeholder that is labelled as one — there is no category stock photo and no
-brand-matching step, because filling the slot with something plausible would
-misrepresent what the seller is offering. `productImageSrc` accepts absolute
-`http(s)` URLs and root-relative paths verbatim and refuses every other scheme,
-so a stray stored value falls back to the placeholder instead of reaching
-`<img src>`. Every product surface reads it, including the seller inventory
-table, which held the last raw `<img>` on a product.
+*Product imagery.* CMM ships no product photography. Sellers supply their own
+through `ProductImage`, and a product with none renders a labelled "Image not
+available" state — there is no seeded catalog image, no category stock photo and
+no brand-matching step, because filling the slot with something plausible would
+misrepresent what the seller is offering. The former `public/images/products/`
+assets, their `image-credits.json` entries and the seed's `OFFICIAL` image rows
+were removed; `productImageSrc` refuses anything still stored under
+`/images/products/`, and the seed clears such rows on its next run.
+`productImageSrc` otherwise accepts absolute `http(s)` URLs and root-relative
+paths verbatim and refuses every other scheme, so a stray stored value falls back
+to the empty state instead of reaching `<img src>`. Every product surface reads
+it, including the seller inventory table.
+
+Sellers manage images after creation from `ProductImagesDialog`, reached from
+"Manage images" on a seller inventory row. It lists, adds, deletes and re-primaries
+through the existing endpoints and is the only image entry point; product creation
+deliberately takes no image. `public/images/categories/` and `public/images/hero/`
+are UI chrome for the homepage, not product imagery, and are retained.
 
 *Procurement visibility.* `attachProcurementProject`, in the
 `ProcurementProjectLinker` port, attaches an `{ id, title, status }` project
@@ -165,7 +173,8 @@ project grouping is not exposed through the seller view.
   - An eight-image limit and HTTP/HTTPS URL validation.
   - Exactly one application-managed primary image when images exist.
   - Automatic primary-image replacement after deletion.
-  - Backward-compatible synchronization with `Product.imageUrl`.
+  - Backward-compatible synchronization with `Product.imageUrl` (a read
+    projection of the primary row, never a separate writable source).
 - Administrator dashboard and moderation with:
   - Marketplace user, customer, seller, product, category, order, and revenue
     totals.

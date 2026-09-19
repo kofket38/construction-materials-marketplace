@@ -8,7 +8,6 @@ export interface CreateProductInput {
   price: string;
   quantity: number;
   categoryId: string;
-  imageUrl?: string | null;
 }
 
 interface ProductData {
@@ -18,6 +17,11 @@ interface ProductData {
 /**
  * POST /api/products — seller creates a new product listing.
  * sellerId is resolved from the authenticated JWT server-side.
+ *
+ * Deliberately carries no image. Photographs belong to `ProductImage` records
+ * and are added afterwards through `product-images.api.ts`, which is also the
+ * only place they can be replaced, removed or re-ordered. Passing one here would
+ * set `Product.imageUrl` directly and give the same data two writers.
  */
 export async function createProduct(
   input: CreateProductInput,
@@ -30,7 +34,6 @@ export async function createProduct(
       price: input.price,
       quantity: input.quantity,
       categoryId: input.categoryId,
-      ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
     },
   );
   return response.data.data.product;

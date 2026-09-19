@@ -8,10 +8,9 @@
   scaled down to something a phone can afford, and written as PNG.
 
   PNG is not the format anyone would choose for a photograph — WebP would be a
-  third of the size — but the filenames are pinned. The live database stores
-  `/images/products/<name>.png` for every product, so changing the extension
-  would blank every image until the data were migrated, and that migration is
-  backend work this task is not permitted to do. So: PNG, but reduced to a
+  third of the size — but the filenames are pinned: `image-credits.json` records
+  provenance against the saved name, and the homepage references the hero file
+  directly. So: PNG, but reduced to a
   256-colour optimal palette with dithering, which brings a 900x675 photograph
   from roughly 1 MB down to roughly a quarter of that with no visible loss at
   the sizes the app actually renders. Pass -Mode truecolor to compare.
@@ -43,7 +42,6 @@ $imagesDir = Join-Path $frontendDir 'public/images'
 # Aspect and width per group. Products and categories share 4:3 so a category
 # tile and a product card crop the same way; the hero is a 16:9 banner.
 $targets = @{
-  products   = @{ Width = 900; Height = 675; Out = (Join-Path $imagesDir 'products') }
   categories = @{ Width = 800; Height = 600; Out = (Join-Path $imagesDir 'categories') }
   hero       = @{ Width = 1920; Height = 1080; Out = (Join-Path $imagesDir 'hero') }
 }

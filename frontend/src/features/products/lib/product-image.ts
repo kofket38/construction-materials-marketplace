@@ -1,9 +1,10 @@
 /**
  * The one place product imagery is resolved.
  *
- * The rule, and it has no exceptions: a product shows a photograph that belongs
- * to *that* product, or it shows a neutral placeholder. There is no matching
- * step, no brand guessing, no shared stock photo standing in for a category.
+ * The rule, and it has no exceptions: a product shows a photograph its *seller*
+ * uploaded for that product, or it shows a neutral "Image not available" state.
+ * CMM supplies no product photography of its own — no seeded catalog images, no
+ * stock fallback, no brand guessing, no shared photo standing in for a category.
  *
  * `Product.imageUrl` is the backend's projection of the primary `ProductImage`
  * row (`product.images[0]?.imageUrl ?? product.imageUrl`, ordered `isPrimary`
@@ -31,25 +32,39 @@ import {
 } from "lucide-react";
 
 /**
+ * Paths the retired CMM-owned catalog images were stored under. Those files were
+ * deleted with the seeded-image strategy, so a row still holding one is stale
+ * data pointing at a 404 — worth recognising rather than handing to `<img src>`
+ * and watching it fail.
+ *
+ * The seed clears these on its next run; this guard is what keeps a database
+ * that has not been re-seeded from showing a column of broken images in the
+ * meantime.
+ */
+const RETIRED_CATALOG_IMAGE_PREFIX = "/images/products/";
+
+/**
  * The `src` to render for a stored product image, or `null` when there is
  * nothing to render.
  *
- * Stored values come in two shapes and both are used verbatim: an absolute
- * `http(s)` URL, which is what managed `ProductImage` records validate to, and a
- * root-relative path such as `/images/products/dangote-cement.png`, which the
- * seeded catalog uses and this app serves from `public/`. Product media is never
- * served by the API — proofs are, through an authenticated endpoint — so
- * rewriting a relative path onto the API origin would point it at a host that
- * has no such file.
+ * Seller uploads validate to an absolute `http(s)` URL server-side and are used
+ * verbatim. Root-relative paths are still accepted — the app serves `public/`
+ * and product media never goes through the API — with one exception: a path
+ * under the retired catalog directory resolves to `null`, because no such file
+ * exists any more.
  *
  * Any other scheme (`javascript:`, `data:`, a typo) is refused, so a stray
- * stored value falls back to the placeholder instead of reaching `<img src>`.
+ * stored value falls back to the empty state instead of reaching `<img src>`.
  */
 export function productImageSrc(
   imageUrl: string | null | undefined,
 ): string | null {
   const trimmed = imageUrl?.trim();
   if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith(RETIRED_CATALOG_IMAGE_PREFIX)) {
     return null;
   }
 
@@ -66,7 +81,8 @@ export function productImageSrc(
  * first, then the remaining records, de-duplicated.
  *
  * `primaryImageUrl` is included so the gallery can paint the image the list view
- * already had while the records request is still in flight.
+ * already had while the records request is still in flight. A product with no
+ * uploads returns an empty array, which is a valid answer and not an error.
  */
 export function productImageUrls(
   primaryImageUrl: string | null | undefined,
@@ -87,9 +103,14 @@ export function productImageUrls(
 }
 
 /**
- * A neutral trade icon for a product with no photograph, chosen from the
- * category name only. It illustrates the category, and the placeholder is
- * labelled as such, so it is never mistaken for a picture of the product.
+ * A neutral trade icon for a *category* with no photograph, chosen from the
+ * category name only.
+ *
+ * Product surfaces no longer use this: a product with no seller upload gets one
+ * neutral "Image not available" state, because a category-flavoured graphic is
+ * still CMM artwork standing where a seller's photograph belongs. Category
+ * tiles, which are UI chrome for a class of material rather than a listing, are
+ * the remaining caller.
  *
  * The classifier returns a key and the icons live in a module-level record, so
  * the component a caller renders is always one of a fixed set rather than a

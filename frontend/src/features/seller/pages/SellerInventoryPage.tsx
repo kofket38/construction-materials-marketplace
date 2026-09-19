@@ -3,6 +3,7 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
   LoaderCircle,
   MapPin,
   PackagePlus,
@@ -33,6 +34,7 @@ import {
 import { AddInventoryDialog } from "@/features/seller/components/AddInventoryDialog";
 import { CreateProductDialog } from "@/features/seller/components/CreateProductDialog";
 import { InventoryEditDialog } from "@/features/seller/components/InventoryEditDialog";
+import { ProductImagesDialog } from "@/features/seller/components/ProductImagesDialog";
 import { createProduct } from "@/features/seller/api/seller-products.api";
 import type { CreateProductInput } from "@/features/seller/api/seller-products.api";
 import type {
@@ -67,6 +69,10 @@ export function SellerInventoryPage() {
   const [editingEntry, setEditingEntry] =
     useState<SellerInventoryEntry | null>(null);
   const [deletingEntry, setDeletingEntry] =
+    useState<SellerInventoryEntry | null>(null);
+  // The product whose images are open for editing. Held as the whole entry so
+  // the dialog can title itself without a second lookup.
+  const [imagesEntry, setImagesEntry] =
     useState<SellerInventoryEntry | null>(null);
 
   const inventoryQuery = useQuery({
@@ -317,6 +323,7 @@ export function SellerInventoryPage() {
                     updateMutation.reset();
                     setEditingEntry(entry);
                   }}
+                  onManageImages={() => setImagesEntry(entry)}
                 />
               ))}
             </tbody>
@@ -426,6 +433,16 @@ export function SellerInventoryPage() {
         title="Remove inventory listing"
       />
 
+      {/* ── Product images dialog ── */}
+      {imagesEntry ? (
+        <ProductImagesDialog
+          key={imagesEntry.productId}
+          onClose={() => setImagesEntry(null)}
+          productId={imagesEntry.productId}
+          productName={imagesEntry.productName}
+        />
+      ) : null}
+
       {/* ── Create product dialog ── */}
       {showCreateDialog ? (
         <CreateProductDialog
@@ -458,10 +475,12 @@ function InventoryRow({
   entry,
   onDelete,
   onEdit,
+  onManageImages,
 }: {
   entry: SellerInventoryEntry;
   onDelete: () => void;
   onEdit: () => void;
+  onManageImages: () => void;
 }) {
   return (
     <tr className="hover:bg-zinc-50">
@@ -477,9 +496,22 @@ function InventoryRow({
               size="xs"
             />
           </div>
-          <p className="max-w-48 font-medium text-zinc-950 leading-5">
-            {entry.productName}
-          </p>
+          <div className="min-w-0">
+            <p className="max-w-48 font-medium text-zinc-950 leading-5">
+              {entry.productName}
+            </p>
+            {/* The row thumbnail is too small to carry a control, so the CTA
+                sits beside it. Wording follows the image state: a product with
+                nothing to show is the one that needs the nudge. */}
+            <button
+              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink underline-offset-2 hover:underline"
+              onClick={onManageImages}
+              type="button"
+            >
+              <ImagePlus aria-hidden="true" className="size-3.5" />
+              {entry.productImageUrl ? "Manage images" : "Upload product image"}
+            </button>
+          </div>
         </div>
       </td>
 
@@ -532,6 +564,15 @@ function InventoryRow({
       {/* Actions */}
       <td className="px-4 py-4">
         <div className="flex justify-end gap-2">
+          <button
+            aria-label={`Manage images for ${entry.productName}`}
+            className="inline-flex size-9 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+            onClick={onManageImages}
+            title="Manage product images"
+            type="button"
+          >
+            <ImagePlus aria-hidden="true" className="size-4" />
+          </button>
           <button
             aria-label={`Edit listing for ${entry.productName}`}
             className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"

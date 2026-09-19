@@ -1,26 +1,27 @@
 /**
- * Sources real construction-material photography from Wikimedia Commons.
+ * Sources the marketplace's *UI* photography from Wikimedia Commons: the
+ * category tiles and the homepage hero, and nothing else.
  *
- * Why this exists as a script rather than a one-off download: every photograph
+ * Product photography is explicitly out of scope. CMM does not ship product
+ * images — sellers upload their own through the `ProductImage` endpoints — and a
+ * product with no seller upload renders a labelled "Image not available" state
+ * rather than a stand-in picture. The product slots this script used to carry
+ * were removed with the seeded assets themselves; do not add them back.
+ *
+ * Why this remains a script rather than a one-off download: every photograph
  * shipped in `public/images` needs a recorded provenance — title, author,
  * licence and the Commons file page — and a hand-run download loses that within
  * a week. Running this writes both the images and `image-credits.json` beside
  * them, so the attribution can never drift from the files it describes.
  *
- * Each slot names its target filename and the search phrase that finds it. The
- * phrase is deliberately narrow ("brass gate valve", not "valve") because the
- * one rule that cannot be broken is that the photograph must show the material
- * the product actually is — a cement bag on a rebar listing is worse than no
- * photograph at all.
- *
  * Usage:
  *   node scripts/source-material-photos.mjs                     # every slot
- *   node scripts/source-material-photos.mjs --only=rebar-12mm   # re-source one
+ *   node scripts/source-material-photos.mjs --only=cement       # re-source one
  *   node scripts/source-material-photos.mjs --only=x --index=2  # next candidate
  *   node scripts/source-material-photos.mjs --list=steel        # inspect matches
  *
  * Downloads land in `.image-staging/` (git-ignored). `convert-material-photos.ps1`
- * turns them into the 4:3 PNGs the application serves.
+ * turns them into the PNGs the application serves.
  */
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -41,154 +42,6 @@ const SOURCE_WIDTH = 1400;
 /** A licence must be one of these to ship. Commons hosts a small amount of
  *  non-free material under exemptions; none of it belongs in a product catalog. */
 const ALLOWED_LICENCE = /^(?:CC0(?: 1\.0)?|CC BY(?:-SA)? [1-4]\.[05]|Public domain|FAL(?: 1\.[123])?|Attribution)$/i;
-
-/**
- * Product photographs. `slot` is the existing filename in
- * `public/images/products/` — kept byte-identical because the live database
- * stores that path, so replacing the file contents needs no data migration.
- *
- * A third element pins an exact `File:` title. Pinned means a human looked at
- * that picture and confirmed it shows the material; unpinned slots resolve to
- * the first candidate of the query and still have to pass the contact sheet.
- *
- * A third element of `null` is the deliberate opposite: a human looked and found
- * that Commons has nothing honest for this slot. Those download nothing, so the
- * product renders the labelled placeholder instead of a misleading photograph.
- */
-const PRODUCT_SLOTS = [
-  ["rebar-12mm", "steel reinforcing bar rebar", "File:Rebar on a pallet.jpg"],
-  ["rebar-16mm", "rebar bundle", "File:A bunch of rebar up close.jpg"],
-  // Two rounds of pipe queries returned a 1905 trade journal, a blast-furnace
-  // diagram and a scrapyard heap. A scrap pile is not a saleable pipe.
-  ["galvanized-steel-pipe-2-inch", "steel pipes", null],
-  ["binding-wire-25kg", "steel wire coil", "File:Steel wire reel in Finland.jpg"],
-  // The "Concrete masonry unit 1z..6z" series turned out to photograph block
-  // *manufacture* — a mixer, a heap of grey aggregate and workers under a tarp.
-  // A listing needs the finished unit a buyer is paying for, not the yard it was
-  // cast in, so both slots moved to photographs of blocks themselves.
-  [
-    "hollow-concrete-block-20cm",
-    "cinder block",
-    "File:Concrete masonry units.jpg",
-  ],
-  // "Concrete blocks beside A592" is filed under its blocks but photographed as a
-  // Lake District panorama — fells, drystone walls, and the blocks a speck at the
-  // roadside. Third attempt at this slot: a single-subject file instead of one
-  // whose title happens to mention blocks.
-  ["hollow-concrete-block-15cm", "cinder block", "File:Cinder block.jpg"],
-  ["fired-clay-brick", "clay bricks", "File:A Load of Bricks (8408569556).jpg"],
-  [
-    "porcelain-floor-tile-60x60",
-    "porcelain floor tiles",
-    "File:Polished Porcelain Floor Tiling.jpg",
-  ],
-  [
-    "ceramic-wall-tile-30x60",
-    "ceramic tiles wall bathroom",
-    "File:Kitchen backsplash tile.jpeg",
-  ],
-  ["tile-adhesive-25kg", "tile adhesive", "File:Sopro auf Baustelle.jpg"],
-  [
-    "corrugated-roofing-sheet-035",
-    "corrugated galvanised iron",
-    "File:Corrugated-galv-iron.jpg",
-  ],
-  [
-    "prepainted-roofing-sheet-040",
-    "metal roofing sheets",
-    "File:Seabees apply metal roofing sheets while reconstructing. (44604813675).jpg",
-  ],
-  // Ridge searches return clay and ceramic ridge tiles — a different material —
-  // and the only galvanised-iron photograph on Commons is already the corrugated
-  // sheet above. Showing one picture twice is what makes a catalogue look faked.
-  ["galvanized-ridge-cap", "roof ridge cap metal", null],
-  [
-    "washed-construction-sand",
-    "construction sand pile",
-    "File:Pile of Sand for Building in Anambra State.jpg",
-  ],
-  ["crushed-gravel-20mm", "crushed stone gravel", "File:20mm-aggregate.jpg"],
-  [
-    "crushed-hardcore-40mm",
-    "crushed stone",
-    "File:2d Av subway crush stone 72 jeh.jpg",
-  ],
-  ["interior-emulsion-paint-20l", "paint bucket", "File:Behr paint bucket.jpg"],
-  ["exterior-weather-paint-20l", "paint cans", "File:Paint cans in store.jpg"],
-  ["alkali-resistant-primer-20l", "paint primer", "File:White primer bucket.jpg"],
-  [
-    "copper-cable-25mm",
-    "copper electrical cable",
-    "File:'Twin and Earth' electrical cable. BS 6004, 6mm².jpg",
-  ],
-  ["copper-cable-15mm", "electrical wire", "File:Electric guide 3×2.5 mm.jpg"],
-  // "Exposed Wall Wiring and Breaker Box" is a *closed* white enclosure beside
-  // scribbled-on plaster: nothing in it reads as a 12-way board. This one shows
-  // the breaker row, which is what the product is.
-  [
-    "distribution-board-12-way",
-    "electrical wiring distribution board",
-    "File:Pretty distribution board.JPG",
-  ],
-  [
-    "twin-socket-13a",
-    "BS 1363 double socket",
-    "File:UK BS1363 double wall socket.jpg",
-  ],
-  [
-    "pvc-pressure-pipe-4-inch",
-    "PVC pressure pipe",
-    "File:Dura-Blue PVC Pipe for Underground Water Mains.JPG",
-  ],
-  [
-    "pvc-drainage-pipe-110mm",
-    "PVC drainage pipes",
-    "File:Bundled PVC pipes for drainage in Awka.jpg",
-  ],
-  ["ppr-pipe-25mm", "polypropylene pipe", "File:Green plastic pipes.JPG"],
-  ["brass-gate-valve-1-inch", "brass gate valve", null],
-  ["security-steel-door", "steel security door", "File:Arrest-door.jpg"],
-  // `null` means: a human searched, looked at the candidates, and found that
-  // Commons has no photograph a buyer would recognise as this material. Leaving
-  // the slot empty renders `ProductImage`'s labelled placeholder, which is the
-  // honest answer — far better than a picture of a different thing. Here the
-  // searches returned church façades and half-timbered houses; the one on-topic
-  // result was a cutaway of a window frame, which sells nothing.
-  ["aluminium-sliding-window", "aluminium window frame", null],
-  [
-    "flush-interior-door",
-    "door white painted room",
-    "File:Door in a white room (Unsplash).jpg",
-  ],
-  [
-    "eucalyptus-poles-4m",
-    "wooden poles delivery",
-    "File:FEMA - 40831 - A utility crew delivers new poles in Arkansas.jpg",
-  ],
-  ["plywood-18mm", "plywood", "File:Birch plywood.jpg"],
-  // Every fibreboard query returned either instrument panels or fly-tipped
-  // rubbish; the one plausible hit was pink MDF *decking*, a different product.
-  ["mdf-board-16mm", "medium density fibreboard", null],
-  [
-    "torch-on-membrane",
-    "bitumen membrane roll roofing",
-    "File:Roofing felt (укладка рубероида на обрешётку2).jpg",
-  ],
-  [
-    "cementitious-waterproofing-25kg",
-    "waterproofing membrane roof application",
-    "File:Roof waterproofing system application by Monotica Athens.jpg",
-  ],
-  // The only toilet photographs on Commons are an institutional disabled-toilet
-  // suite and a cubicle with graffiti on the tiles. Neither belongs on a listing.
-  ["close-coupled-toilet", "flush toilet cistern white", null],
-  ["ceramic-wash-basin", "wash basin bathroom", "File:Wash basin gn.jpg"],
-  // A lever tap over a stainless kitchen sink is a mixer, but a buyer reading
-  // "shower mixer" and seeing a kitchen sink concludes the images are assigned at
-  // random — which is the impression this whole exercise exists to avoid. Chrome
-  // shower brassware at least puts the fitting in a shower.
-  ["chrome-shower-mixer", "shower head", "File:Shower head.JPG"],
-];
 
 /**
  * One photograph per category the seed actually creates. Keys match
@@ -277,7 +130,6 @@ const HERO_SLOTS = [
 ];
 
 const GROUPS = [
-  { kind: "products", slots: PRODUCT_SLOTS },
   { kind: "categories", slots: CATEGORY_SLOTS },
   { kind: "hero", slots: HERO_SLOTS },
 ];

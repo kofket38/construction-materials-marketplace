@@ -3,30 +3,28 @@
  *
  * It renders exactly one of two things, and never anything in between:
  *
- *   1. the photograph stored for *this* product, or
- *   2. a neutral placeholder that is labelled as a placeholder.
+ *   1. the photograph the *seller* uploaded for this product, or
+ *   2. a neutral, labelled "Image not available" state.
  *
- * There is no third branch. It does not consult the product name, brand,
- * description or seller to pick an image, and it does not fall back to a
- * category stock photo — a plausible-looking substitute would misrepresent what
- * the seller is actually offering. `imageUrl` comes from the API (the backend
- * projects the primary `ProductImage` row into it), so passing it through is the
- * whole of the resolution rule.
+ * There is no third branch. CMM ships no product photography of its own: it does
+ * not consult the product name, brand, description or seller to pick an image,
+ * it does not fall back to a category stock photo, and it has no bundled
+ * placeholder photograph to fall back to. A plausible-looking substitute would
+ * misrepresent what the seller is actually offering. `imageUrl` comes from the
+ * API (the backend projects the primary `ProductImage` row into it), so passing
+ * it through is the whole of the resolution rule.
  *
  * The component fills whatever frame the caller provides — the aspect ratio,
  * border and rounding stay with the call site, so a card, a gallery pane and a
  * 32px order-line thumbnail all reuse this without fighting over layout.
  */
-import { useState } from "react";
+import { ImageOff } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
-import {
-  categoryPlaceholderIconKey,
-  placeholderIcons,
-  productImageSrc,
-} from "@/features/products/lib/product-image";
+import { productImageSrc } from "@/features/products/lib/product-image";
 
 /**
- * Frame-relative scale. Drives the placeholder icon, whether the placeholder is
+ * Frame-relative scale. Drives the empty-state icon, whether the empty state is
  * labelled, and how far a `contain` photograph is inset from the frame edge.
  *
  * `xs` suits the ~32–40px thumbnails in tables and order lines, `sm` the ~80–112px
@@ -66,8 +64,14 @@ interface ProductImageProps {
   /** Product name. Used for alt text and the placeholder's accessible name. */
   name: string;
   /**
-   * Category name. Used *only* to choose the placeholder's neutral trade icon
-   * and caption. It never selects a photograph.
+   * Accepted and ignored.
+   *
+   * It used to pick a trade icon for the empty state. The empty state is now one
+   * neutral "Image not available" slot for every product, because a
+   * category-flavoured graphic is still CMM-supplied imagery standing where a
+   * seller's photograph belongs. The prop stays so the many call sites that pass
+   * a category need no edit, and so nothing can quietly start selecting artwork
+   * from it again.
    */
   categoryName?: string | null;
   /** `contain` shows the whole product (default); `cover` fills a small square. */
@@ -85,6 +89,13 @@ interface ProductImageProps {
    * a dead image from its strip rather than leave a placeholder tile in it.
    */
   onError?: (src: string) => void;
+  /**
+   * Rendered inside the empty state, below the label — this is where a
+   * seller-facing surface puts its "Upload product image" control. Ignored when
+   * a photograph is shown, when the frame is a thumbnail, and when the image is
+   * decorative, so a shopper-facing card can simply omit it.
+   */
+  emptyAction?: ReactNode;
   /** Extra classes for whichever of the two branches renders. */
   className?: string;
 }
@@ -92,12 +103,12 @@ interface ProductImageProps {
 export function ProductImage({
   imageUrl,
   name,
-  categoryName,
   fit = "contain",
   size = "md",
   decorative = false,
   loading = "lazy",
   onError,
+  emptyAction,
   className = "",
 }: ProductImageProps) {
   // Tracking the URL that failed rather than a boolean means a new `imageUrl`
@@ -126,8 +137,8 @@ export function ProductImage({
   }
 
   return (
-    <ProductImagePlaceholder
-      categoryName={categoryName}
+    <ProductImageEmptyState
+      action={emptyAction}
       className={className}
       decorative={decorative}
       name={name}
@@ -137,45 +148,53 @@ export function ProductImage({
 }
 
 /**
- * The honest answer for a product with no photograph: a neutral trade icon, and
- * where the frame is large enough, the category name as a caption. It carries
- * its own surface colour so it looks deliberate in any frame, and its accessible
- * name says plainly that no photograph exists.
+ * The honest answer for a product the seller has not photographed yet.
+ *
+ * It is a labelled empty state, not a picture: a neutral outline icon and the
+ * words "Image not available" where the frame is big enough to read them. It
+ * carries its own surface colour and a soft dashed edge so it reads as a
+ * deliberate slot rather than a failed image, and its accessible name says
+ * plainly that no photograph exists.
+ *
+ * `action` is where a seller-facing surface hangs an "Upload product image"
+ * control. It is rendered only in frames large enough to hold it, and never on a
+ * decorative thumbnail, so a shopper-facing card can pass nothing and get the
+ * same empty state without a stray button in it.
  */
-function ProductImagePlaceholder({
-  categoryName,
+function ProductImageEmptyState({
+  action,
   className,
   decorative,
   name,
   size,
 }: {
-  categoryName: string | null | undefined;
+  action: ReactNode;
   className: string;
   decorative: boolean;
   name: string;
   size: ProductImageSize;
 }) {
-  const category = categoryName?.trim() ?? "";
   const styles = SIZE_STYLES[size];
-  const Icon = placeholderIcons[categoryPlaceholderIconKey(category)];
+  const showAction = Boolean(action) && !decorative && styles.label !== null;
 
   return (
     <div
       aria-hidden={decorative ? true : undefined}
-      aria-label={
-        decorative ? undefined : `No photograph available for ${name}`
-      }
-      className={`flex h-full w-full flex-col items-center justify-center gap-3 bg-raised text-ink-faint ${className}`.trim()}
+      aria-label={decorative ? undefined : `Image not available for ${name}`}
+      className={`flex h-full w-full flex-col items-center justify-center gap-2 bg-raised text-ink-faint ${className}`.trim()}
       role={decorative ? undefined : "img"}
     >
-      <Icon aria-hidden="true" className={styles.icon} strokeWidth={styles.iconStroke} />
-      {styles.label && category ? (
-        <span
-          className={`text-center font-semibold uppercase tracking-wide ${styles.label}`}
-        >
-          {category}
+      <ImageOff
+        aria-hidden="true"
+        className={styles.icon}
+        strokeWidth={styles.iconStroke}
+      />
+      {styles.label ? (
+        <span className={`text-center font-medium ${styles.label}`}>
+          Image not available
         </span>
       ) : null}
+      {showAction ? <div className="mt-1">{action}</div> : null}
     </div>
   );
 }
