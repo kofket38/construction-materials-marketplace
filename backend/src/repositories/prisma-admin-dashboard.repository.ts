@@ -72,6 +72,17 @@ const adminProductRelations = {
       name: true,
     },
   },
+  images: {
+    orderBy: [
+      { isPrimary: "desc" },
+      { createdAt: "asc" },
+    ],
+    select: {
+      imageUrl: true,
+      isPrimary: true,
+    },
+    take: 1,
+  },
 } satisfies Prisma.ProductInclude;
 
 type AdminUserRecord = Prisma.UserGetPayload<{
@@ -493,7 +504,25 @@ export class PrismaAdminDashboardRepository
       customer: { select: { id: true, name: true, email: true } },
       items: {
         include: {
-          product: { select: { id: true, sellerId: true, name: true, imageUrl: true } },
+          product: {
+            select: {
+              id: true,
+              sellerId: true,
+              name: true,
+              imageUrl: true,
+              images: {
+                orderBy: [
+                  { isPrimary: "desc" },
+                  { createdAt: "asc" },
+                ],
+                select: {
+                  imageUrl: true,
+                  isPrimary: true,
+                },
+                take: 1,
+              },
+            },
+          },
         },
         orderBy: { id: "asc" as const },
       },
@@ -535,7 +564,7 @@ export class PrismaAdminDashboardRepository
         id: item.id,
         productId: item.productId,
         productName: item.product.name,
-        productImageUrl: item.product.imageUrl,
+        productImageUrl: item.product.images?.[0]?.imageUrl ?? item.product.imageUrl,
         sellerId: item.product.sellerId,
         quantity: item.quantity,
         unitPrice: item.unitPrice.toFixed(2),
@@ -638,7 +667,7 @@ function mapAdminProduct(product: AdminProductRecord): AdminProductEntity {
     description: product.description,
     price: product.price.toFixed(2),
     quantity: product.quantity,
-    imageUrl: product.imageUrl,
+    imageUrl: product.images?.[0]?.imageUrl ?? product.imageUrl,
     seller: {
       id: product.seller.id,
       name: product.seller.name,

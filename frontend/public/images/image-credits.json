@@ -277,14 +277,14 @@
     "products/copper-cable-15mm.png": {
       "kind": "products",
       "slot": "copper-cable-15mm",
-      "query": "1.5mm stranded copper wire",
+      "query": "cable coil reel",
       "pinned": true,
       "savedAs": "products/copper-cable-15mm.png",
       "source": "Wikimedia Commons",
-      "title": "File:Wago 221-413 splicing connector with stranded wire.jpg",
-      "pageUrl": "https://commons.wikimedia.org/wiki/File:Wago_221-413_splicing_connector_with_stranded_wire.jpg",
+      "title": "File:Cables 1.JPG",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Cables_1.JPG",
       "licence": "CC BY-SA 3.0",
-      "author": "Niclaus",
+      "author": "Mark Ahsmann",
       "credit": "Own work"
     },
     "products/copper-cable-25mm.png": {
@@ -628,15 +628,15 @@
     "products/tile-adhesive-25kg.png": {
       "kind": "products",
       "slot": "tile-adhesive-25kg",
-      "query": "tile adhesive cementit universal",
+      "query": "cement bag adhesive",
       "pinned": true,
       "savedAs": "products/tile-adhesive-25kg.png",
       "source": "Wikimedia Commons",
-      "title": "File:Cementit Universal 30g.jpg",
-      "pageUrl": "https://commons.wikimedia.org/wiki/File:Cementit_Universal_30g.jpg",
+      "title": "File:Cement Baggies.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Cement_Baggies.jpg",
       "licence": "CC BY-SA 3.0",
-      "author": "Don-vip",
-      "credit": "Own work"
+      "author": "Billbeee at en.wikipedia",
+      "credit": "Transferred from en.wikipedia"
     },
     "products/torch-on-membrane.png": {
       "kind": "products",

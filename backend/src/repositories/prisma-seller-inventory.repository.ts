@@ -18,6 +18,17 @@ const inventoryInclude = {
     select: {
       name: true,
       imageUrl: true,
+      images: {
+        orderBy: [
+          { isPrimary: "desc" },
+          { createdAt: "asc" },
+        ],
+        select: {
+          imageUrl: true,
+          isPrimary: true,
+        },
+        take: 1,
+      },
     },
   },
 } satisfies Prisma.SellerInventoryInclude;
@@ -32,7 +43,7 @@ function mapInventory(row: InventoryWithProduct): SellerInventoryEntity {
     sellerId: row.sellerId,
     productId: row.productId,
     productName: row.product.name,
-    productImageUrl: row.product.imageUrl,
+    productImageUrl: row.product.images?.[0]?.imageUrl ?? row.product.imageUrl,
     city: row.city,
     region: row.region,
     price: row.price.toFixed(2),

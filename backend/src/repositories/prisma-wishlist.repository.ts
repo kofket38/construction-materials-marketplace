@@ -27,6 +27,17 @@ const wishlistRelations = {
           name: true,
         },
       },
+      images: {
+        orderBy: [
+          { isPrimary: "desc" },
+          { createdAt: "asc" },
+        ],
+        select: {
+          imageUrl: true,
+          isPrimary: true,
+        },
+        take: 1,
+      },
     },
   },
 } satisfies Prisma.WishlistItemInclude;
@@ -50,7 +61,7 @@ function mapWishlistItem(
       description: item.product.description,
       price: item.product.price.toFixed(2),
       quantity: item.product.quantity,
-      imageUrl: item.product.imageUrl,
+      imageUrl: item.product.images?.[0]?.imageUrl ?? item.product.imageUrl,
       seller: item.product.seller,
       category: item.product.category,
       createdAt: item.product.createdAt,

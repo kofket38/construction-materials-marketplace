@@ -45,40 +45,74 @@ const productRelations = {
       name: true,
     },
   },
+  images: {
+    orderBy: [
+      { isPrimary: "desc" },
+      { createdAt: "asc" },
+    ],
+    select: {
+      imageUrl: true,
+      isPrimary: true,
+    },
+    take: 1,
+  },
 } satisfies Prisma.ProductInclude;
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
   include: typeof productRelations;
 }>;
 
+const sellerOrderProductSelect = {
+  id: true,
+  name: true,
+  imageUrl: true,
+  images: {
+    orderBy: [
+      { isPrimary: "desc" },
+      { createdAt: "asc" },
+    ],
+    select: {
+      imageUrl: true,
+      isPrimary: true,
+    },
+    take: 1,
+  },
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+const sellerOrderInclude = (sellerId: string) => ({
+  customer: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+  payment: true,
+  items: {
+    where: {
+      product: {
+        is: { sellerId },
+      },
+    },
+    include: {
+      product: {
+        select: sellerOrderProductSelect,
+      },
+    },
+    orderBy: {
+      id: "asc" as const,
+    },
+  },
+}) satisfies Prisma.OrderInclude;
+
 type SellerOrderWithRelations = Prisma.OrderGetPayload<{
-  include: {
-    customer: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-      };
-    };
-    payment: true;
-    items: {
-      include: {
-        product: {
-          select: {
-            id: true;
-            name: true;
-            imageUrl: true;
-            category: {
-              select: {
-                id: true;
-                name: true;
-              };
-            };
-          };
-        };
-      };
-    };
-  };
+  include: ReturnType<typeof sellerOrderInclude>;
 }>;
 
 interface RevenueRow {
@@ -742,44 +776,6 @@ function sellerOrderWorkflowStatusFilter(
   }
 }
 
-function sellerOrderInclude(sellerId: string) {
-  return {
-    customer: {
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
-    },
-    payment: true,
-    items: {
-      where: {
-        product: {
-          is: { sellerId },
-        },
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        id: "asc" as const,
-      },
-    },
-  };
-}
-
 function mapProduct(product: ProductWithRelations): ProductEntity {
   return {
     id: product.id,
@@ -789,7 +785,7 @@ function mapProduct(product: ProductWithRelations): ProductEntity {
     description: product.description,
     price: product.price.toFixed(2),
     quantity: product.quantity,
-    imageUrl: product.imageUrl,
+    imageUrl: product.images?.[0]?.imageUrl ?? product.imageUrl,
     seller: product.seller,
     category: product.category,
     createdAt: product.createdAt,
@@ -806,13 +802,18 @@ function mapSellerOrder(order: SellerOrderWithRelations): SellerOrderEntity {
     sellerTotal = sellerTotal.plus(lineTotal);
     totalItems += item.quantity;
 
+    const productImageUrl = item.product.images?.[0]?.imageUrl ?? item.product.imageUrl;
+
     return {
       id: item.id,
       productId: item.productId,
       quantity: item.quantity,
       price: item.price.toFixed(2),
       lineTotal: lineTotal.toFixed(2),
-      product: item.product,
+      product: {
+        ...item.product,
+        imageUrl: productImageUrl,
+      },
     };
   });
 
