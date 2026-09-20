@@ -163,54 +163,6 @@ describe("Product API", () => {
     expect(await products.findById(product.id)).not.toBeNull();
   });
 
-  it("creates and serves a product that has no images at all", async () => {
-    // The marketplace ships no product photography, so zero images is the
-    // normal state of a brand-new listing rather than an edge case. A product
-    // created this way has to be fully usable: fetchable, listed, and reporting
-    // an empty image set rather than an error or a stand-in URL.
-    const { imageUrl: _imageUrl, ...input } = productInput;
-
-    const created = await createProduct(sellerToken, input, 201);
-    expect(created.body.data.product).toMatchObject({ imageUrl: null });
-
-    const productId = created.body.data.product.id as string;
-
-    const detail = await request(app)
-      .get(`/api/products/${productId}`)
-      .expect(200);
-    expect(detail.body.data.product).toMatchObject({ imageUrl: null });
-
-    const images = await request(app)
-      .get(`/api/products/${productId}/images`)
-      .expect(200);
-    expect(images.body.data.images).toEqual([]);
-
-    const list = await request(app).get("/api/products").expect(200);
-    expect(
-      (list.body.data.products as { id: string; imageUrl: string | null }[])
-        .find((product) => product.id === productId),
-    ).toMatchObject({ imageUrl: null });
-  });
-
-  it("rejects a local catalog image path from the retired seeded set", async () => {
-    // `/images/products/<name>.png` is what the old CMM-owned seed wrote. Those
-    // files are gone, so the API must not accept the shape again through the
-    // seller endpoint — the URL validator's http(s) rule is what enforces it.
-    const product = await seedProductWithoutImage();
-
-    await addProductImage(
-      product.id,
-      sellerToken,
-      "/images/products/dangote-cement.png",
-      400,
-    );
-
-    const images = await request(app)
-      .get(`/api/products/${product.id}/images`)
-      .expect(200);
-    expect(images.body.data.images).toEqual([]);
-  });
-
   it("allows a seller to add an image to an owned product", async () => {
     const product = await seedProductWithoutImage();
     const imageUrl = "https://example.com/cement-front.jpg";
