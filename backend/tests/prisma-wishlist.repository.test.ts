@@ -181,6 +181,17 @@ function wishlistInclude() {
             name: true,
           },
         },
+        images: {
+          orderBy: [
+            { isPrimary: "desc" },
+            { createdAt: "asc" },
+          ],
+          select: {
+            imageUrl: true,
+            isPrimary: true,
+          },
+          take: 1,
+        },
       },
     },
   };

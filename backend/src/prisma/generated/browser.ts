@@ -83,6 +83,21 @@ export type SellerInventory = Prisma.SellerInventoryModel
  */
 export type Order = Prisma.OrderModel
 /**
+ * Model Shipment
+ * 
+ */
+export type Shipment = Prisma.ShipmentModel
+/**
+ * Model ShipmentEvent
+ * 
+ */
+export type ShipmentEvent = Prisma.ShipmentEventModel
+/**
+ * Model DeliveryProof
+ * 
+ */
+export type DeliveryProof = Prisma.DeliveryProofModel
+/**
  * Model Payment
  * 
  */

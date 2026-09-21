@@ -97,6 +97,15 @@ enum InventoryTransactionType {
   ORDER_CANCELLATION
 }
 
+enum ShipmentStatus {
+  CREATED
+  PROCESSING
+  DISPATCHED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
 enum ProfileVisibility {
   PUBLIC
   PRIVATE
@@ -119,43 +128,43 @@ enum ProjectStatus {
 }
 
 model ProfessionalProfile {
-  id               String            @id @default(uuid()) @db.Uuid
-  userId           String            @unique @db.Uuid
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
 
   // ── Identity ───────────────────────────────────────────────────────────────
-  displayName      String            @db.VarChar(200)
-  headline         String?           @db.VarChar(300)
-  bio              String?           @db.VarChar(2000)
-  avatarUrl        String?           @db.VarChar(500)
+  displayName String  @db.VarChar(200)
+  headline    String? @db.VarChar(300)
+  bio         String? @db.VarChar(2000)
+  avatarUrl   String? @db.VarChar(500)
 
   // ── Professional information ──────────────────────────────────────────────
-  profession       String?           @db.VarChar(200)
-  yearsExperience  Int?
-  company          String?           @db.VarChar(200)
+  profession      String? @db.VarChar(200)
+  yearsExperience Int?
+  company         String? @db.VarChar(200)
 
   // ── Location ──────────────────────────────────────────────────────────────
-  city             String?           @db.VarChar(100)
-  region           String?           @db.VarChar(100)
-  country          String?           @db.VarChar(100)
+  city    String? @db.VarChar(100)
+  region  String? @db.VarChar(100)
+  country String? @db.VarChar(100)
 
   // ── Contact / professional links ──────────────────────────────────────────
-  phone            String?           @db.VarChar(30)
-  email            String?           @db.VarChar(254)
-  website          String?           @db.VarChar(500)
-  linkedinUrl      String?           @db.VarChar(500)
+  phone       String? @db.VarChar(30)
+  email       String? @db.VarChar(254)
+  website     String? @db.VarChar(500)
+  linkedinUrl String? @db.VarChar(500)
 
   // ── Profile state ─────────────────────────────────────────────────────────
-  visibility       ProfileVisibility @default(PUBLIC)
+  visibility ProfileVisibility @default(PUBLIC)
 
   // ── Timestamps ────────────────────────────────────────────────────────────
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ── Relations ─────────────────────────────────────────────────────────────
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  specialties      ProfessionalSpecialty[]
-  credentials      ProfessionalCredential[]
-  portfolioItems   PortfolioItem[]
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialties    ProfessionalSpecialty[]
+  credentials    ProfessionalCredential[]
+  portfolioItems PortfolioItem[]
 
   @@index([userId])
   @@index([visibility])
@@ -165,12 +174,12 @@ model ProfessionalProfile {
 }
 
 model ProfessionalSpecialty {
-  id          String              @id @default(uuid()) @db.Uuid
-  profileId   String              @db.Uuid
-  name        String              @db.VarChar(150)
-  createdAt   DateTime            @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @db.Uuid
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now())
 
-  profile     ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, name])
   @@index([profileId])
@@ -178,43 +187,43 @@ model ProfessionalSpecialty {
 }
 
 model ProfessionalCredential {
-  id             String              @id @default(uuid()) @db.Uuid
-  profileId      String              @db.Uuid
-  type           CredentialType      @default(EDUCATION)
-  title          String              @db.VarChar(300)
-  institution    String?             @db.VarChar(300)
-  yearObtained   Int?
-  description    String?             @db.VarChar(1000)
-  credentialUrl  String?             @db.VarChar(500)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id            String         @id @default(uuid()) @db.Uuid
+  profileId     String         @db.Uuid
+  type          CredentialType @default(EDUCATION)
+  title         String         @db.VarChar(300)
+  institution   String?        @db.VarChar(300)
+  yearObtained  Int?
+  description   String?        @db.VarChar(1000)
+  credentialUrl String?        @db.VarChar(500)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  profile        ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
   @@map("professional_credentials")
 }
 
 model PortfolioItem {
-  id             String    @id @default(uuid()) @db.Uuid
-  profileId      String    @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  profileId String @db.Uuid
 
-  title          String    @db.VarChar(200)
-  description    String?   @db.VarChar(2000)
+  title       String  @db.VarChar(200)
+  description String? @db.VarChar(2000)
 
   projectType    String?   @db.VarChar(150)
   location       String?   @db.VarChar(200)
   completionDate DateTime?
 
   // External image URL references (no upload infrastructure yet).
-  images         String[]  @default([])
+  images String[] @default([])
 
-  displayOrder   Int       @default(0)
+  displayOrder Int @default(0)
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  profile        ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId, displayOrder])
   @@map("portfolio_items")
@@ -231,10 +240,10 @@ model Project {
   projectType String? @db.VarChar(150)
   location    String? @db.VarChar(200)
 
-  budget      Decimal? @db.Decimal(14, 2)
+  budget Decimal? @db.Decimal(14, 2)
 
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate DateTime?
+  endDate   DateTime?
 
   // External image URL references (no upload infrastructure yet).
   images String[] @default([])
@@ -264,32 +273,35 @@ model Project {
 }
 
 model User {
-  id                String            @id @default(uuid()) @db.Uuid
-  name              String
-  firstName         String?
-  lastName          String?
-  email             String            @unique
-  passwordHash      String
-  phone             String?
-  company           String?
-  role              Role              @default(CUSTOMER)
-  isActive          Boolean           @default(true)
-  emailVerified     Boolean           @default(false)
-  refreshToken      String?
-  sellerProfile     SellerProfile?
-  professionalProfile ProfessionalProfile?
-  listedProducts    Product[]         @relation("SellerProducts")
-  createdProducts   Product[]         @relation("SellerCreatedProducts")
-  orders            Order[]           @relation("CustomerOrders")
-  reviews           Review[]          @relation("CustomerReviews")
-  wishlistItems     WishlistItem[]    @relation("CustomerWishlist")
-  rfqs              RequestForQuote[] @relation("CustomerRfqs")
-  supplierQuotes    SupplierQuote[]   @relation("SellerQuotes")
-  sellerInventories SellerInventory[] @relation("SellerInventory")
+  id                    String                 @id @default(uuid()) @db.Uuid
+  name                  String
+  firstName             String?
+  lastName              String?
+  email                 String                 @unique
+  passwordHash          String
+  phone                 String?
+  company               String?
+  role                  Role                   @default(CUSTOMER)
+  isActive              Boolean                @default(true)
+  emailVerified         Boolean                @default(false)
+  refreshToken          String?
+  sellerProfile         SellerProfile?
+  professionalProfile   ProfessionalProfile?
+  listedProducts        Product[]              @relation("SellerProducts")
+  createdProducts       Product[]              @relation("SellerCreatedProducts")
+  orders                Order[]                @relation("CustomerOrders")
+  reviews               Review[]               @relation("CustomerReviews")
+  wishlistItems         WishlistItem[]         @relation("CustomerWishlist")
+  rfqs                  RequestForQuote[]      @relation("CustomerRfqs")
+  supplierQuotes        SupplierQuote[]        @relation("SellerQuotes")
+  sellerInventories     SellerInventory[]      @relation("SellerInventory")
   inventoryTransactions InventoryTransaction[] @relation("SellerInventoryTransactions")
-  projects          Project[]         @relation("OwnerProjects")
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  projects              Project[]              @relation("OwnerProjects")
+  // M2b delivery: actor on shipment events and delivery proofs
+  shipmentEvents        ShipmentEvent[]        @relation("ShipmentEventActor")
+  deliveryProofs        DeliveryProof[]        @relation("DeliveryProofActor")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([role])
   @@index([isActive])
@@ -297,21 +309,21 @@ model User {
 }
 
 model SellerProfile {
-  id                         String   @id @default(uuid()) @db.Uuid
-  userId                     String   @unique @db.Uuid
-  shopName                   String
-  phone                      String
-  address                    String
-  paymentAccountName         String?
-  telebirrNumber             String?
-  cbeBirrNumber              String?
-  cbeBankAccountNumber       String?
-  awashBankAccountNumber     String?
-  dashenBankAccountNumber    String?
-  eBirrNumber                String?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @unique @db.Uuid
+  shopName                String
+  phone                   String
+  address                 String
+  paymentAccountName      String?
+  telebirrNumber          String?
+  cbeBirrNumber           String?
+  cbeBankAccountNumber    String?
+  awashBankAccountNumber  String?
+  dashenBankAccountNumber String?
+  eBirrNumber             String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([shopName])
   @@index([shopName(ops: raw("gin_trgm_ops"))], type: Gin, map: "seller_profiles_shopName_trgm_idx")
@@ -449,34 +461,90 @@ model SellerInventory {
 }
 
 model Order {
-  id               String         @id @default(uuid()) @db.Uuid
-  customerId       String         @db.Uuid
+  id                    String                 @id @default(uuid()) @db.Uuid
+  customerId            String                 @db.Uuid
   // Optional procurement container. Nullable so every pre-existing order
   // remains valid; Restrict keeps a project with order history undeletable.
-  projectId        String?        @db.Uuid
-  status           OrderStatus    @default(PENDING)
-  paymentMethod    PaymentMethod  @default(CASH_ON_DELIVERY)
-  totalAmount      Decimal        @db.Decimal(14, 2)
-  shippingFullName String         @default("Not provided")
-  shippingPhone    String         @default("Not provided")
-  shippingCity     String         @default("Not provided")
-  shippingAddress  String         @default("Not provided")
-  shippingNotes    String?
-  customer         User           @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
-  project          Project?       @relation("ProjectOrders", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  items            OrderItem[]
-  payment          Payment?
-  sourceQuote      SupplierQuote?
+  projectId             String?                @db.Uuid
+  // Optional shipment link (M2b delivery foundation). One-to-one with Shipment.
+  shipmentId            String?                @unique @db.Uuid
+  status                OrderStatus            @default(PENDING)
+  paymentMethod         PaymentMethod          @default(CASH_ON_DELIVERY)
+  totalAmount           Decimal                @db.Decimal(14, 2)
+  shippingFullName      String                 @default("Not provided")
+  shippingPhone         String                 @default("Not provided")
+  shippingCity          String                 @default("Not provided")
+  shippingAddress       String                 @default("Not provided")
+  shippingNotes         String?
+  customer              User                   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  project               Project?               @relation("ProjectOrders", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  shipment              Shipment?              @relation("ShipmentOrder")
+  items                 OrderItem[]
+  payment               Payment?
+  sourceQuote           SupplierQuote?
   inventoryTransactions InventoryTransaction[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([customerId, createdAt])
   @@index([status])
   // Serves the project procurement read path (filter by project, newest
   // first) and the lifecycle guard's active-order count.
   @@index([projectId, createdAt])
+  @@index([shipmentId])
   @@map("orders")
+}
+
+model Shipment {
+  id           String         @id @default(uuid()) @db.Uuid
+  orderId      String         @unique @db.Uuid
+  trackingCode String         @unique @db.VarChar(64)
+  status       ShipmentStatus @default(CREATED)
+  proofId      String?        @unique @db.Uuid
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  order  Order           @relation("ShipmentOrder", fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  proof  DeliveryProof?  @relation("ShipmentProof")
+  events ShipmentEvent[] @relation("ShipmentEvents")
+
+  @@index([trackingCode])
+  @@index([status, createdAt])
+  @@map("shipments")
+}
+
+model ShipmentEvent {
+  id         String         @id @default(uuid()) @db.Uuid
+  shipmentId String         @db.Uuid
+  status     ShipmentStatus
+  metadata   Json?
+  actorId    String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+
+  shipment Shipment @relation("ShipmentEvents", fields: [shipmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  actor    User?    @relation("ShipmentEventActor", fields: [actorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([shipmentId, createdAt])
+  @@index([status])
+  @@map("shipment_events")
+}
+
+model DeliveryProof {
+  id            String   @id @default(uuid()) @db.Uuid
+  shipmentId    String   @unique @db.Uuid
+  fileReference String   @db.VarChar(500)
+  contentType   String   @db.VarChar(100)
+  capturedAt    DateTime @default(now())
+  actorId       String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shipment Shipment @relation("ShipmentProof", fields: [shipmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  actor    User?    @relation("DeliveryProofActor", fields: [actorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([shipmentId])
+  @@index([actorId])
+  @@map("delivery_proofs")
 }
 
 model Payment {

@@ -1,6 +1,6 @@
 import {
   ShipmentStatus as PrismaShipmentStatus,
-  type Prisma,
+  Prisma,
   type PrismaClient,
 } from "../prisma/generated/client.js";
 import {
@@ -10,6 +10,7 @@ import {
   ShipmentStateChangedError,
   ShipmentTerminalStatusError,
   type CreateShipmentEventInput,
+  type CreateShipmentInput,
   type ShipmentEntity,
   type ShipmentEventEntity,
   type ShipmentProofAuthorization,
@@ -19,18 +20,25 @@ import {
   type UpdateShipmentStatusInput,
 } from "./shipment.repository.js";
 
-const shipmentEventActorSelect = {
+const actorSelect = {
   id: true,
   name: true,
   email: true,
-};
+  phone: true,
+  firstName: true,
+  lastName: true,
+  company: true,
+  role: true,
+  isActive: true,
+  emailVerified: true,
+} satisfies Prisma.UserSelect;
 
 const shipmentProofRelations = {
-  actor: shipmentEventActorSelect,
+  actor: { select: actorSelect },
 } satisfies Prisma.DeliveryProofInclude;
 
 const shipmentEventRelations = {
-  actor: shipmentEventActorSelect,
+  actor: { select: actorSelect },
 } satisfies Prisma.ShipmentEventInclude;
 
 const shipmentItemRelations = {
@@ -98,11 +106,6 @@ function hasPrismaCode(error: unknown, code: string): boolean {
   return error instanceof Error && "code" in error && error.code === code;
 }
 
-/**
- * Build the `actor` connect payload for a create call. With
- * exactOptionalPropertyTypes, the property must be omitted (not set to
- * undefined) when there is no actor.
- */
 function actorConnect(
   actorId?: string | null,
 ): { actor: { connect: { id: string } } } | undefined {
@@ -112,13 +115,11 @@ function actorConnect(
 export class PrismaShipmentRepository implements ShipmentRepository {
   constructor(private readonly client: PrismaClient) {}
 
-  async create(orderId: string): Promise<ShipmentEntity> {
+  async create(input: CreateShipmentInput): Promise<ShipmentEntity> {
+    const orderId = input.orderId;
     const trackingCode = generateTrackingCode();
     let attempt = 0;
 
-    // The tracking code is server-generated and must be unique. On the rare
-    // collision, regenerate and retry (up to a bounded number of attempts).
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         const shipment = await this.client.shipment.create({
@@ -133,8 +134,7 @@ export class PrismaShipmentRepository implements ShipmentRepository {
         if (hasPrismaCode(error, "P2002")) {
           if (attempt < 5) {
             attempt++;
-            // Retry with a fresh code by recursing through a new variable.
-            return this.create(orderId);
+            return this.create(input);
           }
           throw error;
         }
@@ -194,18 +194,22 @@ export class PrismaShipmentRepository implements ShipmentRepository {
     return shipments.map(mapShipment);
   }
 
-  async addEvent(
+async addEvent(
     shipmentId: string,
     input: CreateShipmentEventInput,
   ): Promise<ShipmentEventEntity> {
     try {
+      const data: Prisma.ShipmentEventCreateInput = {
+        shipment: { connect: { id: shipmentId } },
+        status: mapShipmentStatus(input.status),
+        metadata: (input.metadata as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+      };
+      if (input.actorId) {
+        data.actor = { connect: { id: input.actorId } };
+      }
+
       const event = await this.client.shipmentEvent.create({
-        data: {
-          shipment: { connect: { id: shipmentId } },
-          status: mapShipmentStatus(input.status),
-          metadata: input.metadata ?? undefined,
-          ...actorConnect(input.actorId),
-        },
+        data,
         include: shipmentEventRelations,
       });
       return mapShipmentEvent(event);
@@ -246,13 +250,17 @@ export class PrismaShipmentRepository implements ShipmentRepository {
         throw new ShipmentStateChangedError();
       }
 
+const eventData: Prisma.ShipmentEventCreateInput = {
+        shipment: { connect: { id: shipmentId } },
+        status: mapShipmentStatus(input.status),
+        metadata: (input.metadata as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+      };
+      if (input.actorId) {
+        eventData.actor = { connect: { id: input.actorId } };
+      }
+
       await transaction.shipmentEvent.create({
-        data: {
-          shipmentId,
-          status: mapShipmentStatus(input.status),
-          metadata: input.metadata ?? undefined,
-          ...actorConnect(input.actorId),
-        },
+        data: eventData,
       });
 
       const updated = await transaction.shipment.findUnique({
@@ -278,7 +286,7 @@ export class PrismaShipmentRepository implements ShipmentRepository {
           fileReference: input.fileReference,
           contentType: input.contentType,
           capturedAt: new Date(),
-          ...actorConnect(input.actorId),
+          ...(input.actorId ? { actor: { connect: { id: input.actorId } } } : {}),
         },
         include: shipmentProofRelations,
       });
@@ -340,13 +348,6 @@ export class PrismaShipmentRepository implements ShipmentRepository {
   }
 }
 
-/**
- * Generate a human-readable, server-side tracking code.
- *
- * Format: SHIP-<YYMMDD>-<8 alphanumeric>
- * Guarantees: server-generated, unique (enforced by DB + retry), stable for the
- * shipment lifetime, and contains no client-supplied input.
- */
 function generateTrackingCode(): string {
   const date = new Date();
   const yymmdd =
@@ -406,15 +407,27 @@ function mapShipmentProof(proof: ShipmentProofPayload): ShipmentProofEntity {
   };
 }
 
-function mapShipmentEvent(event: ShipmentEventPayload): ShipmentEventEntity {
+function mapShipmentEvent(event: {
+  id: string;
+  shipmentId: string;
+  status: ShipmentStatus;
+  metadata: Prisma.JsonValue;
+  actorId: string | null;
+  actor: { id: string; name: string; email: string; phone: string | null; firstName: string | null; lastName: string | null; company: string | null; role: string; isActive: boolean; emailVerified: boolean } | null;
+  createdAt: Date;
+}): ShipmentEventEntity {
   return {
     id: event.id,
     shipmentId: event.shipmentId,
-    status: event.status as ShipmentStatus,
+    status: event.status,
     metadata: event.metadata as Record<string, unknown> | null,
     actorId: event.actorId,
     actor: event.actor
-      ? { id: event.actor.id, name: event.actor.name, email: event.actor.email }
+      ? {
+          id: event.actor.id,
+          name: event.actor.name,
+          email: event.actor.email,
+        }
       : null,
     createdAt: event.createdAt,
   };

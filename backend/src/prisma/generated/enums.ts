@@ -129,6 +129,18 @@ export const InventoryTransactionType = {
 export type InventoryTransactionType = (typeof InventoryTransactionType)[keyof typeof InventoryTransactionType]
 
 
+export const ShipmentStatus = {
+  CREATED: 'CREATED',
+  PROCESSING: 'PROCESSING',
+  DISPATCHED: 'DISPATCHED',
+  IN_TRANSIT: 'IN_TRANSIT',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type ShipmentStatus = (typeof ShipmentStatus)[keyof typeof ShipmentStatus]
+
+
 export const ProfileVisibility = {
   PUBLIC: 'PUBLIC',
   PRIVATE: 'PRIVATE'
